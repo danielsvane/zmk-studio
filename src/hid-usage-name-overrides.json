@@ -10,9 +10,10 @@
     "37": { "short": "8" },
     "38": { "short": "9" },
     "39": { "short": "0" },
-    "40": { "short": "Ret", "med": "Return" },
+    "40": { "short": "Ret", "med": "Return", "icon": "corner-down-left" },
     "41": { "short": "Esc", "long": "Escape" },
-    "42": { "short": "BkSp", "med": "BkSpc", "long": "Backspace" },
+    "42": { "short": "BkSp", "med": "BkSpc", "long": "Backspace", "icon": "delete" },
+    "43": { "short": "Tab", "icon": "arrow-right-to-line" },
     "44": { "short": "␣", "med": "Space" },
     "45": { "short": "-", "med": "Dash" },
     "46": { "short": "=", "med": "Equals" },
@@ -32,7 +33,7 @@
     "72": { "short": "Paus", "med": "Pause" },
     "73": { "short": "Ins", "med": "Insert" },
     "75": { "short": "PgUp", "med": "PageUp", "long": "Page Up" },
-    "76": { "short": "Del", "med": "Delete" },
+    "76": { "short": "Del", "med": "Delete", "icon": "delete" },
     "78": { "short": "PgDn", "med": "PageDn", "long": "Page Down" },
     "79": { "short": "→" },
     "80": { "short": "←" },
@@ -54,7 +55,7 @@
     "96": { "short": "8 ↑" },
     "97": { "short": "9 PU", "med": "9 PgUp" },
     "98": { "short": "0 In", "med": "0 Ins", "long": "0 Insert" },
-    "99": { "short": ". Dl", "med": ". Del", "long": ". Delete" },
+    "99": { "short": ". Dl", "med": ". Del", "long": ". Delete", "icon": "delete" },
     "101": { "short": "Appl", "med": "Appl", "long": "Applicat'n" },
     "102": { "short": "Power", "med": "Power" },
     "100": { "short": "NUBS" },
@@ -63,14 +64,14 @@
     "134": { "short": "=" },
     "176": { "short": "00" },
     "177": { "short": "000" },
-    "224": { "short": "Ctrl", "med": "L Ctrl" },
-    "225": { "short": "Shft", "med": "L Shft", "long": "L Shift" },
-    "226": { "short": "Alt", "med": "L Alt", "long": "Left Alt" },
-    "227": { "short": "GUI", "med": "L GUI", "long": "Left GUI" },
-    "228": { "short": "Ctrl", "med": "R Ctrl" },
-    "229": { "short": "Shft", "med": "R Shft", "long": "R Shift" },
+    "224": { "short": "Ctrl", "med": "L Ctrl", "icon": "chevron-up" },
+    "225": { "short": "Shft", "med": "L Shft", "long": "L Shift", "icon": "arrow-big-up" },
+    "226": { "short": "Alt", "med": "L Alt", "long": "Left Alt", "icon": "option" },
+    "227": { "short": "GUI", "med": "L GUI", "long": "Left GUI", "icon": "command" },
+    "228": { "short": "Ctrl", "med": "R Ctrl", "icon": "chevron-up" },
+    "229": { "short": "Shft", "med": "R Shft", "long": "R Shift", "icon": "arrow-big-up" },
     "230": { "short": "AltG", "med": "AltGr" },
-    "231": { "short": "GUI", "med": "R GUI", "long": "Right GUI" }
+    "231": { "short": "GUI", "med": "R GUI", "long": "Right GUI", "icon": "command" }
   },
   "12": {
     "111": { "short": "🔆" },
@@ -79,7 +80,7 @@
     "182": { "short": "⇤" },
     "205": { "short": "⏯️" },
     "226": { "short": "🔇" },
-    "233": { "short": "🔊" },
-    "234": { "short": "🔉" }
+    "233": { "short": "🔊", "icon": "volume-2" },
+    "234": { "short": "🔉", "icon": "volume-1" }
   }
 }
