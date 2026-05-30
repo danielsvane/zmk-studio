@@ -128,7 +128,7 @@ export const PhysicalLayout = ({
       <div
         key={p.id}
         onClick={() => onPositionClicked?.(idx)}
-        className="hover:[transform:translateZ(100px)] transition-transform duration-200"
+        className="[transform:translateZ(0)] hover:[transform:translateZ(100px)] [backface-visibility:hidden] transition-transform duration-200"
       >
         <Key
           oneU={oneU}
