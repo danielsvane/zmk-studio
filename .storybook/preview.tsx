@@ -1,4 +1,5 @@
 import "../src/index.css";
+import { useLayoutEffect } from "react";
 import type { Preview } from "@storybook/react";
 import { themes } from "@storybook/theming";
 
@@ -26,19 +27,14 @@ const preview: Preview = {
   decorators: [
     (Story, context) => {
       const dark = context.globals.theme !== "light";
-      return (
-        <div
-          // base-100 background + base-content text, matching the real app shell.
-          className="bg-base-100 text-base-content"
-          style={{
-            colorScheme: dark ? "dark" : "light",
-            minHeight: "100vh",
-            padding: "1rem",
-          }}
-        >
-          <Story />
-        </div>
-      );
+      // Theme the iframe body itself so the dark background fills the whole
+      // canvas while each story still sizes to its own content (no 100vh box).
+      useLayoutEffect(() => {
+        const { documentElement, body } = document;
+        documentElement.style.colorScheme = dark ? "dark" : "light";
+        body.classList.add("bg-base-100", "text-base-content");
+      }, [dark]);
+      return <Story />;
     },
   ],
   parameters: {
