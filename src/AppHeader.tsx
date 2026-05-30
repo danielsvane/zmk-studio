@@ -55,14 +55,27 @@ export const AppHeader = ({
   }, [lockState, showSettingsReset]);
 
   const showSettingsRef = useModalRef(showSettingsReset);
-  const [unsaved, setUnsaved] = useConnectedDeviceData<boolean>(
+  const [keymapUnsaved, setKeymapUnsaved] = useConnectedDeviceData<boolean>(
     { keymap: { checkUnsavedChanges: true } },
     (r) => r.keymap?.checkUnsavedChanges
   );
 
   useSub("rpc_notification.keymap.unsavedChangesStatusChanged", (unsaved) =>
-    setUnsaved(unsaved)
+    setKeymapUnsaved(unsaved)
   );
+
+  // Combos share the same unsaved indicator + Save/Discard buttons as the
+  // keymap (M3). Track their unsaved state independently and OR the two.
+  const [combosUnsaved, setCombosUnsaved] = useConnectedDeviceData<boolean>(
+    { combos: { checkUnsavedChanges: true } },
+    (r) => r.combos?.checkUnsavedChanges
+  );
+
+  useSub("rpc_notification.combos.unsavedChangesStatusChanged", (unsaved) =>
+    setCombosUnsaved(unsaved)
+  );
+
+  const unsaved = !!keymapUnsaved || !!combosUnsaved;
 
   return (
     <header className="top-0 left-0 right-0 grid grid-cols-[1fr_auto_1fr] items-center justify-between h-10 max-w-full">

@@ -10,20 +10,34 @@ export interface ComboListProps {
   behaviors: BehaviorMap;
   selectedIndex?: number;
   onComboSelected?: (index: number) => void;
+  onAddCombo?: () => void;
+  canAdd?: boolean;
 }
 
 // Combo list. Rows are clickable to select a combo for editing (M2); the
 // selected row is highlighted. Mirrors the keymap's behavior rendering: the
 // behavior's display name plus a HID usage label for param1 where it applies.
+// The "Add" button (M4) creates a new combo and selects it for editing.
 export const ComboList = ({
   combos,
   behaviors,
   selectedIndex,
   onComboSelected,
+  onAddCombo,
+  canAdd,
 }: ComboListProps) => {
   return (
     <div className="flex flex-col gap-1">
-      <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
+        <button
+          className="h-6 rounded bg-primary px-2 text-xs text-primary-content disabled:opacity-50"
+          disabled={!canAdd || !onAddCombo}
+          onClick={() => onAddCombo?.()}
+        >
+          + Add
+        </button>
+      </div>
       {combos.combos.length === 0 ? (
         <p className="text-sm opacity-70">No combos defined.</p>
       ) : (

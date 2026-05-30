@@ -212,6 +212,16 @@ function App() {
       if (!resp.keymap?.saveChanges || resp.keymap?.saveChanges.err) {
         console.error("Failed to save changes", resp.keymap?.saveChanges);
       }
+
+      let comboResp = await call_rpc(conn.conn, {
+        combos: { saveChanges: true },
+      });
+      if (!comboResp.combos?.saveChanges || comboResp.combos?.saveChanges.err) {
+        console.error(
+          "Failed to save combo changes",
+          comboResp.combos?.saveChanges
+        );
+      }
     }
 
     doSave();
@@ -228,6 +238,13 @@ function App() {
       });
       if (!resp.keymap?.discardChanges) {
         console.error("Failed to discard changes", resp);
+      }
+
+      let comboResp = await call_rpc(conn.conn, {
+        combos: { discardChanges: true },
+      });
+      if (!comboResp.combos?.discardChanges) {
+        console.error("Failed to discard combo changes", comboResp);
       }
 
       reset();

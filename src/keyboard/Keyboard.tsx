@@ -375,6 +375,157 @@ export default function Keyboard() {
     [combos, conn, undoRedo, setCombos]
   );
 
+  // Add a brand-new combo (M4). Seeds sensible defaults (keys 0,1 -> the first
+  // available behavior) so the new combo is valid the moment it's created; the
+  // user then refines it in the editor. The firmware assigns the pool slot and
+  // returns its index, which we select for editing. Undo deletes it.
+  const addCombo = useCallback(() => {
+    async function doAdd(): Promise<number> {
+      if (!conn.conn) {
+        throw new Error("Not connected");
+      }
+
+      const behaviorList = Object.values(behaviors);
+      if (behaviorList.length === 0) {
+        throw new Error("No behaviors available to seed a new combo");
+      }
+
+      const newCombo: Combo = {
+        keyPositions: [0, 1],
+        layers: 0,
+        binding: { behaviorId: behaviorList[0].id, param1: 0, param2: 0 },
+        timeoutMs: 50,
+        requirePriorIdleMs: 0,
+        slowRelease: false,
+      };
+
+      const resp = await call_rpc(conn.conn, {
+        combos: { addCombo: { combo: newCombo } },
+      });
+
+      const ok = resp.combos?.addCombo?.ok;
+      if (ok) {
+        setCombos(
+          produce((draft: any) => {
+            draft.combos.push({ index: ok.index, combo: ok.combo ?? newCombo });
+            draft.combos.sort((a: any, b: any) => a.index - b.index);
+          })
+        );
+        setSelectedComboIndex(ok.index);
+        return ok.index;
+      } else {
+        console.error("Add combo error", resp.combos?.addCombo?.err);
+        throw new Error("Failed to add combo: " + resp.combos?.addCombo?.err);
+      }
+    }
+
+    async function doRemove(index: number) {
+      if (!conn.conn) {
+        throw new Error("Not connected");
+      }
+
+      const resp = await call_rpc(conn.conn, {
+        combos: { removeCombo: { index } },
+      });
+
+      if (resp.combos?.removeCombo?.ok) {
+        setCombos(
+          produce((draft: any) => {
+            const i = draft.combos.findIndex((e: any) => e.index === index);
+            if (i >= 0) {
+              draft.combos.splice(i, 1);
+            }
+          })
+        );
+        setSelectedComboIndex(undefined);
+      } else {
+        console.error("Remove combo error", resp.combos?.removeCombo?.err);
+        throw new Error(
+          "Failed to remove combo: " + resp.combos?.removeCombo?.err
+        );
+      }
+    }
+
+    undoRedo?.(async () => {
+      const index = await doAdd();
+      return () => doRemove(index);
+    });
+  }, [conn, undoRedo, behaviors, setCombos]);
+
+  // Delete an existing combo (M4). The pool index is stable, so undo re-creates
+  // it at the same slot via setCombo (which doubles as "create at index").
+  const doRemoveCombo = useCallback(
+    (index: number) => {
+      if (!combos) {
+        return;
+      }
+
+      const oldEntry = combos.combos.find((entry) => entry.index === index);
+      const oldCombo = oldEntry?.combo;
+      if (!oldCombo) {
+        console.error("Can't delete a combo that isn't loaded", index);
+        return;
+      }
+
+      async function remove() {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          combos: { removeCombo: { index } },
+        });
+
+        if (resp.combos?.removeCombo?.ok) {
+          setCombos(
+            produce((draft: any) => {
+              const i = draft.combos.findIndex((e: any) => e.index === index);
+              if (i >= 0) {
+                draft.combos.splice(i, 1);
+              }
+            })
+          );
+          setSelectedComboIndex(undefined);
+        } else {
+          console.error("Remove combo error", resp.combos?.removeCombo?.err);
+          throw new Error(
+            "Failed to remove combo: " + resp.combos?.removeCombo?.err
+          );
+        }
+      }
+
+      async function restore(combo: Combo) {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          combos: { setCombo: { index, combo } },
+        });
+
+        if (resp.combos?.setCombo === SetComboResponse.SET_COMBO_RESP_OK) {
+          setCombos(
+            produce((draft: any) => {
+              draft.combos.push({ index, combo });
+              draft.combos.sort((a: any, b: any) => a.index - b.index);
+            })
+          );
+          setSelectedComboIndex(index);
+        } else {
+          console.error("Restore combo error", resp.combos?.setCombo);
+        }
+      }
+
+      undoRedo?.(async () => {
+        await remove();
+        return async () => {
+          await restore(oldCombo);
+        };
+      });
+    },
+    [combos, conn, undoRedo, setCombos]
+  );
+
   const moveLayer = useCallback(
     (start: number, end: number) => {
       const doMove = async (startIndex: number, destIndex: number) => {
@@ -611,6 +762,8 @@ export default function Keyboard() {
               behaviors={behaviors}
               selectedIndex={selectedComboIndex}
               onComboSelected={setSelectedComboIndex}
+              onAddCombo={addCombo}
+              canAdd={Object.keys(behaviors).length > 0}
             />
           </div>
         )}
@@ -670,6 +823,7 @@ export default function Keyboard() {
             }))}
             maxKeysPerCombo={combos.maxKeysPerCombo}
             onApply={doApplyCombo}
+            onDelete={doRemoveCombo}
           />
         </div>
       )}

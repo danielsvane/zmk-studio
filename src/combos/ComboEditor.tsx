@@ -13,6 +13,7 @@ export interface ComboEditorProps {
   layers: { id: number; name: string }[];
   maxKeysPerCombo: number;
   onApply: (index: number, combo: Combo) => void;
+  onDelete?: (index: number) => void;
 }
 
 // Parse a comma/space separated list of key positions into a number array,
@@ -37,6 +38,7 @@ export const ComboEditor = ({
   layers,
   maxKeysPerCombo,
   onApply,
+  onDelete,
 }: ComboEditorProps) => {
   const [keyPositionsText, setKeyPositionsText] = useState("");
   const [timeoutMs, setTimeoutMs] = useState(0);
@@ -60,9 +62,19 @@ export const ComboEditor = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <h2 className="text-sm font-bold uppercase opacity-70">
-        Edit combo #{index}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold uppercase opacity-70">
+          Edit combo #{index}
+        </h2>
+        {onDelete && (
+          <button
+            className="h-6 rounded bg-error px-2 text-xs text-error-content"
+            onClick={() => onDelete(index)}
+          >
+            Delete
+          </button>
+        )}
+      </div>
 
       <div className="flex flex-col gap-1">
         <label className="text-sm">
