@@ -17,11 +17,19 @@ export function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
-const base =
-  "inline-flex items-center justify-center gap-1.5 font-medium select-none cursor-pointer transition-[background-color,filter,color] " +
-  // Accessible keyboard focus ring (react-aria sets data-focus-visible).
-  "rac-focus-visible:outline rac-focus-visible:outline-2 rac-focus-visible:outline-offset-1 rac-focus-visible:outline-primary " +
+// Accessible keyboard focus ring (react-aria sets data-focus-visible). Shared
+// by every interactive control so Buttons, Selects, etc. ring identically.
+export const controlFocusRing =
+  "rac-focus-visible:outline rac-focus-visible:outline-2 rac-focus-visible:outline-offset-1 rac-focus-visible:outline-primary";
+/** Disabled treatment shared by all interactive controls. */
+export const controlDisabled =
   "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed";
+
+const base = cx(
+  "inline-flex items-center justify-center gap-1.5 font-medium select-none cursor-pointer transition-[background-color,filter,color]",
+  controlFocusRing,
+  controlDisabled
+);
 
 // `bg-primary` is defined with light-dark() and has no <alpha-value> slot, so
 // opacity modifiers (bg-primary/90) won't work — use brightness for hover/press.
@@ -39,12 +47,14 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 // Height/text/icon size apply to every variant (incl. link) so they all line
-// up; only the horizontal footprint differs per size/shape.
-const dims: Record<ButtonSize, string> = {
+// up; only the horizontal footprint differs per size/shape. Exported so other
+// controls (Select, future Input) adopt the exact same heights.
+export const controlSizeStyles: Record<ButtonSize, string> = {
   md: "h-8 text-sm [&_svg]:size-4",
   sm: "h-6 text-xs [&_svg]:size-3.5",
 };
-const padX: Record<ButtonSize, string> = { md: "px-3", sm: "px-2" };
+/** Horizontal padding for a control showing a text label. */
+export const controlPadX: Record<ButtonSize, string> = { md: "px-3", sm: "px-2" };
 const iconWidth: Record<ButtonSize, string> = { md: "w-8", sm: "w-6" };
 
 export interface ButtonStyleOptions {
@@ -72,8 +82,8 @@ export function buttonStyles({
     // Standalone buttons round themselves; grouped ones defer to the group.
     !inGroup && "rounded",
     variants[variant],
-    dims[size],
-    variant === "link" ? null : iconOnly ? iconWidth[size] : padX[size]
+    controlSizeStyles[size],
+    variant === "link" ? null : iconOnly ? iconWidth[size] : controlPadX[size]
   );
 }
 
