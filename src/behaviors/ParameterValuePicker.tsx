@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import { HidUsagePicker } from "./HidUsagePicker";
 import { Select } from "../misc/Select";
@@ -15,6 +16,22 @@ export const ParameterValuePicker = ({
   layers,
   onValueChanged,
 }: ParameterValuePickerProps) => {
+  // Stable identity for the HID usage pages so HidUsagePicker doesn't re-flatten
+  // the full keyboard + consumer usage tables on every render/keystroke. Hooks
+  // must run unconditionally, so compute it here even though only the hidUsage
+  // branch below consumes it.
+  const hidUsage = values[0]?.hidUsage;
+  const usagePages = useMemo(
+    () =>
+      hidUsage
+        ? [
+            { id: 7, min: 4, max: hidUsage.keyboardMax },
+            { id: 12, max: hidUsage.consumerMax },
+          ]
+        : [],
+    [hidUsage]
+  );
+
   if (values.length == 0) {
     return <></>;
   } else if (values.every((v) => v.constant !== undefined)) {
@@ -48,10 +65,7 @@ export const ParameterValuePicker = ({
           onValueChanged={onValueChanged}
           label={values[0].name}
           value={value}
-          usagePages={[
-            { id: 7, min: 4, max: values[0].hidUsage.keyboardMax },
-            { id: 12, max: values[0].hidUsage.consumerMax },
-          ]}
+          usagePages={usagePages}
         />
       );
     } else if (values[0].layerId) {

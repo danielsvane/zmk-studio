@@ -55,8 +55,14 @@ export const BehaviorBindingPicker = ({
     [behaviorId, behaviors]
   );
 
+  // Copy before sorting: `.sort()` mutates in place, and `behaviors` is a prop.
+  // (`.toSorted()` would be cleaner but needs Safari 16; this build targets
+  // Safari 13 — see vite.config.ts.)
   const sortedBehaviors = useMemo(
-    () => behaviors.sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    () =>
+      [...behaviors].sort((a, b) =>
+        a.displayName.localeCompare(b.displayName)
+      ),
     [behaviors]
   );
 
