@@ -8,8 +8,8 @@ import {
   type SelectProps as RACSelectProps,
   type Key,
 } from "react-aria-components";
-import { ChevronDown } from "lucide-react";
-import { type ReactNode } from "react";
+import { ChevronDown, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   cx,
   controlSizeStyles,
@@ -43,9 +43,13 @@ const triggerBase = cx(
 );
 
 const popoverStyles = cx(
-  "min-w-[var(--trigger-width)] max-h-60 overflow-auto p-1",
+  "min-w-[var(--trigger-width)] p-1",
   "rounded border border-base-300 bg-base-100 text-base-content shadow-lg"
 );
+
+// The list scrolls (not the whole popover) so a searchable Select's search
+// field can stay pinned above it.
+const listBoxStyles = "max-h-60 overflow-auto outline-none";
 
 const itemStyles = cx(
   "group flex items-center gap-2 px-2 py-1.5 text-sm outline-none",
@@ -93,6 +97,10 @@ export interface SelectProps<T extends object>
   errorMessage?: ReactNode;
   size?: ButtonSize;
   placeholder?: string;
+  /** Show a search field at the top of the list that filters options by text. */
+  searchable?: boolean;
+  /** Placeholder for the search field (when `searchable`). */
+  searchPlaceholder?: string;
   /** Render one option's content. Default: `itemText(item)`. */
   renderItem?: (item: T) => ReactNode;
   /** Render the trigger's selected value. Default: same as `renderItem`. */
@@ -121,6 +129,8 @@ export function Select<T extends object>({
   errorMessage,
   size = "md",
   placeholder = "Select…",
+  searchable = false,
+  searchPlaceholder = "Search…",
   renderItem,
   renderValue,
   itemKey = defaultKey,
@@ -132,8 +142,55 @@ export function Select<T extends object>({
   const item = renderItem ?? ((i: T) => itemText(i));
   const value = renderValue ?? item;
 
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // react-aria's Select auto-focuses its listbox on open; pull focus back to
+  // the search field (next frame, after that effect runs) so the user can type
+  // immediately.
+  useEffect(() => {
+    if (!searchable || !isOpen) return;
+    const raf = requestAnimationFrame(() => searchRef.current?.focus());
+    return () => cancelAnimationFrame(raf);
+  }, [searchable, isOpen]);
+
+  const allItems = useMemo(() => [...items], [items]);
+  const visibleItems = useMemo(() => {
+    if (!searchable || !query.trim()) return allItems;
+    const q = query.trim().toLowerCase();
+    return allItems.filter((i) => itemText(i).toLowerCase().includes(q));
+  }, [allItems, query, searchable, itemText]);
+
+  // Only take over the open state when searchable, so we can clear the query on
+  // close; otherwise leave react-aria's Select fully uncontrolled.
+  const openProps = searchable
+    ? {
+        isOpen,
+        onOpenChange: (open: boolean) => {
+          setIsOpen(open);
+          if (!open) setQuery("");
+        },
+      }
+    : {};
+
+  // ArrowDown from the search field hands keyboard focus to the list.
+  const onSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      listRef.current?.querySelector<HTMLElement>('[role="option"]')?.focus();
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+    }
+  };
+
   return (
-    <RACSelect className={cx("flex flex-col gap-1", className)} {...props}>
+    <RACSelect
+      className={cx("flex flex-col gap-1", className)}
+      {...openProps}
+      {...props}
+    >
       {label && <FieldLabel size={size}>{label}</FieldLabel>}
       <RACButton
         className={cx(
@@ -157,7 +214,36 @@ export function Select<T extends object>({
       {description && <FieldDescription>{description}</FieldDescription>}
       <FieldErrorMessage>{errorMessage}</FieldErrorMessage>
       <Popover className={popoverStyles}>
-        <ListBox items={items} className="outline-none">
+        {searchable && (
+          <div className="flex items-center gap-2 border-b border-base-300 px-2 pb-1">
+            <Search aria-hidden className="size-4 shrink-0 opacity-60" />
+            <input
+              ref={searchRef}
+              autoFocus
+              type="text"
+              value={query}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              className="w-full bg-transparent py-1 text-sm outline-none placeholder:opacity-60"
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={onSearchKeyDown}
+            />
+          </div>
+        )}
+        <ListBox
+          ref={listRef}
+          items={visibleItems}
+          className={cx(listBoxStyles, searchable && "mt-1")}
+          renderEmptyState={
+            searchable
+              ? () => (
+                  <div className="px-2 py-1.5 text-sm opacity-60">
+                    No matches
+                  </div>
+                )
+              : undefined
+          }
+        >
           {(data) => (
             <ListBoxItem
               id={itemKey(data)}

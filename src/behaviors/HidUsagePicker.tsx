@@ -1,23 +1,11 @@
-import {
-  Button,
-  Collection,
-  ComboBox,
-  Header,
-  Input,
-  Key,
-  Label,
-  ListBox,
-  ListBoxItem,
-  Popover,
-  Section,
-} from "react-aria-components";
+import { Key } from "react-aria-components";
 import { ButtonGroup, ToggleButton } from "../misc/Button";
+import { Select, SelectItemContent } from "../misc/Select";
 import {
   hid_usage_from_page_and_id,
   hid_usage_page_get_ids,
 } from "../hid-usages";
 import { useCallback, useMemo } from "react";
-import { ChevronDown } from "lucide-react";
 
 export interface HidUsagePage {
   id: number;
@@ -32,40 +20,34 @@ export interface HidUsagePickerProps {
   onValueChanged: (value?: number) => void;
 }
 
-type UsageSectionProps = HidUsagePage;
+interface UsageItem {
+  /** Full HID usage value (page + id), used as the Select key. */
+  id: number;
+  name: string;
+  /** Source page name (e.g. "Keyboard", "Consumer"), shown as a hint. */
+  page: string;
+}
 
-const UsageSection = ({ id, min, max }: UsageSectionProps) => {
-  const info = useMemo(() => hid_usage_page_get_ids(id), [id]);
+// Flatten a usage page into selectable items. The page's usages are filtered to
+// the requested min/max range (the keyboard page also always keeps the modifier
+// usages 0xE0–0xE7).
+function getPageUsages({ id, min, max }: HidUsagePage): UsageItem[] {
+  const info = hid_usage_page_get_ids(id);
+  let usages = info?.UsageIds || [];
+  if (max || min) {
+    usages = usages.filter(
+      (i) =>
+        (i.Id <= (max || Number.MAX_SAFE_INTEGER) && i.Id >= (min || 0)) ||
+        (id === 7 && i.Id >= 0xe0 && i.Id <= 0xe7)
+    );
+  }
 
-  let usages = useMemo(() => {
-    let usages = info?.UsageIds || [];
-    if (max || min) {
-      usages = usages.filter(
-        (i) =>
-          (i.Id <= (max || Number.MAX_SAFE_INTEGER) && i.Id >= (min || 0)) ||
-          (id === 7 && i.Id >= 0xe0 && i.Id <= 0xe7)
-      );
-    }
-
-    return usages;
-  }, [id, min, max, info]);
-
-  return (
-    <Section id={id}>
-      <Header className="text-base-content/50">{info?.Name}</Header>
-      <Collection items={usages}>
-        {(i) => (
-          <ListBoxItem
-            className="rac-hover:bg-base-300 pl-3 relative rac-focus:bg-base-300 cursor-default select-none rac-selected:before:content-['✔'] before:absolute before:left-[0] before:top-[0]"
-            id={hid_usage_from_page_and_id(id, i.Id)}
-          >
-            {i.Name}
-          </ListBoxItem>
-        )}
-      </Collection>
-    </Section>
-  );
-};
+  return usages.map((i) => ({
+    id: hid_usage_from_page_and_id(id, i.Id),
+    name: i.Name,
+    page: info?.Name ?? "",
+  }));
+}
 
 enum Mods {
   LeftControl = 0x01,
@@ -114,6 +96,15 @@ export const HidUsagePicker = ({
   usagePages,
   onValueChanged,
 }: HidUsagePickerProps) => {
+  const usageItems = useMemo(
+    () => usagePages.flatMap(getPageUsages),
+    [usagePages]
+  );
+
+  // More than one page means names alone can be ambiguous, so show the source
+  // page as a hint under each option.
+  const multiPage = usagePages.length > 1;
+
   const mods = useMemo(() => {
     let flags = value ? value >> 24 : 0;
 
@@ -147,29 +138,24 @@ export const HidUsagePicker = ({
   );
 
   return (
-    <div className="flex gap-2 relative">
-      {label && <Label id="hid-usage-picker">{label}:</Label>}
-      <ComboBox
+    <div className="flex items-end gap-2">
+      <Select<UsageItem>
+        label={label}
+        aria-label={label ? undefined : "HID usage"}
+        searchable
+        searchPlaceholder="Search keys…"
+        placeholder="Select a key…"
+        items={usageItems}
         selectedKey={value ? mask_mods(value) : null}
         onSelectionChange={selectionChanged}
-        aria-labelledby="hid-usage-picker"
-      >
-        <div className="flex">
-          <Input className="p-1 rounded-l" />
-          <Button className="rounded-r bg-primary text-primary-content w-8 h-8 flex justify-center items-center">
-            <ChevronDown className="size-4" />
-          </Button>
-        </div>
-        <Popover className="w-[var(--trigger-width)] max-h-4 shadow-md text-base-content rounded border-base-content bg-base-100">
-          <ListBox
-            items={usagePages}
-            className="block max-h-[30vh] min-h-[unset] overflow-auto p-2"
-            selectionMode="single"
-          >
-            {({ id, min, max }) => <UsageSection id={id} min={min} max={max} />}
-          </ListBox>
-        </Popover>
-      </ComboBox>
+        triggerClassName="min-w-48"
+        renderItem={
+          multiPage
+            ? (u) => <SelectItemContent title={u.name} description={u.page} />
+            : undefined
+        }
+        renderValue={multiPage ? (u) => u.name : undefined}
+      />
       <ButtonGroup>
         {all_mods.map((m) => {
           const key = m.toLocaleString();

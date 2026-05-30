@@ -96,6 +96,40 @@ export const ScalePicker: Story = {
   },
 };
 
+/**
+ * A searchable Select — a search field is pinned above the list and filters
+ * options by text. For long lists (e.g. the HID usage picker).
+ */
+export const Searchable: Story = {
+  render: () => {
+    const keys = [
+      { id: 4, name: "A" },
+      { id: 5, name: "B" },
+      { id: 6, name: "C" },
+      { id: 40, name: "Enter" },
+      { id: 41, name: "Escape" },
+      { id: 42, name: "Backspace" },
+      { id: 43, name: "Tab" },
+      { id: 44, name: "Spacebar" },
+      { id: 79, name: "Right Arrow" },
+      { id: 80, name: "Left Arrow" },
+      { id: 81, name: "Down Arrow" },
+      { id: 82, name: "Up Arrow" },
+      { id: 128, name: "Volume Up" },
+      { id: 129, name: "Volume Down" },
+    ];
+    return (
+      <Select
+        label="Key"
+        searchable
+        items={keys}
+        placeholder="Select a key…"
+        triggerClassName="min-w-56"
+      />
+    );
+  },
+};
+
 /** A description + validation error attached to the field. */
 export const WithDescriptionAndError: Story = {
   render: () => (
