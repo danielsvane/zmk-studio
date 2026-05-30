@@ -57,7 +57,9 @@ export const Key = ({
       onClick={onClick}
     >
       <div className={`absolute text-xs ${selected ? "text-primary-content" : "z1text-base-content"} opacity-80 top-1 text-nowrap left-1/2 font-light -translate-x-1/2 text-center`}>{shortenHeader(header)}</div>
-      {children}
+      <div className="flex flex-col gap-0.5 items-center scale-75 [&>*:nth-child(2)]:opacity-50">
+        {children}
+      </div>
     </button>
   );
 };
