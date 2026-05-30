@@ -1,10 +1,5 @@
-import {
-  Button,
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  Popover,
-} from "react-aria-components";
+import { Menu, MenuItem, MenuTrigger, Popover } from "react-aria-components";
+import { Button } from "./misc/Button";
 import { useConnectedDeviceData } from "./rpc/useConnectedDeviceData";
 import { useSub } from "./usePubSub";
 import { useContext, useEffect, useState } from "react";
@@ -93,13 +88,13 @@ export const AppHeader = ({
           <p>Continue?</p>
           <div className="flex justify-end my-2 gap-3">
             <Button
-              className="rounded bg-base-200 hover:bg-base-300 px-3 py-2"
+              variant="secondary"
               onPress={() => setShowSettingsReset(false)}
             >
               Cancel
             </Button>
             <Button
-              className="rounded bg-base-200 hover:bg-base-300 px-3 py-2"
+              variant="primary"
               onPress={() => {
                 setShowSettingsReset(false);
                 onResetSettings?.();
@@ -110,72 +105,72 @@ export const AppHeader = ({
           </div>
         </div>
       </GenericModal>
-      <MenuTrigger>
-        <Button
-          className="text-center rac-disabled:opacity-0 hover:bg-base-300 transition-all duration-100 p-1 pl-2 rounded-lg"
-          isDisabled={!connectedDeviceLabel}
-        >
-          {connectedDeviceLabel}
-          <ChevronDown className="inline-block w-4" />
-        </Button>
-        <Popover>
-          <Menu className="shadow-md rounded bg-base-100 text-base-content cursor-pointer overflow-hidden">
-            <MenuItem
-              className="px-2 py-1 hover:bg-base-200"
-              onAction={onDisconnect}
-            >
-              Disconnect
-            </MenuItem>
-            <MenuItem
-              className="px-2 py-1 hover:bg-base-200"
-              onAction={() => setShowSettingsReset(true)}
-            >
-              Restore Stock Settings
-            </MenuItem>
-          </Menu>
-        </Popover>
-      </MenuTrigger>
+      <div className="flex justify-center">
+        {connectedDeviceLabel && (
+          <MenuTrigger>
+            <Button variant="ghost" icon={<ChevronDown />} iconPosition="end">
+              {connectedDeviceLabel}
+            </Button>
+            <Popover>
+              <Menu className="shadow-md rounded bg-base-100 text-base-content cursor-pointer overflow-hidden">
+                <MenuItem
+                  className="px-2 py-1 hover:bg-base-200"
+                  onAction={onDisconnect}
+                >
+                  Disconnect
+                </MenuItem>
+                <MenuItem
+                  className="px-2 py-1 hover:bg-base-200"
+                  onAction={() => setShowSettingsReset(true)}
+                >
+                  Restore Stock Settings
+                </MenuItem>
+              </Menu>
+            </Popover>
+          </MenuTrigger>
+        )}
+      </div>
       <div className="flex justify-end gap-1 px-2">
         {onUndo && (
           <Tooltip label="Undo">
             <Button
-              className="flex items-center justify-center p-1.5 rounded enabled:hover:bg-base-300 disabled:opacity-50"
+              variant="ghost"
+              icon={<Undo2 />}
+              aria-label="Undo"
               isDisabled={!canUndo}
               onPress={onUndo}
-            >
-              <Undo2 className="inline-block w-4 mx-1" aria-label="Undo" />
-            </Button>
+            />
           </Tooltip>
         )}
 
         {onRedo && (
           <Tooltip label="Redo">
             <Button
-              className="flex items-center justify-center p-1.5 rounded enabled:hover:bg-base-300 disabled:opacity-50"
+              variant="ghost"
+              icon={<Redo2 />}
+              aria-label="Redo"
               isDisabled={!canRedo}
               onPress={onRedo}
-            >
-              <Redo2 className="inline-block w-4 mx-1" aria-label="Redo" />
-            </Button>
+            />
           </Tooltip>
         )}
         <Tooltip label="Save">
           <Button
-            className="flex items-center justify-center p-1.5 rounded enabled:hover:bg-base-300 disabled:opacity-50"
+            variant="ghost"
+            icon={<Save />}
+            aria-label="Save"
             isDisabled={!unsaved}
             onPress={onSave}
-          >
-            <Save className="inline-block w-4 mx-1" aria-label="Save" />
-          </Button>
+          />
         </Tooltip>
         <Tooltip label="Discard">
           <Button
-            className="flex items-center justify-center p-1.5 rounded enabled:hover:bg-base-300 disabled:opacity-50"
+            variant="ghost"
+            icon={<Trash2 />}
+            aria-label="Discard"
             onPress={onDiscard}
             isDisabled={!unsaved}
-          >
-            <Trash2 className="inline-block w-4 mx-1" aria-label="Discard" />
-          </Button>
+          />
         </Tooltip>
       </div>
     </header>

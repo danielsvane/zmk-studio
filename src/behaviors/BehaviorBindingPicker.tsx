@@ -7,6 +7,7 @@ import {
 import { BehaviorBinding } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { BehaviorParametersPicker } from "./BehaviorParametersPicker";
 import { validateValue } from "./parameters";
+import { Select } from "../misc/Select";
 
 export interface BehaviorBindingPickerProps {
   binding: BehaviorBinding;
@@ -100,24 +101,18 @@ export const BehaviorBindingPicker = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <div>
-        <label>Behavior: </label>
-        <select
-          value={behaviorId}
-          className="h-8 rounded"
-          onChange={(e) => {
-            setBehaviorId(parseInt(e.target.value));
-            setParam1(0);
-            setParam2(0);
-          }}
-        >
-          {sortedBehaviors.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.displayName}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Select
+        label="Behavior"
+        items={sortedBehaviors}
+        selectedKey={behaviorId}
+        itemKey={(b) => b.id}
+        itemText={(b) => b.displayName}
+        onSelectionChange={(key) => {
+          setBehaviorId(Number(key));
+          setParam1(0);
+          setParam2(0);
+        }}
+      />
       {metadata && (
         <BehaviorParametersPicker
           metadata={metadata}

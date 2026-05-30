@@ -1,5 +1,6 @@
 import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import { HidUsagePicker } from "./HidUsagePicker";
+import { Select } from "../misc/Select";
 
 export interface ParameterValuePickerProps {
   value?: number;
@@ -18,17 +19,14 @@ export const ParameterValuePicker = ({
     return <></>;
   } else if (values.every((v) => v.constant !== undefined)) {
     return (
-      <div>
-        <select
-          value={value}
-          className="h-8 rounded"
-          onChange={(e) => onValueChanged(parseInt(e.target.value))}
-        >
-          {values.map((v) => (
-            <option value={v.constant}>{v.name}</option>
-          ))}
-        </select>
-      </div>
+      <Select
+        aria-label="Value"
+        items={values}
+        selectedKey={value}
+        itemKey={(v) => v.constant!}
+        itemText={(v) => v.name}
+        onSelectionChange={(key) => onValueChanged(Number(key))}
+      />
     );
   } else if (values.length == 1) {
     if (values[0].range) {
@@ -58,18 +56,14 @@ export const ParameterValuePicker = ({
       );
     } else if (values[0].layerId) {
       return (
-        <div>
-          <label>{values[0].name}: </label>
-          <select
-            value={value}
-            className="h-8 rounded"
-            onChange={(e) => onValueChanged(parseInt(e.target.value))}
-          >
-            {layers.map(({ name, id }) => (
-              <option value={id}>{name}</option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label={values[0].name}
+          items={layers}
+          selectedKey={value}
+          itemKey={(l) => l.id}
+          itemText={(l) => l.name}
+          onSelectionChange={(key) => onValueChanged(Number(key))}
+        />
       );
     }
   } else {

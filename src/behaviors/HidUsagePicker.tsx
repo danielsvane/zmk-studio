@@ -1,7 +1,5 @@
 import {
   Button,
-  Checkbox,
-  CheckboxGroup,
   Collection,
   ComboBox,
   Header,
@@ -13,6 +11,7 @@ import {
   Popover,
   Section,
 } from "react-aria-components";
+import { ButtonGroup, ToggleButton } from "../misc/Button";
 import {
   hid_usage_from_page_and_id,
   hid_usage_page_get_ids,
@@ -171,22 +170,27 @@ export const HidUsagePicker = ({
           </ListBox>
         </Popover>
       </ComboBox>
-      <CheckboxGroup
-        aria-label="Implicit Modifiers"
-        className="grid grid-flow-col gap-x-px auto-cols-[minmax(min-content,1fr)] content-stretch divide-x rounded-md"
-        value={mods}
-        onChange={modifiersChanged}
-      >
-        {all_mods.map((m) => (
-          <Checkbox
-            key={m}
-            value={m.toLocaleString()}
-            className="text-nowrap cursor-pointer grid px-2 content-center justify-center rac-selected:bg-primary border-base-100 bg-base-300 hover:bg-base-100 first:rounded-s-md last:rounded-e-md rac-selected:text-primary-content"
-          >
-            {mod_labels[m]}
-          </Checkbox>
-        ))}
-      </CheckboxGroup>
+      <ButtonGroup>
+        {all_mods.map((m) => {
+          const key = m.toLocaleString();
+          return (
+            <ToggleButton
+              key={m}
+              size="sm"
+              isSelected={mods.includes(key)}
+              onChange={(isSelected) =>
+                modifiersChanged(
+                  isSelected
+                    ? [...mods, key]
+                    : mods.filter((existing) => existing !== key)
+                )
+              }
+            >
+              {mod_labels[m]}
+            </ToggleButton>
+          );
+        })}
+      </ButtonGroup>
     </div>
   );
 };

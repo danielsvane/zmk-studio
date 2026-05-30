@@ -10,6 +10,7 @@ import {
 } from "react-aria-components";
 import { useModalRef } from "../misc/useModalRef";
 import { GenericModal } from "../GenericModal";
+import { Button } from "../misc/Button";
 
 interface Layer {
   id: number;
@@ -84,19 +85,13 @@ const EditLabelModal = ({
           }
         }}
       />
-      <div className="mt-4 flex justify-end">
-        <button className="py-1.5 px-2" type="button" onClick={onClose}>
+      <div className="mt-4 flex justify-end gap-4">
+        <Button variant="ghost" onPress={onClose}>
           Cancel
-        </button>
-        <button
-          className="py-1.5 px-2 ml-4 rounded-md bg-gray-100 text-black hover:bg-gray-300"
-          type="button"
-          onClick={() => {
-            handleSave();
-          }}
-        >
+        </Button>
+        <Button variant="primary" onPress={handleSave}>
           Save
-        </button>
+        </Button>
       </div>
     </GenericModal>
   );
@@ -170,24 +165,25 @@ export const LayerPicker = ({
       <div className="grid grid-cols-[1fr_auto_auto] items-center">
         <Label className="after:content-[':'] text-sm">Layers</Label>
         {onRemoveClicked && (
-          <button
-            type="button"
-            className="hover:text-primary-content hover:bg-primary rounded-sm"
-            disabled={!canRemove}
-            onClick={onRemoveClicked}
-          >
-            <Minus className="size-4" />
-          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Minus />}
+            aria-label="Remove layer"
+            isDisabled={!canRemove}
+            onPress={onRemoveClicked}
+          />
         )}
         {onAddClicked && (
-          <button
-            type="button"
-            disabled={!canAdd}
-            className="hover:text-primary-content ml-1 hover:bg-primary rounded-sm disabled:text-gray-500 disabled:hover:bg-base-300 disabled:cursor-not-allowed"
-            onClick={onAddClicked}
-          >
-            <Plus className="size-4" />
-          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Plus />}
+            aria-label="Add layer"
+            className="ml-1"
+            isDisabled={!canAdd}
+            onPress={onAddClicked}
+          />
         )}
       </div>
       {editLabelData !== null && (

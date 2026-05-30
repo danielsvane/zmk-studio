@@ -1,7 +1,10 @@
+import { Plus } from "lucide-react";
+
 import type { Combos } from "@zmkfirmware/zmk-studio-ts-client/combos";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 
 import { HidUsageLabel } from "./HidUsageLabel";
+import { Button } from "../misc/Button";
 
 type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
 
@@ -30,13 +33,15 @@ export const ComboList = ({
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
-        <button
-          className="h-6 rounded bg-primary px-2 text-xs text-primary-content disabled:opacity-50"
-          disabled={!canAdd || !onAddCombo}
-          onClick={() => onAddCombo?.()}
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<Plus />}
+          isDisabled={!canAdd || !onAddCombo}
+          onPress={() => onAddCombo?.()}
         >
-          + Add
-        </button>
+          Add
+        </Button>
       </div>
       {combos.combos.length === 0 ? (
         <p className="text-sm opacity-70">No combos defined.</p>

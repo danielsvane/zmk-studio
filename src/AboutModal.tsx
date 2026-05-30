@@ -1,5 +1,6 @@
 import React from "react";
 import { useModalRef } from "./misc/useModalRef";
+import { Button } from "./misc/Button";
 
 import cannonKeys from "./assets/cannonkeys.png";
 import cannonKeysDarkMode from "./assets/cannonkeys-dark-mode.png";
@@ -192,12 +193,9 @@ export const AboutModal = ({ open, onClose }: AboutModalProps) => {
             Discord Server
           </ExternalLink>
         </p>
-        <button
-          className="p-1.5 rounded-md bg-gray-100 text-black hover:bg-gray-300"
-          onClick={onClose}
-        >
+        <Button variant="secondary" onPress={onClose}>
           Close
-        </button>
+        </Button>
       </div>
       <div>
         <p className="py-1 mr-2">

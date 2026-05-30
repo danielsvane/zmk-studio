@@ -9,6 +9,7 @@ import {
 } from "@fortawesome/free-brands-svg-icons";
 import { DownloadIcon } from "lucide-react";
 import releaseData from "./data/release-data.json";
+import { Button } from "./misc/Button";
 
 type Platform = "windows" | "mac" | "linux" | "ios" | "android" | "unknown";
 
@@ -139,12 +140,13 @@ export const Download = () => {
         )}
         <div className="flex flex-col gap-3">
           {PlatformLinks[platform].length > 0 && (
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="text-primary text-left hover:underline"
+            <Button
+              variant="link"
+              className="self-start"
+              onPress={() => setShowAll(!showAll)}
             >
               {showAll ? "Hide" : "Show"} all downloads
-            </button>
+            </Button>
           )}
           {showAll && (
             <div>

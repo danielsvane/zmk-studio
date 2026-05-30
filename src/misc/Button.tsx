@@ -9,7 +9,12 @@ import { createContext, useContext, type ReactNode } from "react";
 /** Set by ButtonGroup so member buttons drop their own corner radius. */
 const ButtonGroupContext = createContext(false);
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "link";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "ghost"
+  | "link"
+  | "danger";
 export type ButtonSize = "sm" | "md";
 
 /** Minimal className joiner (no clsx/cva dependency in this project). */
@@ -44,6 +49,11 @@ const variants: Record<ButtonVariant, string> = {
     "bg-transparent text-base-content rac-hover:bg-base-300 rac-pressed:brightness-95 " +
     "rac-selected:bg-primary rac-selected:text-primary-content",
   link: "bg-transparent text-primary rac-hover:underline",
+  // Destructive actions. red-600 is a normal Tailwind color (has an alpha slot),
+  // so brightness hover works the same as the theme-token variants above.
+  danger:
+    "bg-red-600 text-white rac-hover:brightness-110 rac-pressed:brightness-95 " +
+    "rac-selected:bg-red-600 rac-selected:text-white",
 };
 
 // Height/text/icon size apply to every variant (incl. link) so they all line

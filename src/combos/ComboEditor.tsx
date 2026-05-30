@@ -5,6 +5,7 @@ import type { Combo } from "@zmkfirmware/zmk-studio-ts-client/combos";
 import type { BehaviorBinding } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 
 import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
+import { Button } from "../misc/Button";
 
 export interface ComboEditorProps {
   index: number;
@@ -77,12 +78,13 @@ export const ComboEditor = ({
           Edit combo #{index}
         </h2>
         {onDelete && (
-          <button
-            className="h-6 rounded bg-error px-2 text-xs text-error-content"
-            onClick={() => onDelete(index)}
+          <Button
+            variant="danger"
+            size="sm"
+            onPress={() => onDelete(index)}
           >
             Delete
-          </button>
+          </Button>
         )}
       </div>
 
@@ -171,10 +173,10 @@ export const ComboEditor = ({
         />
       )}
 
-      <button
-        className="h-8 rounded bg-primary px-3 text-primary-content disabled:opacity-50"
-        disabled={!canApply}
-        onClick={() => {
+      <Button
+        variant="primary"
+        isDisabled={!canApply}
+        onPress={() => {
           if (!binding) {
             return;
           }
@@ -189,7 +191,7 @@ export const ComboEditor = ({
         }}
       >
         Apply
-      </button>
+      </Button>
     </div>
   );
 };

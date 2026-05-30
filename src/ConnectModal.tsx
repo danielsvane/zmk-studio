@@ -8,6 +8,7 @@ import { Key, ListBox, ListBoxItem, Selection } from "react-aria-components";
 import { useModalRef } from "./misc/useModalRef";
 import { ExternalLink } from "./misc/ExternalLink";
 import { GenericModal } from "./GenericModal";
+import { Button } from "./misc/Button";
 
 export type TransportFactory = {
   label: string;
@@ -90,17 +91,13 @@ function deviceList(
     <div>
       <div className="grid grid-cols-[1fr_auto]">
         <label>Select A Device:</label>
-        <button
-          className="p-1 rounded hover:bg-base-300 disabled:bg-base-100 disabled:opacity-75"
-          disabled={refreshing}
-          onClick={onRefresh}
-        >
-          <RefreshCw
-            className={`size-5 transition-transform ${
-              refreshing ? "animate-spin" : ""
-            }`}
-          />
-        </button>
+        <Button
+          variant="ghost"
+          icon={<RefreshCw className={refreshing ? "animate-spin" : ""} />}
+          aria-label="Refresh"
+          isDisabled={refreshing}
+          onPress={onRefresh}
+        />
       </div>
       <ListBox
         aria-label="Device"
@@ -188,13 +185,13 @@ function simpleDevicePicker(
 
   let connections = transports.map((t) => (
     <li key={t.label} className="list-none">
-      <button
-        className="bg-base-300 hover:bg-primary hover:text-primary-content rounded px-2 py-1"
-        type="button"
-        onClick={async () => setSelectedTransport(t)}
+      <Button
+        variant="secondary"
+        size="sm"
+        onPress={() => setSelectedTransport(t)}
       >
         {t.label}
-      </button>
+      </Button>
     </li>
   ));
   return (
