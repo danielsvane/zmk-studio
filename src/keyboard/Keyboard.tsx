@@ -18,12 +18,12 @@ import {
   Layer,
 } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
-// M0 walking-skeleton: temporary import to prove the combos RPC pipeline end-to-end.
 import type { Combos } from "@zmkfirmware/zmk-studio-ts-client/combos";
 
 import { LayerPicker } from "./LayerPicker";
 import { PhysicalLayoutPicker } from "./PhysicalLayoutPicker";
 import { Keymap as KeymapComp } from "./Keymap";
+import { ComboList } from "./ComboList";
 import { useConnectedDeviceData } from "../rpc/useConnectedDeviceData";
 import { ConnectionContext } from "../rpc/ConnectionContext";
 import { UndoRedoContext } from "../undoRedo";
@@ -176,16 +176,10 @@ export default function Keyboard() {
     true
   );
 
-  // M0 walking-skeleton: fire getCombos and log the response to prove the
-  // proto -> firmware -> RPC -> ts-client -> frontend pipeline carries combos.
-  // Replaced by a real combo UI in M1+. Watch the devtools console for
-  // "M0 getCombos response".
-  useConnectedDeviceData<Combos>(
+  // M1: read the real (compile-time) combos and display them read-only.
+  const [combos] = useConnectedDeviceData<Combos>(
     { combos: { getCombos: true } },
-    (resp) => {
-      console.log("M0 getCombos response", resp?.combos?.getCombos);
-      return resp?.combos?.getCombos;
-    },
+    (resp) => resp?.combos?.getCombos,
     true
   );
 
@@ -541,6 +535,12 @@ export default function Keyboard() {
               onRemoveClicked={removeLayer}
               onLayerNameChanged={changeLayerName}
             />
+          </div>
+        )}
+
+        {combos && (
+          <div className="col-start-1">
+            <ComboList combos={combos} behaviors={behaviors} />
           </div>
         )}
       </div>
