@@ -8,12 +8,19 @@ type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
 export interface ComboListProps {
   combos: Combos;
   behaviors: BehaviorMap;
+  selectedIndex?: number;
+  onComboSelected?: (index: number) => void;
 }
 
-// Read-only combo display (M1). Editing lands in M2+. Mirrors the keymap's
-// behavior rendering: the behavior's display name plus a HID usage label for
-// param1 where it applies.
-export const ComboList = ({ combos, behaviors }: ComboListProps) => {
+// Combo list. Rows are clickable to select a combo for editing (M2); the
+// selected row is highlighted. Mirrors the keymap's behavior rendering: the
+// behavior's display name plus a HID usage label for param1 where it applies.
+export const ComboList = ({
+  combos,
+  behaviors,
+  selectedIndex,
+  onComboSelected,
+}: ComboListProps) => {
   return (
     <div className="flex flex-col gap-1">
       <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
@@ -38,7 +45,14 @@ export const ComboList = ({ combos, behaviors }: ComboListProps) => {
                 : "—";
 
               return (
-                <tr key={entry.index} className="border-t border-base-300">
+                <tr
+                  key={entry.index}
+                  className={
+                    "border-t border-base-300 cursor-pointer" +
+                    (entry.index === selectedIndex ? " bg-base-300" : "")
+                  }
+                  onClick={() => onComboSelected?.(entry.index)}
+                >
                   <td className="pr-3 align-top">{entry.index}</td>
                   <td className="pr-3 align-top">
                     {(combo?.keyPositions || []).join(", ")}

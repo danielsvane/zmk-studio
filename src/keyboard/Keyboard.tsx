@@ -18,12 +18,17 @@ import {
   Layer,
 } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
-import type { Combos } from "@zmkfirmware/zmk-studio-ts-client/combos";
+import {
+  type Combo,
+  type Combos,
+  SetComboResponse,
+} from "@zmkfirmware/zmk-studio-ts-client/combos";
 
 import { LayerPicker } from "./LayerPicker";
 import { PhysicalLayoutPicker } from "./PhysicalLayoutPicker";
 import { Keymap as KeymapComp } from "./Keymap";
 import { ComboList } from "./ComboList";
+import { ComboEditor } from "../combos/ComboEditor";
 import { useConnectedDeviceData } from "../rpc/useConnectedDeviceData";
 import { ConnectionContext } from "../rpc/ConnectionContext";
 import { UndoRedoContext } from "../undoRedo";
@@ -176,12 +181,16 @@ export default function Keyboard() {
     true
   );
 
-  // M1: read the real (compile-time) combos and display them read-only.
-  const [combos] = useConnectedDeviceData<Combos>(
+  // Read the combos, now editable in place (M2: RAM-only, lost on reboot).
+  const [combos, setCombos] = useConnectedDeviceData<Combos>(
     { combos: { getCombos: true } },
     (resp) => resp?.combos?.getCombos,
     true
   );
+
+  const [selectedComboIndex, setSelectedComboIndex] = useState<
+    number | undefined
+  >(undefined);
 
   const [keymapScale, setKeymapScale] = useLocalStorageState<LayoutZoom>("keymapScale", "auto", {
     deserialize: deserializeLayoutZoom,
@@ -199,6 +208,7 @@ export default function Keyboard() {
   useEffect(() => {
     setSelectedLayerIndex(0);
     setSelectedKeyPosition(undefined);
+    setSelectedComboIndex(undefined);
   }, [conn]);
 
   useEffect(() => {
@@ -308,6 +318,62 @@ export default function Keyboard() {
 
     return keymap.layers[selectedLayerIndex].bindings[selectedKeyPosition];
   }, [keymap, selectedLayerIndex, selectedKeyPosition]);
+
+  const selectedCombo = useMemo(() => {
+    if (!combos || selectedComboIndex === undefined) {
+      return null;
+    }
+    return (
+      combos.combos.find((entry) => entry.index === selectedComboIndex) ?? null
+    );
+  }, [combos, selectedComboIndex]);
+
+  const doApplyCombo = useCallback(
+    (index: number, combo: Combo) => {
+      if (!combos) {
+        return;
+      }
+
+      const oldEntry = combos.combos.find((entry) => entry.index === index);
+      const oldCombo = oldEntry?.combo;
+      if (!oldCombo) {
+        console.error("Can't edit a combo that isn't loaded", index);
+        return;
+      }
+
+      const setCombo = async (target: Combo) => {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          combos: { setCombo: { index, combo: target } },
+        });
+
+        const result = resp.combos?.setCombo;
+        if (result === SetComboResponse.SET_COMBO_RESP_OK) {
+          setCombos(
+            produce((draft: any) => {
+              const entry = draft.combos.find((e: any) => e.index === index);
+              if (entry) {
+                entry.combo = target;
+              }
+            })
+          );
+        } else {
+          console.error("Failed to set combo", result);
+        }
+      };
+
+      undoRedo?.(async () => {
+        await setCombo(combo);
+        return async () => {
+          await setCombo(oldCombo);
+        };
+      });
+    },
+    [combos, conn, undoRedo, setCombos]
+  );
 
   const moveLayer = useCallback(
     (start: number, end: number) => {
@@ -540,7 +606,12 @@ export default function Keyboard() {
 
         {combos && (
           <div className="col-start-1">
-            <ComboList combos={combos} behaviors={behaviors} />
+            <ComboList
+              combos={combos}
+              behaviors={behaviors}
+              selectedIndex={selectedComboIndex}
+              onComboSelected={setSelectedComboIndex}
+            />
           </div>
         )}
       </div>
@@ -584,6 +655,21 @@ export default function Keyboard() {
               name: name || li.toLocaleString(),
             }))}
             onBindingChanged={doUpdateBinding}
+          />
+        </div>
+      )}
+      {keymap && combos && selectedCombo?.combo && (
+        <div className="p-2 col-start-1 row-start-2 bg-base-200">
+          <ComboEditor
+            index={selectedCombo.index}
+            combo={selectedCombo.combo}
+            behaviors={Object.values(behaviors)}
+            layers={keymap.layers.map(({ id, name }, li) => ({
+              id,
+              name: name || li.toLocaleString(),
+            }))}
+            maxKeysPerCombo={combos.maxKeysPerCombo}
+            onApply={doApplyCombo}
           />
         </div>
       )}
