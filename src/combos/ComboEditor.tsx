@@ -27,10 +27,12 @@ function parseKeyPositions(text: string): number[] {
     .filter((n) => Number.isInteger(n) && n >= 0);
 }
 
-// Edit a single combo in place (M2: RAM-only). Fields are kept in local state
-// and pushed to the device only when "Apply" is pressed, so we don't fire an
-// RPC on every keystroke. Mirrors the keymap edit panel's reuse of
-// BehaviorBindingPicker for the behavior.
+// Edit a single combo in place. Fields are kept in local state and pushed to the
+// device only when "Apply" is pressed, so we don't fire an RPC on every
+// keystroke. Mirrors the keymap edit panel's reuse of BehaviorBindingPicker for
+// the behavior. The layers bitmask is edited as one checkbox per layer (bit i ==
+// layer index i, matching the firmware's `layer_mask & BIT(layer)` test);
+// selecting none == mask 0 == active on all layers.
 export const ComboEditor = ({
   index,
   combo,
@@ -43,6 +45,7 @@ export const ComboEditor = ({
   const [keyPositionsText, setKeyPositionsText] = useState("");
   const [timeoutMs, setTimeoutMs] = useState(0);
   const [requirePriorIdleMs, setRequirePriorIdleMs] = useState(0);
+  const [layersMask, setLayersMask] = useState(0);
   const [slowRelease, setSlowRelease] = useState(false);
   const [binding, setBinding] = useState<BehaviorBinding | undefined>(undefined);
 
@@ -51,6 +54,7 @@ export const ComboEditor = ({
     setKeyPositionsText((combo.keyPositions || []).join(", "));
     setTimeoutMs(combo.timeoutMs);
     setRequirePriorIdleMs(combo.requirePriorIdleMs);
+    setLayersMask(combo.layers);
     setSlowRelease(combo.slowRelease);
     setBinding(combo.binding);
   }, [index, combo]);
@@ -59,6 +63,12 @@ export const ComboEditor = ({
   const keyCountValid =
     keyPositions.length >= 1 && keyPositions.length <= maxKeysPerCombo;
   const canApply = keyCountValid && binding !== undefined;
+
+  const toggleLayer = (layerBit: number, checked: boolean) => {
+    setLayersMask((mask) =>
+      checked ? mask | (1 << layerBit) : mask & ~(1 << layerBit)
+    );
+  };
 
   return (
     <div className="flex flex-col gap-2">
@@ -91,13 +101,18 @@ export const ComboEditor = ({
             Enter 1 to {maxKeysPerCombo} key positions.
           </span>
         )}
+        <span className="text-xs opacity-70">
+          Raw key positions — combos are not remapped across physical layouts, so
+          these refer to the same physical keys regardless of the layout you have
+          selected.
+        </span>
       </div>
 
       <div className="flex flex-col gap-1">
         <label className="text-sm">Timeout (ms)</label>
         <input
           type="number"
-          min={0}
+          min={1}
           className="h-8 rounded px-2"
           value={timeoutMs}
           onChange={(e) => setTimeoutMs(parseInt(e.target.value, 10) || 0)}
@@ -108,13 +123,34 @@ export const ComboEditor = ({
         <label className="text-sm">Require prior idle (ms)</label>
         <input
           type="number"
-          min={0}
+          min={-1}
           className="h-8 rounded px-2"
           value={requirePriorIdleMs}
-          onChange={(e) =>
-            setRequirePriorIdleMs(parseInt(e.target.value, 10) || 0)
-          }
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            setRequirePriorIdleMs(Number.isNaN(v) ? -1 : v);
+          }}
         />
+        <span className="text-xs opacity-70">-1 = disabled</span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-sm">Active on layers</label>
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
+          {layers.map((layer, i) => (
+            <label key={layer.id} className="flex items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                checked={(layersMask & (1 << i)) !== 0}
+                onChange={(e) => toggleLayer(i, e.target.checked)}
+              />
+              {layer.name || i}
+            </label>
+          ))}
+        </div>
+        <span className="text-xs opacity-70">
+          None selected = active on all layers.
+        </span>
       </div>
 
       <label className="flex items-center gap-2 text-sm">
@@ -144,7 +180,7 @@ export const ComboEditor = ({
           }
           onApply(index, {
             keyPositions,
-            layers: combo.layers,
+            layers: layersMask,
             binding,
             timeoutMs,
             requirePriorIdleMs,

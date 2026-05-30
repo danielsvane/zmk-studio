@@ -22,6 +22,7 @@ import {
   type Combo,
   type Combos,
   SetComboResponse,
+  AddComboErrorCode,
 } from "@zmkfirmware/zmk-studio-ts-client/combos";
 
 import { LayerPicker } from "./LayerPicker";
@@ -380,6 +381,9 @@ export default function Keyboard() {
   // user then refines it in the editor. The firmware assigns the pool slot and
   // returns its index, which we select for editing. Undo deletes it.
   const addCombo = useCallback(() => {
+    // Returns the assigned pool index, or -1 if the add failed (already
+    // surfaced to the user). We never throw out of the undoRedo callback: a
+    // throw there leaves the undo/redo system permanently locked.
     async function doAdd(): Promise<number> {
       if (!conn.conn) {
         throw new Error("Not connected");
@@ -395,7 +399,7 @@ export default function Keyboard() {
         layers: 0,
         binding: { behaviorId: behaviorList[0].id, param1: 0, param2: 0 },
         timeoutMs: 50,
-        requirePriorIdleMs: 0,
+        requirePriorIdleMs: -1,
         slowRelease: false,
       };
 
@@ -413,10 +417,19 @@ export default function Keyboard() {
         );
         setSelectedComboIndex(ok.index);
         return ok.index;
-      } else {
-        console.error("Add combo error", resp.combos?.addCombo?.err);
-        throw new Error("Failed to add combo: " + resp.combos?.addCombo?.err);
       }
+
+      const err = resp.combos?.addCombo?.err;
+      console.error("Add combo error", err);
+      // TODO: replace window.alert with a proper toast (matches App.tsx).
+      if (err === AddComboErrorCode.ADD_COMBO_ERR_NO_SPACE) {
+        window.alert(
+          "Can't add another combo: the combo pool is full. Delete an existing combo to make room."
+        );
+      } else {
+        window.alert("Failed to add the combo.");
+      }
+      return -1;
     }
 
     async function doRemove(index: number) {
@@ -448,6 +461,10 @@ export default function Keyboard() {
 
     undoRedo?.(async () => {
       const index = await doAdd();
+      if (index < 0) {
+        // Nothing was created (e.g. pool full) — undo is a no-op.
+        return async () => {};
+      }
       return () => doRemove(index);
     });
   }, [conn, undoRedo, behaviors, setCombos]);
@@ -727,7 +744,7 @@ export default function Keyboard() {
   }, [keymap, selectedLayerIndex]);
 
   return (
-    <div className="grid grid-cols-[auto_1fr] grid-rows-[1fr_minmax(10em,auto)] bg-base-300 max-w-full min-w-0 min-h-0">
+    <div className="grid grid-cols-[auto_1fr] grid-rows-[1fr_minmax(10em,45vh)] bg-base-300 max-w-full min-w-0 min-h-0">
       <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
         {layouts && (
           <div className="col-start-3 row-start-1 row-end-2">
@@ -799,7 +816,7 @@ export default function Keyboard() {
         </div>
       )}
       {keymap && selectedBinding && (
-        <div className="p-2 col-start-2 row-start-2 bg-base-200">
+        <div className="p-2 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0">
           <BehaviorBindingPicker
             binding={selectedBinding}
             behaviors={Object.values(behaviors)}
@@ -812,7 +829,7 @@ export default function Keyboard() {
         </div>
       )}
       {keymap && combos && selectedCombo?.combo && (
-        <div className="p-2 col-start-1 row-start-2 bg-base-200">
+        <div className="p-2 col-start-1 row-start-2 bg-base-200 overflow-y-auto min-h-0">
           <ComboEditor
             index={selectedCombo.index}
             combo={selectedCombo.combo}
