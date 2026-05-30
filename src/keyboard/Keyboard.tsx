@@ -18,6 +18,8 @@ import {
   Layer,
 } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
+// M0 walking-skeleton: temporary import to prove the combos RPC pipeline end-to-end.
+import type { Combos } from "@zmkfirmware/zmk-studio-ts-client/combos";
 
 import { LayerPicker } from "./LayerPicker";
 import { PhysicalLayoutPicker } from "./PhysicalLayoutPicker";
@@ -170,6 +172,19 @@ export default function Keyboard() {
     (keymap) => {
       console.log("Got the keymap!");
       return keymap?.keymap?.getKeymap;
+    },
+    true
+  );
+
+  // M0 walking-skeleton: fire getCombos and log the response to prove the
+  // proto -> firmware -> RPC -> ts-client -> frontend pipeline carries combos.
+  // Replaced by a real combo UI in M1+. Watch the devtools console for
+  // "M0 getCombos response".
+  useConnectedDeviceData<Combos>(
+    { combos: { getCombos: true } },
+    (resp) => {
+      console.log("M0 getCombos response", resp?.combos?.getCombos);
+      return resp?.combos?.getCombos;
     },
     true
   );
