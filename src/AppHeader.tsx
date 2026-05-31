@@ -29,6 +29,7 @@ export interface AppHeaderProps {
 const NAV_ITEMS: { id: Page; label: string }[] = [
   { id: "layers", label: "Layers" },
   { id: "combos", label: "Combos" },
+  { id: "behaviours", label: "Behaviours" },
 ];
 
 export const AppHeader = ({

@@ -17,7 +17,10 @@ import {
   BehaviorBinding,
   Layer,
 } from "@zmkfirmware/zmk-studio-ts-client/keymap";
-import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
+import type {
+  GetBehaviorDetailsResponse,
+  CustomBehaviors,
+} from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import {
   type Combo,
   type Combos,
@@ -55,7 +58,7 @@ const SCALE_ITEMS = [
 import { useLocalStorageState } from "../misc/useLocalStorageState";
 
 /** Top-level sections selectable from the header navigation. */
-export type Page = "layers" | "combos";
+export type Page = "layers" | "combos" | "behaviours";
 
 type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
 
@@ -209,6 +212,14 @@ export default function Keyboard({ page }: { page: Page }) {
   const [selectedComboIndex, setSelectedComboIndex] = useState<
     number | undefined
   >(undefined);
+
+  // M0 tracer: read the (currently empty) custom-behaviour pool. Later
+  // milestones flesh this out with real slots + a generic config editor.
+  const [customBehaviors] = useConnectedDeviceData<CustomBehaviors>(
+    { behaviors: { getCustomBehaviors: true } },
+    (resp) => resp?.behaviors?.getCustomBehaviors,
+    true
+  );
 
   const [keymapScale, setKeymapScale] = useLocalStorageState<LayoutZoom>("keymapScale", "auto", {
     deserialize: deserializeLayoutZoom,
@@ -759,6 +770,15 @@ export default function Keyboard({ page }: { page: Page }) {
       setSelectedLayerIndex(layers);
     }
   }, [keymap, selectedLayerIndex]);
+
+  if (page === "behaviours") {
+    const count = customBehaviors?.behaviors?.length ?? 0;
+    return (
+      <div className="grid bg-base-300 max-w-full min-w-0 min-h-0 h-full place-items-center text-center text-base-content/60">
+        <p>{count} custom behaviours</p>
+      </div>
+    );
+  }
 
   if (page === "combos") {
     return (
