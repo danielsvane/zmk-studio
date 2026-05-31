@@ -506,6 +506,107 @@ export default function Keyboard({ page }: { page: Page }) {
     }
   }, [conn, refreshBehaviors, setCustomBehaviors]);
 
+  // Delete a custom behaviour (M8: RAM-only until saved). Frees the pool slot;
+  // the behaviour vanishes from the list and from the binding picker. Undo
+  // re-claims a slot of the same kind and re-seeds the captured config — in the
+  // common case (deleting then immediately undoing) the freed slot is the first
+  // free one, so the same physical slot and stable local_id come back, keeping
+  // any existing bindings intact.
+  const removeCustomBehavior = useCallback(
+    (behaviorId: number) => {
+      const oldBehaviour = customBehaviors?.behaviors.find(
+        (b) => b.id === behaviorId
+      );
+      if (!oldBehaviour) {
+        console.error("Can't delete a behaviour that isn't loaded", behaviorId);
+        return;
+      }
+
+      async function remove() {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          behaviors: { removeCustomBehavior: { id: behaviorId } },
+        });
+
+        if (resp.behaviors?.removeCustomBehavior?.ok) {
+          setCustomBehaviors(
+            produce((draft: any) => {
+              const i = draft.behaviors.findIndex(
+                (b: any) => b.id === behaviorId
+              );
+              if (i >= 0) {
+                draft.behaviors.splice(i, 1);
+              }
+            })
+          );
+          // Drop it from the binding-picker map too.
+          await refreshBehaviors();
+        } else {
+          console.error(
+            "Remove behaviour error",
+            resp.behaviors?.removeCustomBehavior?.err
+          );
+          throw new Error(
+            "Failed to remove behaviour: " +
+              resp.behaviors?.removeCustomBehavior?.err
+          );
+        }
+      }
+
+      async function restore(behaviour: CustomBehavior) {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          behaviors: {
+            addCustomBehavior: {
+              kind: behaviour.kind,
+              displayName: behaviour.displayName,
+              // Re-seed every field so the restored slot matches what was
+              // deleted (schema is response-only; the firmware matches by key).
+              config: behaviour.config.map((f) => ({
+                key: f.key,
+                displayName: "",
+                value: f.value,
+                schema: undefined,
+              })),
+            },
+          },
+        });
+
+        const ok = resp.behaviors?.addCustomBehavior?.ok;
+        if (ok?.behavior) {
+          setCustomBehaviors(
+            produce((draft: any) => {
+              if (!draft.behaviors) {
+                draft.behaviors = [];
+              }
+              draft.behaviors.push(ok.behavior);
+            })
+          );
+          await refreshBehaviors();
+        } else {
+          console.error(
+            "Restore behaviour error",
+            resp.behaviors?.addCustomBehavior?.err
+          );
+        }
+      }
+
+      undoRedo?.(async () => {
+        await remove();
+        return async () => {
+          await restore(oldBehaviour);
+        };
+      });
+    },
+    [conn, customBehaviors, refreshBehaviors, setCustomBehaviors, undoRedo]
+  );
+
   // Add a brand-new combo (M4). Seeds sensible defaults (keys 0,1 -> the first
   // available behavior) so the new combo is valid the moment it's created; the
   // user then refines it in the editor. The firmware assigns the pool slot and
@@ -909,6 +1010,14 @@ export default function Keyboard({ page }: { page: Page }) {
                   {beh.displayName || `Behaviour #${beh.id}`}
                 </h2>
                 <span className="text-xs text-base-content/60">{beh.kind}</span>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="ml-auto"
+                  onPress={() => removeCustomBehavior(beh.id)}
+                >
+                  Delete
+                </Button>
               </div>
                 <div className="flex flex-col gap-3">
                   {beh.config.map((field) => (
