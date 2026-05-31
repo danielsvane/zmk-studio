@@ -17,9 +17,11 @@ import {
   BehaviorBinding,
   Layer,
 } from "@zmkfirmware/zmk-studio-ts-client/keymap";
-import type {
-  GetBehaviorDetailsResponse,
-  CustomBehaviors,
+import {
+  type GetBehaviorDetailsResponse,
+  type CustomBehaviors,
+  type ConfigValue,
+  SetCustomBehaviorResponse,
 } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import {
   type Combo,
@@ -42,7 +44,7 @@ import { LockStateContext } from "../rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { deserializeLayoutZoom, LayoutZoom } from "./PhysicalLayout";
 import { Select } from "../misc/Select";
-import { ConfigFieldView } from "../behaviours/ConfigFieldEditor";
+import { ConfigFieldEdit } from "../behaviours/ConfigFieldEditor";
 
 // Keymap zoom levels for the overlay picker. Keys are the serialized zoom value
 // (see deserializeLayoutZoom); "auto" fits the layout to the available space.
@@ -214,13 +216,14 @@ export default function Keyboard({ page }: { page: Page }) {
     number | undefined
   >(undefined);
 
-  // M0 tracer: read the (currently empty) custom-behaviour pool. Later
-  // milestones flesh this out with real slots + a generic config editor.
-  const [customBehaviors] = useConnectedDeviceData<CustomBehaviors>(
-    { behaviors: { getCustomBehaviors: true } },
-    (resp) => resp?.behaviors?.getCustomBehaviors,
-    true
-  );
+  // Read the custom-behaviour pool, now editable in place (M3: RAM-only, lost
+  // on reboot) via the generic schema-driven config editor.
+  const [customBehaviors, setCustomBehaviors] =
+    useConnectedDeviceData<CustomBehaviors>(
+      { behaviors: { getCustomBehaviors: true } },
+      (resp) => resp?.behaviors?.getCustomBehaviors,
+      true
+    );
 
   const [keymapScale, setKeymapScale] = useLocalStorageState<LayoutZoom>("keymapScale", "auto", {
     deserialize: deserializeLayoutZoom,
@@ -403,6 +406,53 @@ export default function Keyboard({ page }: { page: Page }) {
       });
     },
     [combos, conn, undoRedo, setCombos]
+  );
+
+  // Edit one config field of a custom behaviour in place (M3: RAM-only). We send
+  // only the changed field (matched by key in the firmware) and optimistically
+  // update local state; undo restores the previous value via the same RPC.
+  const doApplyConfigField = useCallback(
+    (behaviorId: number, fieldKey: string, newValue: ConfigValue, oldValue: ConfigValue) => {
+      const setField = async (value: ConfigValue) => {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          behaviors: {
+            setCustomBehavior: {
+              id: behaviorId,
+              // schema is response-only; the firmware matches by key and ignores
+              // it on a set, so we omit it to keep the request small.
+              config: [{ key: fieldKey, displayName: "", value, schema: undefined }],
+            },
+          },
+        });
+
+        const result = resp.behaviors?.setCustomBehavior;
+        if (result === SetCustomBehaviorResponse.SET_CUSTOM_BEHAVIOR_RESP_OK) {
+          setCustomBehaviors(
+            produce((draft: any) => {
+              const beh = draft.behaviors.find((b: any) => b.id === behaviorId);
+              const field = beh?.config.find((f: any) => f.key === fieldKey);
+              if (field) {
+                field.value = value;
+              }
+            })
+          );
+        } else {
+          console.error("Failed to set custom behaviour field", result);
+        }
+      };
+
+      undoRedo?.(async () => {
+        await setField(newValue);
+        return async () => {
+          await setField(oldValue);
+        };
+      });
+    },
+    [conn, undoRedo, setCustomBehaviors]
   );
 
   // Add a brand-new combo (M4). Seeds sensible defaults (keys 0,1 -> the first
@@ -797,7 +847,18 @@ export default function Keyboard({ page }: { page: Page }) {
               </div>
               <div className="flex flex-col gap-3">
                 {beh.config.map((field) => (
-                  <ConfigFieldView key={field.key} field={field} />
+                  <ConfigFieldEdit
+                    key={field.key}
+                    field={field}
+                    onCommit={(value) =>
+                      doApplyConfigField(
+                        beh.id,
+                        field.key,
+                        value,
+                        field.value ?? {}
+                      )
+                    }
+                  />
                 ))}
               </div>
             </div>

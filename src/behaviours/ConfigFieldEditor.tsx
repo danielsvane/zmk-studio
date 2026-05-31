@@ -1,4 +1,8 @@
-import type { ConfigField } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
+import { useEffect, useState } from "react";
+import type {
+  ConfigField,
+  ConfigValue,
+} from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import { FieldLabel } from "../misc/Field";
 
 /**
@@ -7,9 +11,12 @@ import { FieldLabel } from "../misc/Field";
  * the shape of `value`), so adding a new behaviour kind never touches this
  * component — the firmware just reports new fields with the same schema vocab.
  *
- * M1: read-only display. Later milestones (M3+) swap the read-only value
- * renderings for editable inputs (number, Select, toggle, key-grid) keyed off
- * the same schema discriminant.
+ * `ConfigFieldView` is the read-only rendering (M1). `ConfigFieldEdit` (M3) is
+ * the editable form: int → number input, enum → select, bool → checkbox, all
+ * keyed off the same schema discriminant. It commits a new `ConfigValue` via
+ * `onCommit`; the caller turns that into a set_custom_behavior RPC. Field kinds
+ * not yet editable (key-positions, behaviour-ref) fall back to the read-only
+ * rendering — they become editable in later milestones (M4/M9).
  */
 export interface ConfigFieldViewProps {
   field: ConfigField;
@@ -71,6 +78,107 @@ export function ConfigFieldView({ field }: ConfigFieldViewProps) {
       <FieldLabel>{field.displayName || field.key}</FieldLabel>
       <div className="flex items-baseline gap-2">
         <span className="text-base-content">{renderValue(field)}</span>
+        {hint && <span className="text-xs text-base-content/60">({hint})</span>}
+      </div>
+    </div>
+  );
+}
+
+export interface ConfigFieldEditProps {
+  field: ConfigField;
+  /** Commit a new value for this field (the caller issues the set RPC). */
+  onCommit: (value: ConfigValue) => void;
+}
+
+/** Editable number input for an int-range field; commits on blur / Enter. */
+function IntEditor({ field, onCommit }: ConfigFieldEditProps) {
+  const current = field.value?.intValue ?? 0;
+  const min = field.schema?.intRange?.min;
+  const max = field.schema?.intRange?.max;
+  const [text, setText] = useState(String(current));
+
+  // Re-sync when the value changes externally (undo/redo, reload). We only
+  // commit on blur, so `current` is stable while the user types and this won't
+  // clobber in-progress input.
+  useEffect(() => {
+    setText(String(current));
+  }, [current]);
+
+  const commit = () => {
+    const parsed = parseInt(text, 10);
+    if (Number.isNaN(parsed)) {
+      setText(String(current)); // revert invalid input
+      return;
+    }
+    let clamped = parsed;
+    if (min !== undefined) clamped = Math.max(min, clamped);
+    if (max !== undefined) clamped = Math.min(max, clamped);
+    if (clamped !== parsed) setText(String(clamped));
+    if (clamped !== current) onCommit({ intValue: clamped });
+  };
+
+  return (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      className="h-8 rounded px-2 bg-base-100 border border-white/15"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+    />
+  );
+}
+
+/** Editable rendering of one ConfigField, dispatched on its schema. */
+export function ConfigFieldEdit({ field, onCommit }: ConfigFieldEditProps) {
+  const { value, schema } = field;
+  const hint = renderSchemaHint(field);
+
+  let control;
+  if (schema?.enumOptions && value?.enumValue !== undefined) {
+    const names = schema.enumOptions.names;
+    control = (
+      <select
+        className="h-8 rounded px-2 bg-base-100 border border-white/15"
+        value={value.enumValue}
+        onChange={(e) => onCommit({ enumValue: parseInt(e.target.value, 10) })}
+      >
+        {names.map((name, i) => (
+          <option key={i} value={i}>
+            {name}
+          </option>
+        ))}
+      </select>
+    );
+  } else if (schema?.boolSchema && value?.boolValue !== undefined) {
+    control = (
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={value.boolValue}
+          onChange={(e) => onCommit({ boolValue: e.target.checked })}
+        />
+        <span className="text-sm text-base-content/80">
+          {value.boolValue ? "On" : "Off"}
+        </span>
+      </label>
+    );
+  } else if (value?.intValue !== undefined) {
+    control = <IntEditor field={field} onCommit={onCommit} />;
+  } else {
+    // Not yet editable (key-positions, behaviour-ref): show read-only value.
+    control = <span className="text-base-content">{renderValue(field)}</span>;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <FieldLabel>{field.displayName || field.key}</FieldLabel>
+      <div className="flex items-center gap-2">
+        {control}
         {hint && <span className="text-xs text-base-content/60">({hint})</span>}
       </div>
     </div>
