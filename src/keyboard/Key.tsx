@@ -46,6 +46,8 @@ export const Key = ({
   const pixelWidth = width * oneU - 2;
   const pixelHeight = height * oneU - 2;
 
+  const label = shortenHeader(header);
+
   return (
     <button
       className={`group rounded relative flex justify-center items-center cursor-pointer transition-all hover:shadow-xl hover:ring-1 hover:ring-gray-300 hover:scale-150 ${selected ? "bg-primary text-primary-content" : "bg-base-100 text-base-content"
@@ -56,7 +58,11 @@ export const Key = ({
       }}
       onClick={onClick}
     >
-      <div className={`absolute text-xs ${selected ? "text-primary-content" : "z1text-base-content"} opacity-80 top-1 text-nowrap left-1/2 font-light -translate-x-1/2 text-center`}>{shortenHeader(header)}</div>
+      {label && (
+        <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-2xs leading-none opacity-70 font-light text-nowrap text-center">
+          {label}
+        </div>
+      )}
       <div className="flex flex-col gap-0.5 items-center scale-75 [&>*:nth-child(2)]:opacity-50">
         {children}
       </div>

@@ -51,3 +51,12 @@ export const Large: Story = {
     children: [<span>C</span>],
   },
 };
+
+export const ModTap: Story = {
+  args: {
+    width: 1,
+    height: 1,
+    header: "Mod-Tap",
+    children: [<span>Esc</span>, <span>^</span>],
+  },
+};
