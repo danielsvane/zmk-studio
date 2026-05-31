@@ -81,7 +81,18 @@ export const AppHeader = ({
     setCombosUnsaved(unsaved)
   );
 
-  const unsaved = !!keymapUnsaved || !!combosUnsaved;
+  // Custom behaviours share the same unsaved indicator + Save/Discard buttons
+  // (M6). Track their unsaved state independently and OR it into the rest.
+  const [behaviorsUnsaved, setBehaviorsUnsaved] = useConnectedDeviceData<boolean>(
+    { behaviors: { checkUnsavedChanges: true } },
+    (r) => r.behaviors?.checkUnsavedChanges
+  );
+
+  useSub("rpc_notification.behaviors.unsavedChangesStatusChanged", (unsaved) =>
+    setBehaviorsUnsaved(unsaved)
+  );
+
+  const unsaved = !!keymapUnsaved || !!combosUnsaved || !!behaviorsUnsaved;
 
   return (
     <header className="top-0 left-0 right-0 flex items-center justify-between gap-2 h-10 max-w-full">

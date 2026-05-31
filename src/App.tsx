@@ -307,6 +307,19 @@ function App() {
           comboResp.combos?.saveChanges
         );
       }
+
+      let behaviorResp = await call_rpc(conn.conn, {
+        behaviors: { saveChanges: true },
+      });
+      if (
+        !behaviorResp.behaviors?.saveChanges ||
+        behaviorResp.behaviors?.saveChanges.err
+      ) {
+        console.error(
+          "Failed to save custom behaviour changes",
+          behaviorResp.behaviors?.saveChanges
+        );
+      }
     }
 
     doSave();
@@ -330,6 +343,13 @@ function App() {
       });
       if (!comboResp.combos?.discardChanges) {
         console.error("Failed to discard combo changes", comboResp);
+      }
+
+      let behaviorResp = await call_rpc(conn.conn, {
+        behaviors: { discardChanges: true },
+      });
+      if (!behaviorResp.behaviors?.discardChanges) {
+        console.error("Failed to discard custom behaviour changes", behaviorResp);
       }
 
       reset();
