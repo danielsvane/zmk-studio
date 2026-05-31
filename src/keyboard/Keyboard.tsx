@@ -54,6 +54,9 @@ const SCALE_ITEMS = [
 ];
 import { useLocalStorageState } from "../misc/useLocalStorageState";
 
+/** Top-level sections selectable from the header navigation. */
+export type Page = "layers" | "combos";
+
 type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
 
 function useBehaviors(): BehaviorMap {
@@ -180,7 +183,7 @@ function useLayouts(): [
   ];
 }
 
-export default function Keyboard() {
+export default function Keyboard({ page }: { page: Page }) {
   const [
     layouts,
     _setLayouts,
@@ -757,37 +760,11 @@ export default function Keyboard() {
     }
   }, [keymap, selectedLayerIndex]);
 
-  return (
-    <div className="grid grid-cols-[auto_1fr] grid-rows-[1fr_minmax(10em,45vh)] bg-base-300 max-w-full min-w-0 min-h-0">
-      <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
-        {layouts && (
-          <div className="col-start-3 row-start-1 row-end-2">
-            <PhysicalLayoutPicker
-              layouts={layouts}
-              selectedPhysicalLayoutIndex={selectedPhysicalLayoutIndex}
-              onPhysicalLayoutClicked={doSelectPhysicalLayout}
-            />
-          </div>
-        )}
-
-        {keymap && (
-          <div className="col-start-1 row-start-1 row-end-2">
-            <LayerPicker
-              layers={keymap.layers}
-              selectedLayerIndex={selectedLayerIndex}
-              onLayerClicked={setSelectedLayerIndex}
-              onLayerMoved={moveLayer}
-              canAdd={(keymap.availableLayers || 0) > 0}
-              canRemove={(keymap.layers?.length || 0) > 1}
-              onAddClicked={addLayer}
-              onRemoveClicked={removeLayer}
-              onLayerNameChanged={changeLayerName}
-            />
-          </div>
-        )}
-
-        {combos && (
-          <div className="col-start-1">
+  if (page === "combos") {
+    return (
+      <div className="grid grid-cols-[auto_1fr] bg-base-300 max-w-full min-w-0 min-h-0 h-full">
+        <div className="p-2 flex flex-col gap-2 bg-base-200 overflow-y-auto min-h-0">
+          {combos && (
             <ComboList
               combos={combos}
               behaviors={behaviors}
@@ -796,7 +773,55 @@ export default function Keyboard() {
               onAddCombo={addCombo}
               canAdd={Object.keys(behaviors).length > 0}
             />
-          </div>
+          )}
+        </div>
+        <div className="p-2 col-start-2 overflow-y-auto min-h-0">
+          {keymap && combos && selectedCombo?.combo ? (
+            <ComboEditor
+              index={selectedCombo.index}
+              combo={selectedCombo.combo}
+              behaviors={Object.values(behaviors)}
+              layers={keymap.layers.map(({ id, name }, li) => ({
+                id,
+                name: name || li.toLocaleString(),
+              }))}
+              maxKeysPerCombo={combos.maxKeysPerCombo}
+              onApply={doApplyCombo}
+              onDelete={doRemoveCombo}
+            />
+          ) : (
+            <div className="h-full grid place-items-center text-center text-base-content/60">
+              <p>Select a combo to edit, or add a new one.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-[auto_1fr] grid-rows-[1fr_minmax(10em,45vh)] bg-base-300 max-w-full min-w-0 min-h-0">
+      <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
+        {layouts && (
+          <PhysicalLayoutPicker
+            layouts={layouts}
+            selectedPhysicalLayoutIndex={selectedPhysicalLayoutIndex}
+            onPhysicalLayoutClicked={doSelectPhysicalLayout}
+          />
+        )}
+
+        {keymap && (
+          <LayerPicker
+            layers={keymap.layers}
+            selectedLayerIndex={selectedLayerIndex}
+            onLayerClicked={setSelectedLayerIndex}
+            onLayerMoved={moveLayer}
+            canAdd={(keymap.availableLayers || 0) > 0}
+            canRemove={(keymap.layers?.length || 0) > 1}
+            onAddClicked={addLayer}
+            onRemoveClicked={removeLayer}
+            onLayerNameChanged={changeLayerName}
+          />
         )}
       </div>
       {layouts && keymap && behaviors && (
@@ -833,22 +858,6 @@ export default function Keyboard() {
               name: name || li.toLocaleString(),
             }))}
             onBindingChanged={doUpdateBinding}
-          />
-        </div>
-      )}
-      {keymap && combos && selectedCombo?.combo && (
-        <div className="p-2 col-start-1 row-start-2 bg-base-200 overflow-y-auto min-h-0">
-          <ComboEditor
-            index={selectedCombo.index}
-            combo={selectedCombo.combo}
-            behaviors={Object.values(behaviors)}
-            layers={keymap.layers.map(({ id, name }, li) => ({
-              id,
-              name: name || li.toLocaleString(),
-            }))}
-            maxKeysPerCombo={combos.maxKeysPerCombo}
-            onApply={doApplyCombo}
-            onDelete={doRemoveCombo}
           />
         </div>
       )}

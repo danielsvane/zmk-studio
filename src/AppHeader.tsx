@@ -1,5 +1,6 @@
 import { Menu, MenuItem, MenuTrigger, Popover } from "react-aria-components";
-import { Button } from "./misc/Button";
+import { Button, ToggleButton } from "./misc/Button";
+import type { Page } from "./keyboard/Keyboard";
 import { useConnectedDeviceData } from "./rpc/useConnectedDeviceData";
 import { useSub } from "./usePubSub";
 import { useContext, useEffect, useState } from "react";
@@ -13,6 +14,8 @@ import { GenericModal } from "./GenericModal";
 
 export interface AppHeaderProps {
   connectedDeviceLabel?: string;
+  page?: Page;
+  onPageChange?: (page: Page) => void;
   onSave?: () => void | Promise<void>;
   onDiscard?: () => void | Promise<void>;
   onUndo?: () => Promise<void>;
@@ -23,8 +26,15 @@ export interface AppHeaderProps {
   canRedo?: boolean;
 }
 
+const NAV_ITEMS: { id: Page; label: string }[] = [
+  { id: "layers", label: "Layers" },
+  { id: "combos", label: "Combos" },
+];
+
 export const AppHeader = ({
   connectedDeviceLabel,
+  page,
+  onPageChange,
   canRedo,
   canUndo,
   onRedo,
@@ -73,10 +83,26 @@ export const AppHeader = ({
   const unsaved = !!keymapUnsaved || !!combosUnsaved;
 
   return (
-    <header className="top-0 left-0 right-0 grid grid-cols-[1fr_auto_1fr] items-center justify-between h-10 max-w-full">
-      <div className="flex px-3 items-center gap-1">
-        <img src="/zmk.svg" alt="ZMK Logo" className="h-8 rounded" />
-        <p>Studio</p>
+    <header className="top-0 left-0 right-0 flex items-center justify-between gap-2 h-10 max-w-full">
+      <div className="flex items-center gap-3 px-3 min-w-0">
+        <div className="flex items-center gap-1">
+          <img src="/zmk.svg" alt="ZMK Logo" className="h-8 rounded" />
+          <p>Studio</p>
+        </div>
+        {connectedDeviceLabel && (
+          <nav aria-label="Sections" className="flex items-center gap-1">
+            {NAV_ITEMS.map(({ id, label }) => (
+              <ToggleButton
+                key={id}
+                variant="ghost"
+                isSelected={page === id}
+                onPress={() => onPageChange?.(id)}
+              >
+                {label}
+              </ToggleButton>
+            ))}
+          </nav>
+        )}
       </div>
       <GenericModal ref={showSettingsRef} className="max-w-[50vw]">
         <h2 className="my-2 text-lg">Restore Stock Settings</h2>
@@ -105,32 +131,7 @@ export const AppHeader = ({
           </div>
         </div>
       </GenericModal>
-      <div className="flex justify-center">
-        {connectedDeviceLabel && (
-          <MenuTrigger>
-            <Button variant="ghost" icon={<ChevronDown />} iconPosition="end">
-              {connectedDeviceLabel}
-            </Button>
-            <Popover>
-              <Menu className="shadow-md rounded bg-base-100 text-base-content cursor-pointer overflow-hidden">
-                <MenuItem
-                  className="px-2 py-1 hover:bg-base-200"
-                  onAction={onDisconnect}
-                >
-                  Disconnect
-                </MenuItem>
-                <MenuItem
-                  className="px-2 py-1 hover:bg-base-200"
-                  onAction={() => setShowSettingsReset(true)}
-                >
-                  Restore Stock Settings
-                </MenuItem>
-              </Menu>
-            </Popover>
-          </MenuTrigger>
-        )}
-      </div>
-      <div className="flex justify-end gap-1 px-2">
+      <div className="flex items-center justify-end gap-1 px-2">
         {onUndo && (
           <Tooltip label="Undo">
             <Button
@@ -172,6 +173,29 @@ export const AppHeader = ({
             isDisabled={!unsaved}
           />
         </Tooltip>
+        {connectedDeviceLabel && (
+          <MenuTrigger>
+            <Button variant="ghost" icon={<ChevronDown />} iconPosition="end">
+              {connectedDeviceLabel}
+            </Button>
+            <Popover>
+              <Menu className="shadow-md rounded bg-base-100 text-base-content cursor-pointer overflow-hidden">
+                <MenuItem
+                  className="px-2 py-1 hover:bg-base-200"
+                  onAction={onDisconnect}
+                >
+                  Disconnect
+                </MenuItem>
+                <MenuItem
+                  className="px-2 py-1 hover:bg-base-200"
+                  onAction={() => setShowSettingsReset(true)}
+                >
+                  Restore Stock Settings
+                </MenuItem>
+              </Menu>
+            </Popover>
+          </MenuTrigger>
+        )}
       </div>
     </header>
   );
