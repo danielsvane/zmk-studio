@@ -12,11 +12,12 @@ import { FieldLabel } from "../misc/Field";
  * component — the firmware just reports new fields with the same schema vocab.
  *
  * `ConfigFieldView` is the read-only rendering (M1). `ConfigFieldEdit` (M3) is
- * the editable form: int → number input, enum → select, bool → checkbox, all
- * keyed off the same schema discriminant. It commits a new `ConfigValue` via
- * `onCommit`; the caller turns that into a set_custom_behavior RPC. Field kinds
- * not yet editable (key-positions, behaviour-ref) fall back to the read-only
- * rendering — they become editable in later milestones (M4/M9).
+ * the editable form: int → number input, enum → select, bool → checkbox,
+ * key-positions → a comma-separated list (M5; a KeyGrid picker replaces it in
+ * M9), all keyed off the same schema discriminant. It commits a new
+ * `ConfigValue` via `onCommit`; the caller turns that into a set_custom_behavior
+ * RPC. Field kinds not yet editable (behaviour-ref) fall back to the read-only
+ * rendering — they become editable in M9.
  */
 export interface ConfigFieldViewProps {
   field: ConfigField;
@@ -133,6 +134,51 @@ function IntEditor({ field, onCommit }: ConfigFieldEditProps) {
   );
 }
 
+/**
+ * Minimal editable key-positions field: a comma/space-separated list of position
+ * numbers, committed on blur / Enter. Enough to exercise a long
+ * hold_trigger_key_positions list end-to-end (M5 RX-buffer sizing). A proper
+ * KeyGrid picker replaces this in M9.
+ */
+function PositionsEditor({ field, onCommit }: ConfigFieldEditProps) {
+  const current = field.value?.positions?.positions ?? [];
+  const max = field.schema?.positions?.max;
+  const [text, setText] = useState(current.join(", "));
+
+  useEffect(() => {
+    setText(current.join(", "));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current.join(",")]);
+
+  const commit = () => {
+    const parsed = text
+      .split(/[\s,]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0)
+      .map((t) => parseInt(t, 10))
+      .filter((n) => !Number.isNaN(n) && n >= 0);
+    const bounded =
+      max !== undefined ? parsed.slice(0, max) : parsed;
+    setText(bounded.join(", "));
+    onCommit({ positions: { positions: bounded } });
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      placeholder="e.g. 0, 1, 2"
+      className="h-8 rounded px-2 bg-base-100 border border-white/15 min-w-0 flex-1"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+    />
+  );
+}
+
 /** Editable rendering of one ConfigField, dispatched on its schema. */
 export function ConfigFieldEdit({ field, onCommit }: ConfigFieldEditProps) {
   const { value, schema } = field;
@@ -169,8 +215,10 @@ export function ConfigFieldEdit({ field, onCommit }: ConfigFieldEditProps) {
     );
   } else if (value?.intValue !== undefined) {
     control = <IntEditor field={field} onCommit={onCommit} />;
+  } else if (schema?.positions) {
+    control = <PositionsEditor field={field} onCommit={onCommit} />;
   } else {
-    // Not yet editable (key-positions, behaviour-ref): show read-only value.
+    // Not yet editable (behaviour-ref): show read-only value.
     control = <span className="text-base-content">{renderValue(field)}</span>;
   }
 
