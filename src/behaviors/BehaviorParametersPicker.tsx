@@ -7,6 +7,8 @@ export interface BehaviorParametersPickerProps {
   param2?: number;
   metadata: BehaviorBindingParametersSet[];
   layers: { id: number; name: string }[];
+  /** Show the visual keyboard grid for the first HID-usage param (key-press only). */
+  showGrid?: boolean;
   onParam1Changed: (value?: number) => void;
   onParam2Changed: (value?: number) => void;
 }
@@ -16,6 +18,7 @@ export const BehaviorParametersPicker = ({
   param2,
   metadata,
   layers,
+  showGrid = false,
   onParam1Changed,
   onParam2Changed,
 }: BehaviorParametersPickerProps) => {
@@ -26,6 +29,7 @@ export const BehaviorParametersPicker = ({
           values={metadata.flatMap((m) => m.param1)}
           onValueChanged={onParam1Changed}
           layers={layers}
+          showGrid={showGrid}
         />
       </div>
     );
@@ -43,6 +47,7 @@ export const BehaviorParametersPicker = ({
           values={metadata.flatMap((m) => m.param1)}
           value={param1}
           layers={layers}
+          showGrid={showGrid}
           onValueChanged={onParam1Changed}
         />
         {(set?.param2?.length || 0) > 0 && (

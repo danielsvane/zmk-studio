@@ -1,6 +1,7 @@
 import { Key } from "react-aria-components";
 import { ButtonGroup, ToggleButton } from "../misc/Button";
 import { Select, SelectItemContent } from "../misc/Select";
+import { KeyGrid } from "./KeyGrid";
 import {
   hid_usage_from_page_and_id,
   hid_usage_page_get_ids,
@@ -17,6 +18,8 @@ export interface HidUsagePickerProps {
   label?: string;
   value?: number;
   usagePages: HidUsagePage[];
+  /** Show the visual keyboard grid above the search dropdown (key-press only). */
+  showGrid?: boolean;
   onValueChanged: (value?: number) => void;
 }
 
@@ -94,6 +97,7 @@ export const HidUsagePicker = ({
   label,
   value,
   usagePages,
+  showGrid = false,
   onValueChanged,
 }: HidUsagePickerProps) => {
   const usageItems = useMemo(
@@ -138,8 +142,15 @@ export const HidUsagePicker = ({
   );
 
   return (
-    <div className="flex items-end gap-2">
-      <Select<UsageItem>
+    <div className="flex flex-col gap-2">
+      {showGrid && (
+        <KeyGrid
+          value={value ? mask_mods(value) : undefined}
+          onPick={selectionChanged}
+        />
+      )}
+      <div className="flex items-end gap-2">
+        <Select<UsageItem>
         label={label}
         aria-label={label ? undefined : "HID usage"}
         searchable
@@ -177,6 +188,7 @@ export const HidUsagePicker = ({
           );
         })}
       </ButtonGroup>
+      </div>
     </div>
   );
 };

@@ -38,3 +38,27 @@ export const Default: Story = {
     );
   },
 };
+
+/**
+ * The key-press variant: a visual keyboard grid above the search dropdown. A
+ * single click picks a key (keeping any toggled modifiers); rarer keys stay in
+ * the dropdown.
+ */
+export const WithGrid: Story = {
+  render: (args) => {
+    const [value, setValue] = useState<number | undefined>(undefined);
+    return (
+      <HidUsagePicker
+        {...args}
+        label="Key"
+        showGrid
+        usagePages={usagePages}
+        value={value}
+        onValueChanged={(v) => {
+          args.onValueChanged(v);
+          setValue(v);
+        }}
+      />
+    );
+  },
+};

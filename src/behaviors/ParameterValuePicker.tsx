@@ -7,6 +7,8 @@ export interface ParameterValuePickerProps {
   value?: number;
   values: BehaviorParameterValueDescription[];
   layers: { id: number; name: string }[];
+  /** Show the visual keyboard grid for HID-usage params (key-press only). */
+  showGrid?: boolean;
   onValueChanged: (value?: number) => void;
 }
 
@@ -14,6 +16,7 @@ export const ParameterValuePicker = ({
   value,
   values,
   layers,
+  showGrid = false,
   onValueChanged,
 }: ParameterValuePickerProps) => {
   // Stable identity for the HID usage pages so HidUsagePicker doesn't re-flatten
@@ -66,6 +69,7 @@ export const ParameterValuePicker = ({
           label={values[0].name}
           value={value}
           usagePages={usagePages}
+          showGrid={showGrid}
         />
       );
     } else if (values[0].layerId) {
