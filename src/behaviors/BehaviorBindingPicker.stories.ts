@@ -48,3 +48,27 @@ export const Example: Story = {
     ],
   },
 };
+
+export const ModTap: Story = {
+  args: {
+    binding: { behaviorId: 0, param1: 0, param2: 0 },
+    behaviors: [
+      {
+        id: 0,
+        displayName: "Mod-Tap",
+        metadata: [
+          {
+            // param1 = hold (modifier), param2 = tap (key). The slot selector
+            // surfaces the tap first.
+            param1: [
+              { name: "Hold", hidUsage: { consumerMax: 0, keyboardMax: 0 } },
+            ],
+            param2: [
+              { name: "Tap", hidUsage: { consumerMax: 0, keyboardMax: 0 } },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};

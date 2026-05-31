@@ -56,11 +56,6 @@ export const BehaviorBindingPicker = ({
   );
   const metadata = behavior?.metadata;
 
-  // The visual key grid only makes sense for a plain key press. Match on the
-  // display name, the same identifier the rest of the app keys behaviors off
-  // (see behavior-short-names.json).
-  const isKeyPress = behavior?.displayName === "Key Press";
-
   // Copy before sorting: `.sort()` mutates in place, and `behaviors` is a prop.
   // (`.toSorted()` would be cleaner but needs Safari 16; this build targets
   // Safari 13 — see vite.config.ts.)
@@ -131,7 +126,6 @@ export const BehaviorBindingPicker = ({
           param1={param1}
           param2={param2}
           layers={layers}
-          showGrid={isKeyPress}
           onParam1Changed={setParam1}
           onParam2Changed={setParam2}
         />
