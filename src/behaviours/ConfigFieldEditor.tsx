@@ -3,7 +3,9 @@ import type {
   ConfigField,
   ConfigValue,
 } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
+import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { FieldLabel } from "../misc/Field";
+import { KeyPositionPicker } from "./KeyPositionPicker";
 
 /**
  * Generic, behaviour-kind-agnostic renderer for one custom-behaviour
@@ -13,11 +15,11 @@ import { FieldLabel } from "../misc/Field";
  *
  * `ConfigFieldView` is the read-only rendering (M1). `ConfigFieldEdit` (M3) is
  * the editable form: int → number input, enum → select, bool → checkbox,
- * key-positions → a comma-separated list (M5; a KeyGrid picker replaces it in
- * M9), all keyed off the same schema discriminant. It commits a new
- * `ConfigValue` via `onCommit`; the caller turns that into a set_custom_behavior
- * RPC. Field kinds not yet editable (behaviour-ref) fall back to the read-only
- * rendering — they become editable in M9.
+ * key-positions → a click-to-toggle physical-layout picker (M9; falls back to a
+ * comma-separated text box when no layout is available, M5), all keyed off the
+ * same schema discriminant. It commits a new `ConfigValue` via `onCommit`; the
+ * caller turns that into a set_custom_behavior RPC. Field kinds not yet editable
+ * (behaviour-ref / hold-tap sub-bindings) fall back to the read-only rendering.
  */
 export interface ConfigFieldViewProps {
   field: ConfigField;
@@ -89,6 +91,9 @@ export interface ConfigFieldEditProps {
   field: ConfigField;
   /** Commit a new value for this field (the caller issues the set RPC). */
   onCommit: (value: ConfigValue) => void;
+  /** Physical-layout keys (index = position number) for the key-position
+   * picker. When absent, a key-position field falls back to a text editor. */
+  layoutKeys?: KeyPhysicalAttrs[];
 }
 
 /** Editable number input for an int-range field; commits on blur / Enter. */
@@ -180,9 +185,39 @@ function PositionsEditor({ field, onCommit }: ConfigFieldEditProps) {
 }
 
 /** Editable rendering of one ConfigField, dispatched on its schema. */
-export function ConfigFieldEdit({ field, onCommit }: ConfigFieldEditProps) {
+export function ConfigFieldEdit({
+  field,
+  onCommit,
+  layoutKeys,
+}: ConfigFieldEditProps) {
   const { value, schema } = field;
   const hint = renderSchemaHint(field);
+
+  // Key-positions field: prefer the physical-layout picker when we have a
+  // layout, falling back to the comma-separated text editor otherwise. Rendered
+  // here (not in the shared control block) so it can span the full width.
+  if (schema?.positions) {
+    return (
+      <div className="flex flex-col gap-1">
+        <FieldLabel>{field.displayName || field.key}</FieldLabel>
+        {layoutKeys && layoutKeys.length > 0 ? (
+          <KeyPositionPicker
+            layoutKeys={layoutKeys}
+            value={value?.positions?.positions ?? []}
+            max={schema.positions.max}
+            onChange={(positions) => onCommit({ positions: { positions } })}
+          />
+        ) : (
+          <div className="flex items-center gap-2">
+            <PositionsEditor field={field} onCommit={onCommit} />
+            {hint && (
+              <span className="text-xs text-base-content/60">({hint})</span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   let control;
   if (schema?.enumOptions && value?.enumValue !== undefined) {
@@ -215,10 +250,9 @@ export function ConfigFieldEdit({ field, onCommit }: ConfigFieldEditProps) {
     );
   } else if (value?.intValue !== undefined) {
     control = <IntEditor field={field} onCommit={onCommit} />;
-  } else if (schema?.positions) {
-    control = <PositionsEditor field={field} onCommit={onCommit} />;
   } else {
-    // Not yet editable (behaviour-ref): show read-only value.
+    // Not yet editable (behaviour-ref): show read-only value. (Key-positions
+    // are handled by the early return above.)
     control = <span className="text-base-content">{renderValue(field)}</span>;
   }
 

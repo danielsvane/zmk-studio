@@ -48,6 +48,7 @@ import { deserializeLayoutZoom, LayoutZoom } from "./PhysicalLayout";
 import { Select } from "../misc/Select";
 import { Button } from "../misc/Button";
 import { ConfigFieldEdit } from "../behaviours/ConfigFieldEditor";
+import { BehaviourNameEditor } from "../behaviours/BehaviourNameEditor";
 
 // Keymap zoom levels for the overlay picker. Keys are the serialized zoom value
 // (see deserializeLayoutZoom); "auto" fits the layout to the available space.
@@ -451,6 +452,50 @@ export default function Keyboard({ page }: { page: Page }) {
       });
     },
     [conn, undoRedo, setCustomBehaviors]
+  );
+
+  // Rename a custom behaviour (M9). Reuses set_custom_behavior, which carries an
+  // optional display_name; we send the name only (no config fields) and update
+  // both the behaviours list and the binding-picker map so the new label shows
+  // everywhere. Undo restores the previous name.
+  const doRenameBehavior = useCallback(
+    (behaviorId: number, newName: string, oldName: string) => {
+      const setName = async (name: string) => {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          behaviors: {
+            setCustomBehavior: { id: behaviorId, config: [], displayName: name },
+          },
+        });
+
+        const result = resp.behaviors?.setCustomBehavior;
+        if (result === SetCustomBehaviorResponse.SET_CUSTOM_BEHAVIOR_RESP_OK) {
+          setCustomBehaviors(
+            produce((draft: any) => {
+              const beh = draft.behaviors.find((b: any) => b.id === behaviorId);
+              if (beh) {
+                beh.displayName = name;
+              }
+            })
+          );
+          // Keep the binding-picker label in sync without a reconnect.
+          await refreshBehaviors();
+        } else {
+          console.error("Failed to rename custom behaviour", result);
+        }
+      };
+
+      undoRedo?.(async () => {
+        await setName(newName);
+        return async () => {
+          await setName(oldName);
+        };
+      });
+    },
+    [conn, undoRedo, setCustomBehaviors, refreshBehaviors]
   );
 
   // Claim a new custom behaviour from the spare pool (M4: RAM-only, lost on
@@ -979,6 +1024,9 @@ export default function Keyboard({ page }: { page: Page }) {
     const poolFull =
       customBehaviors?.max !== undefined &&
       behaviours.length >= customBehaviors.max;
+    // Raw key positions aren't remapped across layouts, so any layout is just a
+    // visual aid for the key-position picker; use the active/selected one.
+    const layoutKeys = layouts?.[selectedPhysicalLayoutIndex]?.keys;
     return (
       <div className="bg-base-300 max-w-full min-w-0 min-h-0 h-full overflow-y-auto p-4">
         <div className="flex items-center justify-between mb-4">
@@ -1006,9 +1054,13 @@ export default function Keyboard({ page }: { page: Page }) {
               className="rounded bg-base-200 p-4 flex flex-col gap-3"
             >
               <div className="flex items-baseline gap-2">
-                <h2 className="text-lg font-medium text-base-content">
-                  {beh.displayName || `Behaviour #${beh.id}`}
-                </h2>
+                <BehaviourNameEditor
+                  name={beh.displayName ?? ""}
+                  placeholder={`Behaviour #${beh.id}`}
+                  onCommit={(name) =>
+                    doRenameBehavior(beh.id, name, beh.displayName ?? "")
+                  }
+                />
                 <span className="text-xs text-base-content/60">{beh.kind}</span>
                 <Button
                   variant="danger"
@@ -1024,6 +1076,7 @@ export default function Keyboard({ page }: { page: Page }) {
                     <ConfigFieldEdit
                       key={field.key}
                       field={field}
+                      layoutKeys={layoutKeys}
                       onCommit={(value) =>
                         doApplyConfigField(
                           beh.id,
