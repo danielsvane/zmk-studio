@@ -42,6 +42,7 @@ import { LockStateContext } from "../rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { deserializeLayoutZoom, LayoutZoom } from "./PhysicalLayout";
 import { Select } from "../misc/Select";
+import { ConfigFieldView } from "../behaviours/ConfigFieldEditor";
 
 // Keymap zoom levels for the overlay picker. Keys are the serialized zoom value
 // (see deserializeLayoutZoom); "auto" fits the layout to the available space.
@@ -772,10 +773,36 @@ export default function Keyboard({ page }: { page: Page }) {
   }, [keymap, selectedLayerIndex]);
 
   if (page === "behaviours") {
-    const count = customBehaviors?.behaviors?.length ?? 0;
+    const behaviours = customBehaviors?.behaviors ?? [];
+    if (behaviours.length === 0) {
+      return (
+        <div className="grid bg-base-300 max-w-full min-w-0 min-h-0 h-full place-items-center text-center text-base-content/60">
+          <p>0 custom behaviours</p>
+        </div>
+      );
+    }
     return (
-      <div className="grid bg-base-300 max-w-full min-w-0 min-h-0 h-full place-items-center text-center text-base-content/60">
-        <p>{count} custom behaviours</p>
+      <div className="bg-base-300 max-w-full min-w-0 min-h-0 h-full overflow-y-auto p-4">
+        <div className="flex flex-col gap-4">
+          {behaviours.map((beh) => (
+            <div
+              key={beh.id}
+              className="rounded bg-base-200 p-4 flex flex-col gap-3"
+            >
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-lg font-medium text-base-content">
+                  {beh.displayName || `Behaviour #${beh.id}`}
+                </h2>
+                <span className="text-xs text-base-content/60">{beh.kind}</span>
+              </div>
+              <div className="flex flex-col gap-3">
+                {beh.config.map((field) => (
+                  <ConfigFieldView key={field.key} field={field} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
