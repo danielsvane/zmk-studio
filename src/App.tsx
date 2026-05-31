@@ -1,16 +1,31 @@
 import { AppHeader } from "./AppHeader";
 
-import { create_rpc_connection } from "@zmkfirmware/zmk-studio-ts-client";
+import {
+  create_rpc_connection,
+  RpcConnection,
+} from "@zmkfirmware/zmk-studio-ts-client";
 import { call_rpc } from "./rpc/logging";
 
 import type { Notification } from "@zmkfirmware/zmk-studio-ts-client/studio";
 import { ConnectionState, ConnectionContext } from "./rpc/ConnectionContext";
-import { Dispatch, useCallback, useEffect, useState } from "react";
+import {
+  Dispatch,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ConnectModal, TransportFactory } from "./ConnectModal";
 
 import type { RpcTransport } from "@zmkfirmware/zmk-studio-ts-client/transport/index";
 import { connect as gatt_connect } from "@zmkfirmware/zmk-studio-ts-client/transport/gatt";
-import { connect as serial_connect } from "@zmkfirmware/zmk-studio-ts-client/transport/serial";
+import {
+  openSerialTransport,
+  pickZmkSerialPorts,
+  rememberedZmkReconnect,
+  rememberSerialPort,
+} from "./transport/webSerial";
 import {
   connect as tauri_ble_connect,
   list_devices as ble_list_devices,
@@ -36,8 +51,10 @@ declare global {
   }
 }
 
-const TRANSPORTS: TransportFactory[] = [
-  navigator.serial && { label: "USB", connect: serial_connect },
+// Web USB serial is added per-render inside the component (it needs an
+// `establish` callback that probes ports — see below). These are the static
+// transports that don't.
+const STATIC_TRANSPORTS: TransportFactory[] = [
   ...(navigator.bluetooth && navigator.userAgent.indexOf("Linux") >= 0
     ? [{ label: "BLE", connect: gatt_connect }]
     : []),
@@ -122,15 +139,27 @@ async function listen_for_notifications(
   notification_stream.cancel();
 }
 
-async function connect(
-  transport: RpcTransport,
-  setConn: Dispatch<ConnectionState>,
-  setConnectedDeviceName: Dispatch<string | undefined>,
-  signal: AbortSignal
-) {
-  let conn = await create_rpc_connection(transport, { signal });
+// Guards against overlapping serial probes. A probe opens ports, and two
+// concurrent probes (manual + auto-reconnect, or React StrictMode's double
+// effect invocation in dev) would race to open the same port — the second
+// failing with "port is already open". Module-level so it's shared across
+// every caller and survives StrictMode's mount/unmount/mount.
+let serialProbeInFlight = false;
 
-  let details = await Promise.race([
+type ProbedConnection = { conn: RpcConnection; name: string | undefined };
+
+// Establishes an RPC connection over `transport` and asks the device who it is.
+// Returns the live connection + name if the device answers, or null if it
+// doesn't (i.e. this isn't a ZMK Studio endpoint). On a null result the caller
+// must abort `signal` to close the port. Does NOT touch React state, so the
+// caller can decide whether to keep this connection or move on to another port.
+async function probeConnection(
+  transport: RpcTransport,
+  signal: AbortSignal
+): Promise<ProbedConnection | null> {
+  const conn = await create_rpc_connection(transport, { signal });
+
+  const details = await Promise.race([
     call_rpc(conn, { core: { getDeviceInfo: true } })
       .then((r) => r?.core?.getDeviceInfo)
       .catch((e) => {
@@ -141,11 +170,20 @@ async function connect(
   ]);
 
   if (!details) {
-    // TODO: Show a proper toast/alert not using `window.alert`
-    window.alert("Failed to connect to the chosen device");
-    return;
+    return null;
   }
 
+  return { conn, name: details.name };
+}
+
+// Wires a probed connection into the app: starts the notification stream and
+// publishes the connection + device name to React state.
+function commitConnection(
+  { conn, name }: ProbedConnection,
+  signal: AbortSignal,
+  setConn: Dispatch<ConnectionState>,
+  setConnectedDeviceName: Dispatch<string | undefined>
+) {
   listen_for_notifications(conn.notification_readable, signal)
     .then(() => {
       setConnectedDeviceName(undefined);
@@ -156,7 +194,7 @@ async function connect(
       setConn({ conn: null });
     });
 
-  setConnectedDeviceName(details.name);
+  setConnectedDeviceName(name);
   setConn({ conn });
 }
 
@@ -202,6 +240,52 @@ function App() {
 
     updateLockState();
   }, [conn, setLockState]);
+
+  // While connected but still locked, the keyboard normally reports unlocking
+  // via a `lockStateChanged` notification. If that push never arrives, the app
+  // would sit on the "Unlock To Continue" screen until a manual reload. Poll
+  // the lock state as a fallback so unlocking with a combo continues
+  // automatically. Runs only while locked, and tears down once unlocked.
+  useEffect(() => {
+    if (
+      !conn.conn ||
+      lockState === LockState.ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout>;
+
+    const poll = async () => {
+      const c = conn.conn;
+      if (cancelled || !c) {
+        return;
+      }
+
+      const resp = await call_rpc(c, { core: { getLockState: true } });
+      if (cancelled) {
+        return;
+      }
+
+      const ls = resp?.core?.getLockState;
+      if (ls != null) {
+        setLockState(ls);
+        if (ls === LockState.ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED) {
+          return;
+        }
+      }
+
+      timeout = setTimeout(poll, 500);
+    };
+
+    timeout = setTimeout(poll, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [conn, lockState, setLockState]);
 
   const save = useCallback(() => {
     async function doSave() {
@@ -289,14 +373,139 @@ function App() {
     doDisconnect();
   }, [conn]);
 
-  const onConnect = useCallback(
-    (t: RpcTransport) => {
-      const ac = new AbortController();
-      setConnectionAbort(ac);
-      connect(t, setConn, setConnectedDeviceName, ac.signal);
+  // Human-readable status shown in the connect modal while probing ports, so a
+  // multi-second auto-reconnect doesn't look like the app is stuck.
+  const [probeStatus, setProbeStatus] = useState<string | null>(null);
+
+  // Probe a list of candidate serial ports and connect to the first that speaks
+  // ZMK Studio. A composite device exposes several identical-looking ports
+  // (only one is the Studio endpoint), and ports can't be told apart by
+  // metadata — so we open each, run the handshake, keep the one that answers,
+  // and close the rest. `desiredName` (used on reconnect) restricts the match
+  // to a specific keyboard when several are plugged in.
+  const connectSerialPorts = useCallback(
+    async (
+      ports: SerialPort[],
+      desiredName?: string | null,
+      statusVerb: string = "Connecting to device"
+    ): Promise<boolean> => {
+      if (serialProbeInFlight) {
+        return false;
+      }
+      serialProbeInFlight = true;
+      try {
+        for (let i = 0; i < ports.length; i++) {
+          setProbeStatus(`${statusVerb}… (${i + 1}/${ports.length})`);
+          const ac = new AbortController();
+
+          let transport: RpcTransport;
+          try {
+            transport = await openSerialTransport(ports[i]);
+          } catch (e) {
+            // Port unavailable or already open (e.g. held elsewhere); skip it
+            // and try the next candidate.
+            console.warn("Could not open candidate serial port; skipping", e);
+            continue;
+          }
+
+          const probed = await probeConnection(transport, ac.signal);
+          if (probed && (!desiredName || probed.name === desiredName)) {
+            commitConnection(probed, ac.signal, setConn, setConnectedDeviceName);
+            setConnectionAbort(ac);
+            rememberSerialPort(ports[i], probed.name ?? "");
+            return true;
+          }
+
+          // Not a Studio endpoint, or a different keyboard than requested.
+          // Aborting closes the port so it isn't left open for the next probe.
+          ac.abort("Not the requested ZMK Studio device");
+        }
+        return false;
+      } finally {
+        serialProbeInFlight = false;
+        setProbeStatus(null);
+      }
     },
-    [setConn, setConnectedDeviceName, setConnectedDeviceName]
+    [setConn, setConnectedDeviceName]
   );
+
+  // Manual USB connect: let the user pick a device, then probe its ports.
+  const onConnectSerial = useCallback(async () => {
+    let ports: SerialPort[];
+    try {
+      ports = await pickZmkSerialPorts();
+    } catch (e) {
+      // User dismissed the port picker, or no port available.
+      return;
+    }
+    const ok = await connectSerialPorts(ports);
+    if (!ok) {
+      window.alert("Failed to connect to the chosen device");
+    }
+  }, [connectSerialPorts]);
+
+  // Single-transport connect for BLE / Tauri (no multi-port probing needed).
+  const onConnect = useCallback(
+    async (t: RpcTransport) => {
+      const ac = new AbortController();
+      const probed = await probeConnection(t, ac.signal);
+      if (probed) {
+        commitConnection(probed, ac.signal, setConn, setConnectedDeviceName);
+        setConnectionAbort(ac);
+      } else {
+        ac.abort("handshake failed");
+        window.alert("Failed to connect to the chosen device");
+      }
+    },
+    [setConn, setConnectedDeviceName]
+  );
+
+  const transports = useMemo<TransportFactory[]>(
+    () => [
+      ...(navigator.serial && !window.__TAURI_INTERNALS__
+        ? [{ label: "USB", establish: onConnectSerial }]
+        : []),
+      ...STATIC_TRANSPORTS,
+    ],
+    [onConnectSerial]
+  );
+
+  // Silently reconnect to the last-used keyboard after a page reload, and again
+  // whenever it's re-plugged. WebSerial can't carry a live connection across a
+  // reload, but on Chromium the permission grant persists, so getPorts() lets
+  // us reopen without prompting. Scoped to web WebSerial (not Tauri/BLE).
+  const connRef = useRef(conn);
+  connRef.current = conn;
+  useEffect(() => {
+    if (!navigator.serial || window.__TAURI_INTERNALS__) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const tryReconnect = async () => {
+      if (connRef.current.conn) {
+        return;
+      }
+      try {
+        const { ports, name } = await rememberedZmkReconnect();
+        if (ports.length === 0 || cancelled || connRef.current.conn) {
+          return;
+        }
+        await connectSerialPorts(ports, name, "Auto-connecting to last device");
+      } catch (e) {
+        console.error("Auto-reconnect failed", e);
+      }
+    };
+
+    tryReconnect();
+
+    navigator.serial.addEventListener("connect", tryReconnect);
+    return () => {
+      cancelled = true;
+      navigator.serial.removeEventListener("connect", tryReconnect);
+    };
+  }, [connectSerialPorts]);
 
   return (
     <ConnectionContext.Provider value={conn}>
@@ -305,8 +514,9 @@ function App() {
           <UnlockModal />
           <ConnectModal
             open={!conn.conn}
-            transports={TRANSPORTS}
+            transports={transports}
             onTransportCreated={onConnect}
+            status={probeStatus}
           />
           <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
           <LicenseNoticeModal

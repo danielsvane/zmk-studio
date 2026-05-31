@@ -14,6 +14,11 @@ export type TransportFactory = {
   label: string;
   isWireless?: boolean;
   connect?: () => Promise<RpcTransport>;
+  // Fully establishes the connection itself (including device selection and any
+  // probing), rather than returning a single transport for the app to drive.
+  // Used by web USB serial, where a composite device exposes several ports and
+  // we must probe to find the ZMK Studio endpoint.
+  establish?: () => Promise<void>;
   pick_and_connect?: {
     list: () => Promise<Array<AvailableDevice>>;
     connect: (dev: AvailableDevice) => Promise<RpcTransport>;
@@ -24,6 +29,9 @@ export interface ConnectModalProps {
   open?: boolean;
   transports: TransportFactory[];
   onTransportCreated: (t: RpcTransport) => void;
+  // Optional status line shown at the bottom of the modal, e.g. while probing
+  // serial ports during an auto-reconnect.
+  status?: string | null;
 }
 
 function deviceList(
@@ -143,7 +151,26 @@ function simpleDevicePicker(
 
     let ignore = false;
 
-    if (selectedTransport.connect) {
+    if (selectedTransport.establish) {
+      async function establishTransport() {
+        try {
+          await selectedTransport?.establish?.();
+        } catch (e) {
+          if (!ignore) {
+            console.error(e);
+            if (e instanceof Error && !(e instanceof UserCancelledError)) {
+              alert(e.message);
+            }
+          }
+        } finally {
+          if (!ignore) {
+            setSelectedTransport(undefined);
+          }
+        }
+      }
+
+      establishTransport();
+    } else if (selectedTransport.connect) {
       async function connectTransport() {
         try {
           const transport = await selectedTransport?.connect?.();
@@ -274,6 +301,7 @@ export const ConnectModal = ({
   open,
   transports,
   onTransportCreated,
+  status,
 }: ConnectModalProps) => {
   const dialog = useModalRef(open || false, false, false);
 
@@ -285,6 +313,11 @@ export const ConnectModal = ({
       {haveTransports
         ? connectOptions(transports, onTransportCreated, open)
         : noTransportsOptionsPrompt()}
+      {status && (
+        <p className="pt-3 text-sm opacity-70" aria-live="polite">
+          {status}
+        </p>
+      )}
     </GenericModal>
   );
 };
