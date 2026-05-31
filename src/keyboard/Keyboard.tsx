@@ -20,8 +20,10 @@ import {
 import {
   type GetBehaviorDetailsResponse,
   type CustomBehaviors,
+  type CustomBehavior,
   type ConfigValue,
   SetCustomBehaviorResponse,
+  AddCustomBehaviorErrorCode,
 } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import {
   type Combo,
@@ -44,6 +46,7 @@ import { LockStateContext } from "../rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { deserializeLayoutZoom, LayoutZoom } from "./PhysicalLayout";
 import { Select } from "../misc/Select";
+import { Button } from "../misc/Button";
 import { ConfigFieldEdit } from "../behaviours/ConfigFieldEditor";
 
 // Keymap zoom levels for the overlay picker. Keys are the serialized zoom value
@@ -65,69 +68,64 @@ export type Page = "layers" | "combos" | "behaviours";
 
 type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
 
-function useBehaviors(): BehaviorMap {
+// Returns the behaviour map plus a `refresh` callback. The map is fetched on
+// connect/unlock; `refresh` re-fetches it so a behaviour claimed at runtime
+// (add_custom_behavior) shows up in the binding pickers without a reconnect.
+function useBehaviors(): [BehaviorMap, () => Promise<void>] {
   let connection = useContext(ConnectionContext);
   let lockState = useContext(LockStateContext);
 
   const [behaviors, setBehaviors] = useState<BehaviorMap>({});
 
-  useEffect(() => {
-    if (
-      !connection.conn ||
-      lockState != LockState.ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED
-    ) {
-      setBehaviors({});
-      return;
+  const fetchBehaviorMap = useCallback(async (): Promise<BehaviorMap> => {
+    const conn = connection.conn;
+    if (!conn || lockState != LockState.ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED) {
+      return {};
     }
 
-    async function startRequest() {
-      setBehaviors({});
+    let get_behaviors: Request = {
+      behaviors: { listAllBehaviors: true },
+      requestId: 0,
+    };
 
-      if (!connection.conn) {
-        return;
-      }
-
-      let get_behaviors: Request = {
-        behaviors: { listAllBehaviors: true },
+    let behavior_list = await call_rpc(conn, get_behaviors);
+    let behavior_map: BehaviorMap = {};
+    for (let behaviorId of behavior_list.behaviors?.listAllBehaviors
+      ?.behaviors || []) {
+      let details_req = {
+        behaviors: { getBehaviorDetails: { behaviorId } },
         requestId: 0,
       };
+      let behavior_details = await call_rpc(conn, details_req);
+      let dets: GetBehaviorDetailsResponse | undefined =
+        behavior_details?.behaviors?.getBehaviorDetails;
 
-      let behavior_list = await call_rpc(connection.conn, get_behaviors);
-      if (!ignore) {
-        let behavior_map: BehaviorMap = {};
-        for (let behaviorId of behavior_list.behaviors?.listAllBehaviors
-          ?.behaviors || []) {
-          if (ignore) {
-            break;
-          }
-          let details_req = {
-            behaviors: { getBehaviorDetails: { behaviorId } },
-            requestId: 0,
-          };
-          let behavior_details = await call_rpc(connection.conn, details_req);
-          let dets: GetBehaviorDetailsResponse | undefined =
-            behavior_details?.behaviors?.getBehaviorDetails;
-
-          if (dets) {
-            behavior_map[dets.id] = dets;
-          }
-        }
-
-        if (!ignore) {
-          setBehaviors(behavior_map);
-        }
+      if (dets) {
+        behavior_map[dets.id] = dets;
       }
     }
+    return behavior_map;
+  }, [connection, lockState]);
 
+  const refresh = useCallback(async () => {
+    setBehaviors(await fetchBehaviorMap());
+  }, [fetchBehaviorMap]);
+
+  useEffect(() => {
     let ignore = false;
-    startRequest();
+    setBehaviors({});
+    fetchBehaviorMap().then((map) => {
+      if (!ignore) {
+        setBehaviors(map);
+      }
+    });
 
     return () => {
       ignore = true;
     };
-  }, [connection, lockState]);
+  }, [fetchBehaviorMap]);
 
-  return behaviors;
+  return [behaviors, refresh];
 }
 
 function useLayouts(): [
@@ -233,7 +231,7 @@ export default function Keyboard({ page }: { page: Page }) {
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<
     number | undefined
   >(undefined);
-  const behaviors = useBehaviors();
+  const [behaviors, refreshBehaviors] = useBehaviors();
 
   const conn = useContext(ConnectionContext);
   const undoRedo = useContext(UndoRedoContext);
@@ -454,6 +452,59 @@ export default function Keyboard({ page }: { page: Page }) {
     },
     [conn, undoRedo, setCustomBehaviors]
   );
+
+  // Claim a new custom behaviour from the spare pool (M4: RAM-only, lost on
+  // reboot). For now only hold-tap is offered; the firmware seeds the slot with
+  // its DT defaults, which the user then edits via the generic config form. The
+  // claimed behaviour immediately appears in get_custom_behaviors AND in
+  // list_all_behaviors, so we refresh the binding-picker map to make it
+  // selectable as a keymap/combo binding without reconnecting.
+  const addCustomBehavior = useCallback(async () => {
+    if (!conn.conn) {
+      return;
+    }
+
+    const name = window.prompt(
+      "Name for the new hold-tap behaviour:",
+      "hrml"
+    );
+    if (name === null) {
+      return; // cancelled
+    }
+
+    const resp = await call_rpc(conn.conn, {
+      behaviors: {
+        addCustomBehavior: { kind: "hold-tap", displayName: name, config: [] },
+      },
+    });
+
+    const ok = resp.behaviors?.addCustomBehavior?.ok;
+    if (ok?.behavior) {
+      const behavior = ok.behavior as CustomBehavior;
+      setCustomBehaviors(
+        produce((draft: any) => {
+          if (!draft.behaviors) {
+            draft.behaviors = [];
+          }
+          draft.behaviors.push(behavior);
+        })
+      );
+      // Make the new behaviour selectable as a binding right away.
+      await refreshBehaviors();
+      return;
+    }
+
+    const err = resp.behaviors?.addCustomBehavior?.err;
+    console.error("Add custom behaviour error", err);
+    // TODO: replace window.alert with a proper toast (matches App.tsx).
+    if (err === AddCustomBehaviorErrorCode.ADD_CUSTOM_BEHAVIOR_ERR_NO_SPACE) {
+      window.alert(
+        "Can't add another behaviour: the hold-tap pool is full."
+      );
+    } else {
+      window.alert("Failed to add the behaviour.");
+    }
+  }, [conn, refreshBehaviors, setCustomBehaviors]);
 
   // Add a brand-new combo (M4). Seeds sensible defaults (keys 0,1 -> the first
   // available behavior) so the new combo is valid the moment it's created; the
@@ -824,17 +875,31 @@ export default function Keyboard({ page }: { page: Page }) {
 
   if (page === "behaviours") {
     const behaviours = customBehaviors?.behaviors ?? [];
-    if (behaviours.length === 0) {
-      return (
-        <div className="grid bg-base-300 max-w-full min-w-0 min-h-0 h-full place-items-center text-center text-base-content/60">
-          <p>0 custom behaviours</p>
-        </div>
-      );
-    }
+    const poolFull =
+      customBehaviors?.max !== undefined &&
+      behaviours.length >= customBehaviors.max;
     return (
       <div className="bg-base-300 max-w-full min-w-0 min-h-0 h-full overflow-y-auto p-4">
-        <div className="flex flex-col gap-4">
-          {behaviours.map((beh) => (
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-medium text-base-content">
+            Custom behaviours
+          </h1>
+          <Button
+            variant="primary"
+            size="sm"
+            isDisabled={poolFull}
+            onPress={() => addCustomBehavior()}
+          >
+            Add hold-tap
+          </Button>
+        </div>
+        {behaviours.length === 0 ? (
+          <p className="text-base-content/60">
+            No custom behaviours yet. Add one to get started.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {behaviours.map((beh) => (
             <div
               key={beh.id}
               className="rounded bg-base-200 p-4 flex flex-col gap-3"
@@ -845,25 +910,26 @@ export default function Keyboard({ page }: { page: Page }) {
                 </h2>
                 <span className="text-xs text-base-content/60">{beh.kind}</span>
               </div>
-              <div className="flex flex-col gap-3">
-                {beh.config.map((field) => (
-                  <ConfigFieldEdit
-                    key={field.key}
-                    field={field}
-                    onCommit={(value) =>
-                      doApplyConfigField(
-                        beh.id,
-                        field.key,
-                        value,
-                        field.value ?? {}
-                      )
-                    }
-                  />
-                ))}
+                <div className="flex flex-col gap-3">
+                  {beh.config.map((field) => (
+                    <ConfigFieldEdit
+                      key={field.key}
+                      field={field}
+                      onCommit={(value) =>
+                        doApplyConfigField(
+                          beh.id,
+                          field.key,
+                          value,
+                          field.value ?? {}
+                        )
+                      }
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
