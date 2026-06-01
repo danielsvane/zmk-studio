@@ -5,8 +5,9 @@ import {
   BehaviorBindingParametersSet,
 } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import { BehaviorBinding } from "@zmkfirmware/zmk-studio-ts-client/keymap";
-import { BehaviorParametersPicker } from "./BehaviorParametersPicker";
+import { useBehaviorParameters } from "./useBehaviorParameters";
 import { validateValue } from "./parameters";
+import { PickerShell } from "../misc/PickerShell";
 import { Select } from "../misc/Select";
 
 export interface BehaviorBindingPickerProps {
@@ -123,30 +124,35 @@ export const BehaviorBindingPicker = ({
     setParam2(binding.param2);
   }, [binding]);
 
+  const { controls, canvas } = useBehaviorParameters({
+    metadata,
+    param1,
+    param2,
+    layers,
+    onParam1Changed: setParam1,
+    onParam2Changed: setParam2,
+  });
+
   return (
-    <div className="flex flex-col gap-2">
-      <Select
-        label="Behavior"
-        items={sortedBehaviors}
-        selectedKey={behaviorId}
-        itemKey={(b) => b.id}
-        itemText={(b) => b.displayName}
-        onSelectionChange={(key) => {
-          setBehaviorId(Number(key));
-          setParam1(0);
-          setParam2(0);
-        }}
-      />
-      {metadata && (
-        <BehaviorParametersPicker
-          metadata={metadata}
-          param1={param1}
-          param2={param2}
-          layers={layers}
-          onParam1Changed={setParam1}
-          onParam2Changed={setParam2}
-        />
-      )}
-    </div>
+    <PickerShell
+      canvas={canvas}
+      controls={
+        <>
+          <Select
+            label="Behavior"
+            items={sortedBehaviors}
+            selectedKey={behaviorId}
+            itemKey={(b) => b.id}
+            itemText={(b) => b.displayName}
+            onSelectionChange={(key) => {
+              setBehaviorId(Number(key));
+              setParam1(0);
+              setParam2(0);
+            }}
+          />
+          {controls}
+        </>
+      }
+    />
   );
 };
