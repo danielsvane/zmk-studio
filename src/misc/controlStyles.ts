@@ -56,7 +56,7 @@ const variants: Record<ButtonVariant, string> = {
 // height, so Selects, ToggleGroups, keys, and Buttons all line up. Exported so
 // other controls (Select, future Input) adopt the exact same height.
 export const controlSizeStyles: Record<ButtonSize, string> = {
-  md: "h-control text-sm [&_svg]:size-4",
+  md: "h-control text-base [&_svg]:size-4",
   sm: "h-control text-xs [&_svg]:size-3.5",
 };
 /** Horizontal padding for a control showing a text label. */

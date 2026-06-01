@@ -41,7 +41,7 @@ const itemBase = cx(
 // minimum. `size` only tunes text/padding density, not the height.
 const itemSize: Record<ButtonSize, string> = {
   sm: "min-h-control px-2 py-1 text-xs",
-  md: "min-h-control px-3 py-1.5 text-sm",
+  md: "min-h-control px-3 py-1.5 text-base",
 };
 
 interface GroupConfig {
