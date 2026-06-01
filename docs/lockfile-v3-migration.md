@@ -1,6 +1,6 @@
 # Handoff: migrate `package-lock.json` to lockfileVersion 3
 
-**Status:** not started · **Type:** one-time chore · **Owner:** unassigned
+**Status:** done (commit `4891d7b`, branch `chore/lockfile-v3`) · **Type:** one-time chore · **Owner:** Daniel Svane
 
 ## Why this exists
 
