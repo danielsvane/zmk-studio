@@ -34,7 +34,8 @@ import {
 } from "@zmkfirmware/zmk-studio-ts-client/combos";
 
 import { LayerPicker } from "./LayerPicker";
-import { PhysicalLayoutPicker } from "./PhysicalLayoutPicker";
+// Layout picker temporarily hidden — not needed for now.
+// import { PhysicalLayoutPicker } from "./PhysicalLayoutPicker";
 import { Keymap as KeymapComp } from "./Keymap";
 import { ComboList } from "./ComboList";
 import { ComboEditor } from "../combos/ComboEditor";
@@ -214,7 +215,7 @@ export default function Keyboard({ page }: { page: Page }) {
     layouts,
     ,
     selectedPhysicalLayoutIndex,
-    setSelectedPhysicalLayoutIndex,
+    // setSelectedPhysicalLayoutIndex — unused while layout picker is hidden
   ] = useLayouts();
   const [keymap, setKeymap] = useConnectedDeviceData<Keymap>(
     { keymap: { getKeymap: true } },
@@ -299,19 +300,20 @@ export default function Keyboard({ page }: { page: Page }) {
     performSetRequest();
   }, [selectedPhysicalLayoutIndex, setKeymap]);
 
-  const doSelectPhysicalLayout = useCallback(
-    (i: number) => {
-      const oldLayout = selectedPhysicalLayoutIndex;
-      undoRedo?.(async () => {
-        setSelectedPhysicalLayoutIndex(i);
-
-        return async () => {
-          setSelectedPhysicalLayoutIndex(oldLayout);
-        };
-      });
-    },
-    [undoRedo, selectedPhysicalLayoutIndex, setSelectedPhysicalLayoutIndex]
-  );
+  // Layout picker temporarily hidden — see commented PhysicalLayoutPicker below.
+  // const doSelectPhysicalLayout = useCallback(
+  //   (i: number) => {
+  //     const oldLayout = selectedPhysicalLayoutIndex;
+  //     undoRedo?.(async () => {
+  //       setSelectedPhysicalLayoutIndex(i);
+  //
+  //       return async () => {
+  //         setSelectedPhysicalLayoutIndex(oldLayout);
+  //       };
+  //     });
+  //   },
+  //   [undoRedo, selectedPhysicalLayoutIndex, setSelectedPhysicalLayoutIndex]
+  // );
 
   const doUpdateBinding = useCallback(
     (binding: BehaviorBinding) => {
@@ -1193,6 +1195,7 @@ export default function Keyboard({ page }: { page: Page }) {
   return (
     <div className="grid grid-cols-[auto_1fr] grid-rows-[1fr_minmax(10em,45vh)] bg-base-300 max-w-full min-w-0 min-h-0">
       <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
+        {/* Layout picker temporarily hidden — not needed for now.
         {layouts && (
           <PhysicalLayoutPicker
             layouts={layouts}
@@ -1200,6 +1203,7 @@ export default function Keyboard({ page }: { page: Page }) {
             onPhysicalLayoutClicked={doSelectPhysicalLayout}
           />
         )}
+        */}
 
         {keymap && (
           <LayerPicker
