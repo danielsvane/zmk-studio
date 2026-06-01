@@ -14,6 +14,16 @@ html {
   color-scheme: light dark;
 }
 
+/* The app is a fixed-viewport shell: the document itself never scrolls, only
+   the inner panels (each an overflow-auto region) do. Lock html+body to the
+   viewport height and hide their overflow so a tall panel can't propagate its
+   overflow up to the document and produce a second, page-level scrollbar. */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
 #root {
   height: 100%;
   width: 100%;
@@ -22,7 +32,4 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-
-  width: 100vw;
-  height: 100vh;
 }

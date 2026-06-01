@@ -1152,7 +1152,7 @@ export default function Keyboard({ page }: { page: Page }) {
             />
           )}
         </div>
-        <div className="p-6 col-start-2 overflow-y-auto min-h-0">
+        <div className="p-6 col-start-2 overflow-y-auto min-h-0 min-w-0">
           <div className="mx-auto h-full w-full max-w-4xl">
             {keymap && combos && selectedCombo?.combo ? (
               <ComboEditor
