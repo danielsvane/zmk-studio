@@ -46,7 +46,7 @@ function PickerAt({
 }) {
   const [value, setValue] = useState<number | undefined>(initialValue);
   return (
-    <div style={{ width }} className="bg-base-300 p-2">
+    <div style={{ width }} className="bg-base-300 p-6">
       <HidUsagePicker
         label="Key"
         showGrid={showGrid}

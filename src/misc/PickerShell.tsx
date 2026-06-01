@@ -24,17 +24,17 @@ export interface PickerShellProps {
  */
 export const PickerShell = ({ controls, canvas }: PickerShellProps) => {
   if (!canvas) {
-    return <div className="flex max-w-sm flex-col gap-2">{controls}</div>;
+    return <div className="flex max-w-sm flex-col gap-4">{controls}</div>;
   }
 
   return (
     <div className="@container">
-      <div className="flex flex-col gap-3 @[88rem]:flex-row @[88rem]:items-start @[88rem]:gap-4">
+      <div className="flex flex-col gap-6 @[88rem]:flex-row @[88rem]:items-start @[88rem]:gap-6">
         {/* Cap the controls at the same 38rem stacked or side-by-side: wide
             enough for the eight modifier segments to sit on one line at the full
             control text size (text-sm), but still bounded so the selects don't
             stretch across a very wide panel. */}
-        <div className="flex min-w-0 max-w-[38rem] flex-col gap-2 @[88rem]:w-[38rem] @[88rem]:max-w-none @[88rem]:shrink-0">
+        <div className="flex min-w-0 max-w-[38rem] flex-col gap-4 @[88rem]:w-[38rem] @[88rem]:max-w-none @[88rem]:shrink-0">
           {controls}
         </div>
         <div className="min-w-0 @[88rem]:flex-1">{canvas}</div>

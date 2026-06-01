@@ -1178,7 +1178,7 @@ export default function Keyboard({ page }: { page: Page }) {
   }
 
   return (
-    <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)_min(50vh,30rem)] bg-base-300 max-w-full min-w-0 min-h-0">
+    <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)_min(54vh,34rem)] bg-base-300 max-w-full min-w-0 min-h-0">
       <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
         {/* Layout picker temporarily hidden — not needed for now.
         {layouts && (
@@ -1220,11 +1220,12 @@ export default function Keyboard({ page }: { page: Page }) {
           whether or not a key is selected, so the physical keyboard above stays
           one stable size — opening/closing the drawer or switching key-category
           tabs (which have different row counts) never reflows it. The row is
-          min(50vh, 30rem): half the viewport on short screens, but capped at
-          30rem (enough for the controls + tallest key grid) on tall ones so the
-          extra height goes to the keyboard above rather than padding the drawer. */}
+          min(54vh, 34rem): just over half the viewport on short screens, but
+          capped at 34rem (enough for the controls + tallest key grid) on tall
+          ones so the extra height goes to the keyboard above rather than padding
+          the drawer. */}
       {layouts && keymap && behaviors && (
-        <div className="p-2 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0">
+        <div className="p-6 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0">
           {selectedBinding ? (
             <BehaviorBindingPicker
               binding={selectedBinding}

@@ -33,7 +33,7 @@ function PickerAt({
 }) {
   const [binding, setBinding] = useState<BehaviorBinding>(initial);
   return (
-    <div style={{ width }} className="bg-base-200 p-2">
+    <div style={{ width }} className="bg-base-200 p-6">
       <BehaviorBindingPicker
         binding={binding}
         behaviors={FIXTURE_BEHAVIORS}
