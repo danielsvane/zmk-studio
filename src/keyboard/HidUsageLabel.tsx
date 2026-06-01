@@ -15,6 +15,7 @@ import {
   hid_usage_get_labels,
   hid_usage_page_and_id_from_usage,
 } from "../hid-usages";
+import { SYMBOL_GLYPHS, isShiftOnly } from "../behaviors/keyGridTabs";
 
 export interface HidUsageLabelProps {
   hid_usage: number;
@@ -57,9 +58,18 @@ function remove_prefix(s?: string) {
 
 export const HidUsageLabel = ({ hid_usage }: HidUsageLabelProps) => {
   const [page_raw, id] = hid_usage_page_and_id_from_usage(hid_usage);
-
-  // TODO: Do something with implicit mods!
   const page = page_raw & 0xff;
+
+  // A base key carrying only a Shift renders as its shifted glyph (e.g. [ +
+  // Shift → {), matching how the Symbols tab presents it. Other implicit
+  // modifiers fall through to the plain key label.
+  const mod_flags = (hid_usage >> 24) & 0xff;
+  if (isShiftOnly(mod_flags)) {
+    const glyph = SYMBOL_GLYPHS.get(hid_usage & 0x00ffffff);
+    if (glyph) {
+      return <span aria-label={glyph}>{glyph}</span>;
+    }
+  }
 
   const labels = hid_usage_get_labels(page, id);
 

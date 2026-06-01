@@ -1,10 +1,10 @@
 import { Key } from "react-aria-components";
 import { useCallback, useMemo } from "react";
 
-import { LabeledGroup } from "../misc/Field";
 import { ToggleGroup, ToggleGroupItem } from "../misc/ToggleGroup";
 import { Combobox, SelectItemContent } from "../misc/Select";
-import { KeyGrid } from "./KeyGrid";
+import { KeyTabs } from "./KeyTabs";
+import { resolveCell, tabsForUsagePages } from "./keyGridTabs";
 import type { PickerRegions } from "../misc/PickerShell";
 import {
   hid_usage_from_page_and_id,
@@ -116,21 +116,32 @@ export function useHidUsagePicker({
   // page as a hint under each option.
   const multiPage = usagePages.length > 1;
 
-  const activeMods = useMemo(() => {
-    const flags = value ? value >> 24 : 0;
-    return all_mods.filter((m) => m & flags);
-  }, [value]);
+  const tabs = useMemo(() => tabsForUsagePages(usagePages), [usagePages]);
+
+  // A symbol cell (e.g. `{`) owns its Shift, so that bit is *intrinsic*, not a
+  // user modifier. The toggle row shows only the residual modifiers layered on
+  // top, and picks/edits must preserve the intrinsic bit without surfacing it.
+  const valueFlags = value ? (value >> 24) & 0xff : 0;
+  const intrinsicFlags = resolveCell(value, tabs)?.intrinsicFlags ?? 0;
+  const residualFlags = valueFlags & ~intrinsicFlags;
+
+  const activeMods = useMemo(
+    () => all_mods.filter((m) => m & residualFlags),
+    [residualFlags]
+  );
 
   const selectionChanged = useCallback(
     (e: Key | null) => {
+      // `e` is a full cell usage (grid, may carry an intrinsic shift) or a base
+      // usage (combobox). Either way the residual modifiers ride along.
       let value = typeof e == "number" ? e : undefined;
       if (value !== undefined) {
-        value = value | (mods_to_flags(activeMods) << 24);
+        value = value | (residualFlags << 24);
       }
 
       onValueChanged(value);
     },
-    [onValueChanged, activeMods]
+    [onValueChanged, residualFlags]
   );
 
   const modifiersChanged = useCallback(
@@ -140,10 +151,10 @@ export function useHidUsagePicker({
       }
 
       const mod_flags = mods_to_flags([...keys].map(Number));
-      const new_value = mask_mods(value) | (mod_flags << 24);
+      const new_value = mask_mods(value) | ((intrinsicFlags | mod_flags) << 24);
       onValueChanged(new_value);
     },
-    [value, onValueChanged]
+    [value, onValueChanged, intrinsicFlags]
   );
 
   const maskedValue = value ? mask_mods(value) : undefined;
@@ -186,9 +197,7 @@ export function useHidUsagePicker({
   );
 
   const canvas = (
-    <LabeledGroup label="Keyboard">
-      <KeyGrid value={maskedValue} onPick={selectionChanged} />
-    </LabeledGroup>
+    <KeyTabs value={value} onPick={selectionChanged} tabs={tabs} />
   );
 
   return { controls, canvas };
