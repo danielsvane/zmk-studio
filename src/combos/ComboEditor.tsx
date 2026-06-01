@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Key } from "react-aria-components";
+import { Trash2 } from "lucide-react";
 
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { Combo } from "@zmkfirmware/zmk-studio-ts-client/combos";
@@ -124,7 +125,12 @@ export const ComboEditor = ({
           Edit combo #{index}
         </h2>
         {onDelete && (
-          <Button variant="danger" size="sm" onPress={() => onDelete(index)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Trash2 aria-hidden />}
+            onPress={() => onDelete(index)}
+          >
             Delete
           </Button>
         )}
@@ -154,14 +160,10 @@ export const ComboEditor = ({
             Select 1 to {maxKeysPerCombo} key positions.
           </span>
         )}
-        <span className="text-xs opacity-70">
-          Raw key positions — combos are not remapped across physical layouts, so
-          these refer to the same physical keys regardless of the layout you have
-          selected.
-        </span>
       </div>
 
       <TextField
+        className="max-w-sm"
         label="Timeout (ms)"
         type="number"
         inputProps={{ min: 1 }}
@@ -170,6 +172,7 @@ export const ComboEditor = ({
       />
 
       <TextField
+        className="max-w-sm"
         label="Require prior idle (ms)"
         description="-1 = disabled"
         type="number"
@@ -210,6 +213,7 @@ export const ComboEditor = ({
       )}
 
       <Button
+        className="self-start"
         variant="primary"
         isDisabled={!canApply}
         onPress={() => {
