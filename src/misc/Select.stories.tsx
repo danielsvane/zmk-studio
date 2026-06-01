@@ -82,7 +82,7 @@ export const ScalePicker: Story = {
       { id: "1.5", name: "150%" },
       { id: "2", name: "200%" },
     ];
-    const [key, setKey] = useState<Key>("auto");
+    const [key, setKey] = useState<Key | null>("auto");
     return (
       <Select
         aria-label="Scale"
