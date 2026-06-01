@@ -5,6 +5,8 @@ import {
   Popover,
   ListBox,
   ListBoxItem,
+  UNSTABLE_Virtualizer as Virtualizer,
+  UNSTABLE_ListLayout as ListLayout,
   type SelectProps as RACSelectProps,
   type Key,
 } from "react-aria-components";
@@ -101,6 +103,14 @@ export interface SelectProps<T extends object>
   searchable?: boolean;
   /** Placeholder for the search field (when `searchable`). */
   searchPlaceholder?: string;
+  /**
+   * Fixed pixel height of an option row. Setting this turns on virtualization:
+   * only the visible rows are mounted, so a long list (e.g. the ~600-entry HID
+   * usage picker) opens and filters instantly instead of reconciling every row.
+   * Must match the rendered row height — see `itemStyles` (single line ≈ 32,
+   * title+description ≈ 48). Leave unset for short lists.
+   */
+  rowHeight?: number;
   /** Render one option's content. Default: `itemText(item)`. */
   renderItem?: (item: T) => ReactNode;
   /** Render the trigger's selected value. Default: same as `renderItem`. */
@@ -136,6 +146,7 @@ export function Select<T extends object>({
   placeholder = "Select…",
   searchable = false,
   searchPlaceholder = "Search…",
+  rowHeight,
   renderItem,
   renderValue,
   itemKey = defaultKey,
@@ -161,6 +172,14 @@ export function Select<T extends object>({
     return () => cancelAnimationFrame(raf);
   }, [searchable, isOpen]);
 
+  // A ListLayout drives virtualization (only mount the visible rows). It's a
+  // stateful object, so keep one instance alive across renders and just feed it
+  // the row height. Undefined when not virtualizing.
+  const layout = useMemo(
+    () => (rowHeight ? new ListLayout({ rowHeight }) : undefined),
+    [rowHeight]
+  );
+
   const allItems = useMemo(() => [...items], [items]);
   const visibleItems = useMemo(() => {
     if (!searchable || !query.trim()) return allItems;
@@ -179,6 +198,31 @@ export function Select<T extends object>({
         },
       }
     : {};
+
+  const listBox = (
+    <ListBox
+      ref={listRef}
+      items={visibleItems}
+      className={cx(listBoxStyles, searchable && "mt-1")}
+      renderEmptyState={
+        searchable
+          ? () => (
+              <div className="px-2 py-1.5 text-sm opacity-60">No matches</div>
+            )
+          : undefined
+      }
+    >
+      {(data) => (
+        <ListBoxItem
+          id={itemKey(data)}
+          textValue={itemText(data)}
+          className={itemStyles}
+        >
+          {item(data)}
+        </ListBoxItem>
+      )}
+    </ListBox>
+  );
 
   // ArrowDown from the search field hands keyboard focus to the list.
   const onSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -235,30 +279,11 @@ export function Select<T extends object>({
             />
           </div>
         )}
-        <ListBox
-          ref={listRef}
-          items={visibleItems}
-          className={cx(listBoxStyles, searchable && "mt-1")}
-          renderEmptyState={
-            searchable
-              ? () => (
-                  <div className="px-2 py-1.5 text-sm opacity-60">
-                    No matches
-                  </div>
-                )
-              : undefined
-          }
-        >
-          {(data) => (
-            <ListBoxItem
-              id={itemKey(data)}
-              textValue={itemText(data)}
-              className={itemStyles}
-            >
-              {item(data)}
-            </ListBoxItem>
-          )}
-        </ListBox>
+        {layout ? (
+          <Virtualizer layout={layout}>{listBox}</Virtualizer>
+        ) : (
+          listBox
+        )}
       </Popover>
     </RACSelect>
   );

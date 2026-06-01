@@ -160,6 +160,9 @@ export const HidUsagePicker = ({
         selectedKey={value ? mask_mods(value) : null}
         onSelectionChange={selectionChanged}
         triggerClassName="min-w-48"
+        // Virtualize: this list runs to ~600 entries. Row height tracks the
+        // template — title+page (multiPage) is taller than a single name.
+        rowHeight={multiPage ? 48 : 32}
         renderItem={
           multiPage
             ? (u) => <SelectItemContent title={u.name} description={u.page} />
