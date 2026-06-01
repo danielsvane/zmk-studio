@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { Combo } from "@zmkfirmware/zmk-studio-ts-client/combos";
 import type { BehaviorBinding } from "@zmkfirmware/zmk-studio-ts-client/keymap";
+import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 
 import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
+import { KeyPositionPicker } from "../keyboard/KeyPositionPicker";
 import { Button } from "../misc/Button";
 
 export interface ComboEditorProps {
@@ -12,6 +14,9 @@ export interface ComboEditorProps {
   combo: Combo;
   behaviors: GetBehaviorDetailsResponse[];
   layers: { id: number; name: string }[];
+  /** Physical-layout keys for the click-to-toggle key picker; array index is the
+   * key position. When absent, key positions are entered as text instead. */
+  layoutKeys?: KeyPhysicalAttrs[];
   maxKeysPerCombo: number;
   onApply: (index: number, combo: Combo) => void;
   onDelete?: (index: number) => void;
@@ -28,6 +33,33 @@ function parseKeyPositions(text: string): number[] {
     .filter((n) => Number.isInteger(n) && n >= 0);
 }
 
+// Text fallback for entering key positions when no physical layout is available
+// to click on. Keeps its own raw-text buffer (so typing "1, 2," doesn't get
+// reformatted mid-edit) and emits the parsed list upward. Seeded once from the
+// initial value; the caller remounts it (via `key`) when a different combo is
+// loaded, so it never has to sync the buffer back down from props.
+function KeyPositionsTextInput({
+  initialValue,
+  onChange,
+}: {
+  initialValue: number[];
+  onChange: (positions: number[]) => void;
+}) {
+  const [text, setText] = useState(initialValue.join(", "));
+
+  return (
+    <input
+      type="text"
+      className="h-8 rounded px-2"
+      value={text}
+      onChange={(e) => {
+        setText(e.target.value);
+        onChange(parseKeyPositions(e.target.value));
+      }}
+    />
+  );
+}
+
 // Edit a single combo in place. Fields are kept in local state and pushed to the
 // device only when "Apply" is pressed, so we don't fire an RPC on every
 // keystroke. Mirrors the keymap edit panel's reuse of BehaviorBindingPicker for
@@ -39,11 +71,12 @@ export const ComboEditor = ({
   combo,
   behaviors,
   layers,
+  layoutKeys,
   maxKeysPerCombo,
   onApply,
   onDelete,
 }: ComboEditorProps) => {
-  const [keyPositionsText, setKeyPositionsText] = useState("");
+  const [keyPositions, setKeyPositions] = useState<number[]>([]);
   const [timeoutMs, setTimeoutMs] = useState(0);
   const [requirePriorIdleMs, setRequirePriorIdleMs] = useState(0);
   const [layersMask, setLayersMask] = useState(0);
@@ -52,7 +85,7 @@ export const ComboEditor = ({
 
   // Reload local state whenever a different combo (or a fresh copy) is selected.
   useEffect(() => {
-    setKeyPositionsText((combo.keyPositions || []).join(", "));
+    setKeyPositions(combo.keyPositions || []);
     setTimeoutMs(combo.timeoutMs);
     setRequirePriorIdleMs(combo.requirePriorIdleMs);
     setLayersMask(combo.layers);
@@ -60,7 +93,6 @@ export const ComboEditor = ({
     setBinding(combo.binding);
   }, [index, combo]);
 
-  const keyPositions = parseKeyPositions(keyPositionsText);
   const keyCountValid =
     keyPositions.length >= 1 && keyPositions.length <= maxKeysPerCombo;
   const canApply = keyCountValid && binding !== undefined;
@@ -72,17 +104,13 @@ export const ComboEditor = ({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase opacity-70">
           Edit combo #{index}
         </h2>
         {onDelete && (
-          <Button
-            variant="danger"
-            size="sm"
-            onPress={() => onDelete(index)}
-          >
+          <Button variant="danger" size="sm" onPress={() => onDelete(index)}>
             Delete
           </Button>
         )}
@@ -92,15 +120,24 @@ export const ComboEditor = ({
         <label className="text-sm">
           Key positions (max {maxKeysPerCombo})
         </label>
-        <input
-          type="text"
-          className="h-8 rounded px-2"
-          value={keyPositionsText}
-          onChange={(e) => setKeyPositionsText(e.target.value)}
-        />
+        {layoutKeys ? (
+          <KeyPositionPicker
+            layoutKeys={layoutKeys}
+            value={keyPositions}
+            max={maxKeysPerCombo}
+            oneU={48}
+            onChange={setKeyPositions}
+          />
+        ) : (
+          <KeyPositionsTextInput
+            key={index}
+            initialValue={combo.keyPositions || []}
+            onChange={setKeyPositions}
+          />
+        )}
         {!keyCountValid && (
           <span className="text-xs text-error">
-            Enter 1 to {maxKeysPerCombo} key positions.
+            Select 1 to {maxKeysPerCombo} key positions.
           </span>
         )}
         <span className="text-xs opacity-70">

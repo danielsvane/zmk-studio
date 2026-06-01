@@ -5,7 +5,7 @@ import type {
 } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { FieldLabel } from "../misc/Field";
-import { KeyPositionPicker } from "./KeyPositionPicker";
+import { KeyPositionPicker } from "../keyboard/KeyPositionPicker";
 
 /**
  * Generic, behaviour-kind-agnostic renderer for one custom-behaviour

@@ -1154,13 +1154,17 @@ export default function Keyboard({ page }: { page: Page }) {
   }
 
   if (page === "combos") {
+    // Raw key positions aren't remapped across layouts, so any layout is just a
+    // visual aid for the key-position picker; use the active/selected one.
+    const comboLayoutKeys = layouts?.[selectedPhysicalLayoutIndex]?.keys;
     return (
       <div className="grid grid-cols-[auto_1fr] bg-base-300 max-w-full min-w-0 min-h-0 h-full">
-        <div className="p-2 flex flex-col gap-2 bg-base-200 overflow-y-auto min-h-0">
+        <div className="p-2 flex flex-col gap-2 bg-base-200 overflow-y-auto min-h-0 min-w-44 max-w-64">
           {combos && (
             <ComboList
               combos={combos}
               behaviors={behaviors}
+              layoutKeys={comboLayoutKeys}
               selectedIndex={selectedComboIndex}
               onComboSelected={setSelectedComboIndex}
               onAddCombo={addCombo}
@@ -1178,6 +1182,7 @@ export default function Keyboard({ page }: { page: Page }) {
                 id,
                 name: name || li.toLocaleString(),
               }))}
+              layoutKeys={comboLayoutKeys}
               maxKeysPerCombo={combos.maxKeysPerCombo}
               onApply={doApplyCombo}
               onDelete={doRemoveCombo}

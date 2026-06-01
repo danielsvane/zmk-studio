@@ -1,25 +1,30 @@
 import { useMemo } from "react";
 import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
-import { PhysicalLayout } from "../keyboard/PhysicalLayout";
+import { PhysicalLayout } from "./PhysicalLayout";
+import { keyPhysicalAttrsToPositions } from "./layoutKeyPositions";
 
 /**
- * Click-to-toggle picker for a raw key-position list (e.g. a hold-tap's
- * hold_trigger_key_positions). Renders the keyboard's physical layout and
- * highlights every selected position; clicking a key adds/removes it. The
- * position number is shown on each key so the list stays legible.
+ * Click-to-toggle picker for a raw key-position list — used both by a hold-tap's
+ * hold_trigger_key_positions and by a combo's key positions. Renders the
+ * keyboard's physical layout and highlights every selected position; clicking a
+ * key adds/removes it. The position number is shown on each key so the list
+ * stays legible.
  *
- * Like combos, these are RAW physical key positions — they are not remapped
- * across physical layouts, so any layout is only a visual aid for picking the
- * same underlying positions. The caller passes the keys of whichever layout is
- * active; if no layout is available the parent falls back to a text editor.
+ * These are RAW physical key positions — they are not remapped across physical
+ * layouts, so any layout is only a visual aid for picking the same underlying
+ * positions. The caller passes the keys of whichever layout is active; if no
+ * layout is available the parent falls back to a text editor.
  */
 export interface KeyPositionPickerProps {
   /** Physical-layout keys; the array index is the key position number. */
   layoutKeys: KeyPhysicalAttrs[];
   /** Currently-selected positions. */
   value: number[];
-  /** Maximum number of positions allowed (from the schema). */
+  /** Maximum number of positions allowed (from the schema / combo limit). */
   max?: number;
+  /** 1u size in pixels. Smaller (~36) suits an inline form; larger (~48) suits
+   * a primary editor surface. */
+  oneU?: number;
   onChange: (positions: number[]) => void;
 }
 
@@ -27,24 +32,12 @@ export function KeyPositionPicker({
   layoutKeys,
   value,
   max,
+  oneU = 36,
   onChange,
 }: KeyPositionPickerProps) {
-  // Proto attrs are stored ×100; the layout component wants 1u-relative units.
   const positions = useMemo(
-    () =>
-      layoutKeys.map((k, i) => ({
-        id: String(i),
-        header: String(i),
-        x: k.x / 100.0,
-        y: k.y / 100.0,
-        width: k.width / 100.0,
-        height: k.height / 100.0,
-        r: (k.r || 0) / 100.0,
-        rx: (k.rx || 0) / 100.0,
-        ry: (k.ry || 0) / 100.0,
-        children: <span />,
-      })),
-    [layoutKeys]
+    () => keyPhysicalAttrsToPositions(layoutKeys, (i) => ({ header: String(i) })),
+    [layoutKeys],
   );
 
   const selected = new Set(value);
@@ -68,7 +61,7 @@ export function KeyPositionPicker({
       <div className="overflow-auto rounded bg-base-100 p-2">
         <PhysicalLayout
           positions={positions}
-          oneU={36}
+          oneU={oneU}
           selectedPositions={value}
           onPositionClicked={toggle}
         />

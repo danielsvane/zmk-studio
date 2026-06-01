@@ -1,36 +1,52 @@
+import { useMemo } from "react";
 import { Plus } from "lucide-react";
 
 import type { Combos } from "@zmkfirmware/zmk-studio-ts-client/combos";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
+import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 
 import { HidUsageLabel } from "./HidUsageLabel";
+import { PhysicalLayout } from "./PhysicalLayout";
+import { keyPhysicalAttrsToPositions } from "./layoutKeyPositions";
 import { Button } from "../misc/Button";
+import { cx } from "../misc/controlStyles";
 
 type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
 
 export interface ComboListProps {
   combos: Combos;
   behaviors: BehaviorMap;
+  /** Physical-layout keys for the mini keyboard preview; array index is the key
+   * position. When absent the preview falls back to a plain list of positions. */
+  layoutKeys?: KeyPhysicalAttrs[];
   selectedIndex?: number;
   onComboSelected?: (index: number) => void;
   onAddCombo?: () => void;
   canAdd?: boolean;
 }
 
-// Combo list. Rows are clickable to select a combo for editing (M2); the
-// selected row is highlighted. Mirrors the keymap's behavior rendering: the
-// behavior's display name plus a HID usage label for param1 where it applies.
-// The "Add" button (M4) creates a new combo and selects it for editing.
+// Combo list. Rows are clickable cards, mirroring the layer picker on the left of
+// the keymap editor. Each card shows a small physical-keyboard preview with the
+// combo's key positions highlighted so the list stays scannable at a glance, plus
+// the bound behavior. The "Add" button creates a new combo and selects it.
 export const ComboList = ({
   combos,
   behaviors,
+  layoutKeys,
   selectedIndex,
   onComboSelected,
   onAddCombo,
   canAdd,
 }: ComboListProps) => {
+  // The preview keyboard is the same for every row (only the highlight differs),
+  // so build the bare positions once.
+  const previewPositions = useMemo(
+    () => (layoutKeys ? keyPhysicalAttrsToPositions(layoutKeys) : undefined),
+    [layoutKeys],
+  );
+
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
         <Button
@@ -46,50 +62,60 @@ export const ComboList = ({
       {combos.combos.length === 0 ? (
         <p className="text-sm opacity-70">No combos defined.</p>
       ) : (
-        <table className="text-sm border-collapse">
-          <thead>
-            <tr className="text-left opacity-70">
-              <th className="pr-3 font-medium">#</th>
-              <th className="pr-3 font-medium">Keys</th>
-              <th className="pr-3 font-medium">Behavior</th>
-              <th className="pr-3 font-medium">Timeout</th>
-            </tr>
-          </thead>
-          <tbody>
-            {combos.combos.map((entry) => {
-              const combo = entry.combo;
-              const binding = combo?.binding;
-              const behaviorName = binding
-                ? behaviors[binding.behaviorId]?.displayName || "Unknown"
-                : "—";
+        <ul className="flex flex-col gap-1">
+          {combos.combos.map((entry) => {
+            const combo = entry.combo;
+            const binding = combo?.binding;
+            const behaviorName = binding
+              ? behaviors[binding.behaviorId]?.displayName || "Unknown"
+              : "—";
+            const positions = combo?.keyPositions || [];
+            const selected = entry.index === selectedIndex;
 
-              return (
-                <tr
-                  key={entry.index}
-                  className={
-                    "border-t border-base-300 cursor-pointer" +
-                    (entry.index === selectedIndex ? " bg-base-300" : "")
-                  }
+            return (
+              <li key={entry.index}>
+                <button
+                  type="button"
+                  aria-pressed={selected}
                   onClick={() => onComboSelected?.(entry.index)}
+                  className={cx(
+                    "w-full rounded border p-2 text-left transition-colors",
+                    selected
+                      ? "border-primary bg-base-100"
+                      : "border-transparent hover:bg-base-300",
+                  )}
                 >
-                  <td className="pr-3 align-top">{entry.index}</td>
-                  <td className="pr-3 align-top">
-                    {(combo?.keyPositions || []).join(", ")}
-                  </td>
-                  <td className="pr-3 align-top">
-                    <span>{behaviorName}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium opacity-50">
+                      #{entry.index}
+                    </span>
+                    <span className="min-w-0 truncate text-sm font-medium">
+                      {behaviorName}
+                    </span>
                     {binding ? (
-                      <span className="ml-1 opacity-70 inline-flex">
+                      <span className="ml-auto inline-flex shrink-0 text-xs opacity-70 [&_svg]:size-3.5">
                         <HidUsageLabel hid_usage={binding.param1} />
                       </span>
                     ) : null}
-                  </td>
-                  <td className="pr-3 align-top">{combo?.timeoutMs} ms</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                  {previewPositions ? (
+                    <div className="mt-1.5 flex justify-center">
+                      <PhysicalLayout
+                        positions={previewPositions}
+                        oneU={11}
+                        selectedPositions={positions}
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-1 font-mono text-xs opacity-60">
+                      {positions.join(", ") || "no keys"}
+                    </div>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
