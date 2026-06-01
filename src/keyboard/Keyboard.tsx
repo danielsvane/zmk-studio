@@ -1178,7 +1178,7 @@ export default function Keyboard({ page }: { page: Page }) {
   }
 
   return (
-    <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)_min(54vh,34rem)] bg-base-300 max-w-full min-w-0 min-h-0">
+    <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)_min(54vh,28rem)] bg-base-300 max-w-full min-w-0 min-h-0">
       <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
         {/* Layout picker temporarily hidden — not needed for now.
         {layouts && (
@@ -1220,10 +1220,12 @@ export default function Keyboard({ page }: { page: Page }) {
           whether or not a key is selected, so the physical keyboard above stays
           one stable size — opening/closing the drawer or switching key-category
           tabs (which have different row counts) never reflows it. The row is
-          min(54vh, 34rem): just over half the viewport on short screens, but
-          capped at 34rem (enough for the controls + tallest key grid) on tall
-          ones so the extra height goes to the keyboard above rather than padding
-          the drawer. */}
+          min(54vh, 28rem): just over half the viewport on short screens, but
+          capped at 28rem on tall ones. 28rem is tuned to the tallest the picker
+          ever gets side-by-side (the 6-row Basic grid + p-6 padding ≈ 27.5rem),
+          so the drawer fits its content exactly with no trailing empty space and
+          the extra height goes to the keyboard above. Narrower widths where the
+          picker stacks are taller and simply scroll, as before. */}
       {layouts && keymap && behaviors && (
         <div className="p-6 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0">
           {selectedBinding ? (
