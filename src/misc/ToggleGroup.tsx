@@ -27,7 +27,7 @@ const groupSurface = cx(
 );
 
 const itemBase = cx(
-  "flex flex-1 items-center justify-center gap-0.5 font-medium whitespace-nowrap",
+  "flex items-center justify-center gap-0.5 font-medium whitespace-nowrap",
   "cursor-pointer select-none text-base-content bg-base-100",
   "transition-[background-color,filter,color]",
   "rac-hover:brightness-110",
@@ -44,7 +44,12 @@ const itemSize: Record<ButtonSize, string> = {
   md: "min-h-control px-3 py-1.5 text-sm",
 };
 
-const SizeContext = createContext<ButtonSize>("md");
+interface GroupConfig {
+  size: ButtonSize;
+  /** Whether segments stretch to fill the row (`flex-1`) or hug their content. */
+  fill: boolean;
+}
+const GroupContext = createContext<GroupConfig>({ size: "md", fill: true });
 
 export interface ToggleGroupProps
   extends Omit<RACToggleButtonGroupProps, "className" | "children"> {
@@ -53,6 +58,12 @@ export interface ToggleGroupProps
   /** Accessible name when there's no visible `label`. */
   "aria-label"?: string;
   size?: ButtonSize;
+  /**
+   * When `true` (default) the segments stretch to divide the row equally. Set
+   * `false` to size each segment to its own content and let the group hug it,
+   * leaving the rest of the row empty (e.g. the modifier / key-category rows).
+   */
+  fill?: boolean;
   /** Classes for the group surface (e.g. a min width). */
   className?: string;
   children: ReactNode;
@@ -61,6 +72,7 @@ export interface ToggleGroupProps
 export function ToggleGroup({
   label,
   size = "md",
+  fill = true,
   className,
   children,
   ...props
@@ -71,15 +83,17 @@ export function ToggleGroup({
       {/* Label stays at the standard field size regardless of `size` (which sets
           segment density) so it lines up with the sibling selects' labels. */}
       {label && <GroupLabel id={labelId}>{label}</GroupLabel>}
-      <SizeContext.Provider value={size}>
+      <GroupContext.Provider value={{ size, fill }}>
         <RACToggleButtonGroup
           aria-labelledby={label ? labelId : undefined}
-          className={cx(groupSurface, className)}
+          // `w-fit` collapses the surface to its content when not filling; the
+          // flex-col parent would otherwise stretch it to the full width.
+          className={cx(groupSurface, !fill && "w-fit max-w-full", className)}
           {...props}
         >
           {children}
         </RACToggleButtonGroup>
-      </SizeContext.Provider>
+      </GroupContext.Provider>
     </div>
   );
 }
@@ -99,12 +113,12 @@ export function ToggleGroupItem({
   className,
   children,
 }: ToggleGroupItemProps) {
-  const size = useContext(SizeContext);
+  const { size, fill } = useContext(GroupContext);
   return (
     <RACToggleButton
       id={id}
       isDisabled={isDisabled}
-      className={cx(itemBase, itemSize[size], className)}
+      className={cx(itemBase, fill && "flex-1", itemSize[size], className)}
     >
       {children}
     </RACToggleButton>
