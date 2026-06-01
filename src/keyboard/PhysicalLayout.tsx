@@ -32,6 +32,10 @@ interface PhysicalLayoutProps {
   oneU?: number;
   zoom?: LayoutZoom;
   onPositionClicked?: (position: number) => void;
+  /** Surface treatment for unselected keys, forwarded to each `Key`. Use
+   * `"preview"` for the small static visualizations (combo list) so the keys
+   * stay legible against the panel. */
+  keyVariant?: "default" | "preview";
 }
 
 interface PhysicalLayoutPositionLocation {
@@ -75,6 +79,7 @@ export const PhysicalLayout = ({
   oneU = 48,
   zoom,
   onPositionClicked,
+  keyVariant = "default",
 }: PhysicalLayoutProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -140,6 +145,7 @@ export const PhysicalLayout = ({
         <Key
           oneU={oneU}
           interactive={interactive}
+          variant={keyVariant}
           selected={idx === selectedPosition || !!selectedPositions?.includes(idx)}
           {...p}
         />

@@ -1139,7 +1139,7 @@ export default function Keyboard({ page }: { page: Page }) {
     const comboLayoutKeys = layouts?.[selectedPhysicalLayoutIndex]?.keys;
     return (
       <div className="grid grid-cols-[auto_1fr] bg-base-300 max-w-full min-w-0 min-h-0 h-full">
-        <div className="p-2 flex flex-col gap-2 bg-base-200 overflow-y-auto min-h-0 min-w-44 max-w-64">
+        <div className="p-4 flex flex-col gap-2 bg-base-200 overflow-y-auto min-h-0 min-w-48 max-w-64">
           {combos && (
             <ComboList
               combos={combos}

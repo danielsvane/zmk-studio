@@ -59,9 +59,14 @@ Decided deliberately over making the box itself 48px.
 - `base-300` — app background (`#15191e` in dark).
 - `base-line` — **the hairline edge for every control border/divider.** Use this,
   never a hardcoded `border-white/15` (which is invisible on a light surface).
-- `primary` / `primary-content` — selected/active fill + its text.
-- `base-content` — default text. (`primary` etc. have no alpha slot — use
-  `brightness-*` for hover/press, not `/opacity`.)
+- `primary` / `primary-content` — selected/active fill + its text. (`primary`,
+  `base-100/200/300` have no alpha slot — use `brightness-*` for hover/press,
+  not `/opacity`.)
+- `base-content` — default text. Written with an `<alpha-value>` slot, so it
+  **does** take opacity modifiers: `bg-base-content/40` gives a muted surface
+  that contrasts with the panel in both themes (~2.3:1) where the
+  near-identical `base-100/200/300` fills can't. Used by the combo-list preview
+  keys (`Key.tsx` `variant="preview"`).
 
 ## Components — prefer these over raw `<input>`/`<select>`
 

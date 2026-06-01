@@ -29,7 +29,14 @@ export default {
           "light-dark(oklch(69.71% 0.329 342.55), oklch(74.8% 0.26 342.55))",
         accent:
           "light-dark(oklch(76.76% 0.184 183.61), oklch(74.51% 0.167 183.61))",
-        "base-content": "light-dark(#1f2937, #A6ADBB)",
+        // Foreground/text token. Written with an `<alpha-value>` slot (rather
+        // than a flat hex) so opacity modifiers work — `text-base-content`
+        // stays fully opaque while `bg-base-content/40` gives a muted surface
+        // that still contrasts with the panel in *both* themes (~2.3:1), which
+        // the near-identical base-100/200/300 fills can't. Used by the combo
+        // preview keys; see Key.tsx `variant="preview"`.
+        "base-content":
+          "light-dark(rgb(31 41 55 / <alpha-value>), rgb(166 173 187 / <alpha-value>))",
         "base-100": "light-dark(oklch(100% 0 0), #1d232a)",
         "base-200": "light-dark(#F2F2F2, #191e24)",
         "base-300": "light-dark(#E5E6E6, #15191e)",

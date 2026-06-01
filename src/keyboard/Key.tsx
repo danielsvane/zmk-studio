@@ -12,6 +12,12 @@ interface KeyProps {
   /** When false the key is a static visualization: rendered as a plain element
    * with no hover affordance and not focusable (e.g. a combo-list preview). */
   interactive?: boolean;
+  /** Surface treatment for the unselected fill. `"default"` uses the `base-100`
+   * control fill (the full-size editor keyboard). `"preview"` fills from
+   * `base-content` instead — the foreground token always contrasts with the
+   * panel in both themes, so the tiny combo-list previews stay legible where the
+   * near-identical `base-100`/`base-200` surfaces would wash out. */
+  variant?: "default" | "preview";
 }
 
 interface BehaviorShortName {
@@ -46,6 +52,7 @@ export const Key = ({
   header,
   onClick,
   interactive = true,
+  variant = "default",
   children,
 }: PropsWithChildren<KeyProps>) => {
   const pixelWidth = width * oneU - 2;
@@ -53,11 +60,16 @@ export const Key = ({
 
   const label = shortenHeader(header);
 
+  const unselected =
+    variant === "preview"
+      ? "bg-base-content/40 text-base-content"
+      : "bg-base-100 text-base-content";
+
   const className = cx(
     "group rounded relative flex justify-center items-center transition-all",
     interactive &&
       "cursor-pointer hover:shadow-xl hover:ring-1 hover:ring-gray-300 hover:scale-150",
-    selected ? "bg-primary text-primary-content" : "bg-base-100 text-base-content",
+    selected ? "bg-primary text-primary-content" : unselected,
   );
 
   const style = { width: `${pixelWidth}px`, height: `${pixelHeight}px` };

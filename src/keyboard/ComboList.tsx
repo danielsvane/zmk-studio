@@ -46,12 +46,11 @@ export const ComboList = ({
   );
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
         <Button
-          variant="primary"
-          size="sm"
+          variant="secondary"
           icon={<Plus />}
           isDisabled={!canAdd || !onAddCombo}
           onPress={() => onAddCombo?.()}
@@ -62,7 +61,7 @@ export const ComboList = ({
       {combos.combos.length === 0 ? (
         <p className="text-sm opacity-70">No combos defined.</p>
       ) : (
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-2">
           {combos.combos.map((entry) => {
             const combo = entry.combo;
             const binding = combo?.binding;
@@ -79,7 +78,7 @@ export const ComboList = ({
                   aria-pressed={selected}
                   onClick={() => onComboSelected?.(entry.index)}
                   className={cx(
-                    "w-full rounded border p-2 text-left transition-colors",
+                    "w-full rounded border p-3 text-left transition-colors",
                     selected
                       ? "border-primary bg-base-100"
                       : "border-transparent hover:bg-base-300",
@@ -103,6 +102,7 @@ export const ComboList = ({
                       <PhysicalLayout
                         positions={previewPositions}
                         oneU={11}
+                        keyVariant="preview"
                         selectedPositions={positions}
                       />
                     </div>

@@ -33,7 +33,7 @@ export const WithLayoutPreview: Story = {
   render: (args) => {
     const [selected, setSelected] = useState<number | undefined>(0);
     return (
-      <div className="w-60 bg-base-200 p-2">
+      <div className="w-64 bg-base-200 p-4">
         <ComboList
           {...args}
           combos={FIXTURE_COMBOS}
@@ -60,7 +60,7 @@ export const NoLayout: Story = {
   },
   decorators: [
     (Story) => (
-      <div className="w-60 bg-base-200 p-2">
+      <div className="w-64 bg-base-200 p-4">
         <Story />
       </div>
     ),
@@ -75,7 +75,7 @@ export const Empty: Story = {
   },
   decorators: [
     (Story) => (
-      <div className="w-60 bg-base-200 p-2">
+      <div className="w-64 bg-base-200 p-4">
         <Story />
       </div>
     ),
