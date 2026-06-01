@@ -32,7 +32,6 @@ interface PhysicalLayoutProps {
    * selected if it is `selectedPosition` OR appears in `selectedPositions`. */
   selectedPositions?: Array<number>;
   oneU?: number;
-  hoverZoom?: boolean;
   zoom?: LayoutZoom;
   onPositionClicked?: (position: number) => void;
 }
@@ -76,11 +75,17 @@ export const PhysicalLayout = ({
   selectedPosition,
   selectedPositions,
   oneU = 48,
+  zoom,
   onPositionClicked,
-  ...props
 }: PhysicalLayoutProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+
+  // Without a click handler the layout is a static visualization (e.g. a combo
+  // list preview): keys don't react to hover, aren't focusable, and don't lift.
+  // Interactive layouts get the hover affordance: the key zooms (in Key) and
+  // lifts forward so it sits above its neighbors rather than behind them.
+  const interactive = !!onPositionClicked;
 
   useLayoutEffect(() => {
     const element = ref.current;
@@ -90,7 +95,7 @@ export const PhysicalLayout = ({
     if (!parent) return;
 
     const calculateScale = () => {
-      if (props.zoom === "auto") {
+      if (zoom === "auto") {
         const padding = Math.min(window.innerWidth, window.innerHeight) * 0.05; // Padding when in auto mode
         const newScale = Math.min(
           parent.clientWidth / (element.clientWidth + 2 * padding),
@@ -98,7 +103,7 @@ export const PhysicalLayout = ({
         );
         setScale(newScale);
       } else {
-        setScale(props.zoom || 1);
+        setScale(zoom || 1);
       }
     };
 
@@ -114,7 +119,7 @@ export const PhysicalLayout = ({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [props.zoom]);
+  }, [zoom]);
 
   // TODO: Add a bit of padding for rotation when supported
   const rightMost = positions
@@ -128,11 +133,15 @@ export const PhysicalLayout = ({
     <div className="absolute" style={scalePosition(p, oneU)}>
       <div
         key={p.id}
-        onClick={() => onPositionClicked?.(idx)}
-        className="[transform:translateZ(0)] hover:[transform:translateZ(100px)] [backface-visibility:hidden] transition-transform duration-200"
+        onClick={interactive ? () => onPositionClicked?.(idx) : undefined}
+        className={
+          "[transform:translateZ(0)] [backface-visibility:hidden] transition-transform duration-200" +
+          (interactive ? " hover:[transform:translateZ(100px)]" : "")
+        }
       >
         <Key
           oneU={oneU}
+          interactive={interactive}
           selected={idx === selectedPosition || !!selectedPositions?.includes(idx)}
           {...p}
         />
@@ -150,7 +159,6 @@ export const PhysicalLayout = ({
         transformStyle: "preserve-3d",
       }}
       ref={ref}
-      {...props}
     >
       {positionItems}
     </div>
