@@ -17,13 +17,14 @@ import { ChevronDown } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import {
   cx,
+  controlSurface,
   controlSizeStyles,
   controlPadX,
   controlFocusRing,
   controlDisabled,
   type ButtonSize,
 } from "./controlStyles";
-import { FieldLabel, FieldDescription, FieldErrorMessage } from "./Field";
+import { Field, fieldColumn } from "./Field";
 
 /**
  * Form-input-styled pickers built on react-aria.
@@ -43,25 +44,25 @@ import { FieldLabel, FieldDescription, FieldErrorMessage } from "./Field";
  * render their text.
  */
 
-// Filled-with-subtle-border input surface. Uses base-100 so it sits a shade
-// lighter than the base-200 editor panel it lives on (matching the app). Theme
-// tokens are light-dark() with no alpha slot, so hover brightens the fill.
+// The Select trigger: the shared filled-input `controlSurface`, laid out as one
+// focusable button (label on the left, chevron on the right) that brightens on
+// hover and rings via rac-focus-visible.
 const triggerBase = cx(
   "inline-flex items-center justify-between gap-2 rounded text-left font-medium",
-  "cursor-pointer select-none text-base-content bg-base-100 border border-white/15",
-  "transition-[background-color,filter,border-color]",
+  "cursor-pointer select-none",
+  controlSurface,
   "rac-hover:brightness-110",
   controlFocusRing,
   controlDisabled
 );
 
-// Combobox's outer surface. Same look as `triggerBase`, but it wraps a text
-// input + toggle button rather than being one focusable button, so the ring is
-// driven by focus-within (the input holds focus) instead of rac-focus-visible.
+// Combobox's outer surface. Same `controlSurface` look as `triggerBase`, but it
+// wraps a text input + toggle button rather than being one focusable button, so
+// the ring is driven by focus-within (the input holds focus) instead of
+// rac-focus-visible.
 const comboSurface = cx(
   "flex items-center rounded font-medium",
-  "text-base-content bg-base-100 border border-white/15",
-  "transition-[background-color,filter,border-color]",
+  controlSurface,
   "focus-within:outline focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-primary",
   "has-[input:disabled]:opacity-50 has-[input:disabled]:cursor-not-allowed"
 );
@@ -212,29 +213,33 @@ export function Select<T extends object>({
   const value = renderValue ?? item;
 
   return (
-    <RACSelect className={cx("flex flex-col gap-1", className)} {...props}>
-      {label && <FieldLabel size={size}>{label}</FieldLabel>}
-      <RACButton
-        className={cx(
-          triggerBase,
-          controlSizeStyles[size],
-          controlPadX[size],
-          triggerClassName
-        )}
+    <RACSelect className={cx(fieldColumn, className)} {...props}>
+      <Field
+        label={label}
+        description={description}
+        errorMessage={errorMessage}
+        size={size}
       >
-        <SelectValue<T> className="flex min-w-0 items-center gap-2 truncate">
-          {({ selectedItem, isPlaceholder }) =>
-            isPlaceholder || !selectedItem ? (
-              <span className="opacity-60">{placeholder}</span>
-            ) : (
-              value(selectedItem as T)
-            )
-          }
-        </SelectValue>
-        <ChevronDown aria-hidden className="shrink-0 opacity-60" />
-      </RACButton>
-      {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldErrorMessage>{errorMessage}</FieldErrorMessage>
+        <RACButton
+          className={cx(
+            triggerBase,
+            controlSizeStyles[size],
+            controlPadX[size],
+            triggerClassName
+          )}
+        >
+          <SelectValue<T> className="flex min-w-0 items-center gap-2 truncate">
+            {({ selectedItem, isPlaceholder }) =>
+              isPlaceholder || !selectedItem ? (
+                <span className="opacity-60">{placeholder}</span>
+              ) : (
+                value(selectedItem as T)
+              )
+            }
+          </SelectValue>
+          <ChevronDown aria-hidden className="shrink-0 opacity-60" />
+        </RACButton>
+      </Field>
       <Popover className={popoverStyles}>
         <OptionsList<T>
           items={items}
@@ -306,7 +311,7 @@ export function Combobox<T extends object>({
 
   return (
     <RACComboBox<T>
-      className={cx("flex flex-col gap-1", className)}
+      className={cx(fieldColumn, className)}
       // `defaultItems` (not `items`) lets react-aria own the filtering — it
       // matches each option's textValue against what's typed (contains).
       defaultItems={allItems}
@@ -319,29 +324,33 @@ export function Combobox<T extends object>({
       allowsEmptyCollection
       {...props}
     >
-      {label && <FieldLabel size={size}>{label}</FieldLabel>}
-      <div
-        className={cx(comboSurface, controlSizeStyles[size], triggerClassName)}
+      <Field
+        label={label}
+        description={description}
+        errorMessage={errorMessage}
+        size={size}
       >
-        <RACInput
-          placeholder={placeholder}
-          className={cx(
-            "min-w-0 flex-1 self-stretch bg-transparent outline-none placeholder:opacity-60",
-            controlPadX[size]
-          )}
-        />
-        <RACButton
-          aria-label="Show options"
-          className={cx(
-            "flex shrink-0 cursor-pointer items-center self-stretch rounded-r pl-1 pr-2",
-            "text-base-content/60 rac-hover:text-base-content"
-          )}
+        <div
+          className={cx(comboSurface, controlSizeStyles[size], triggerClassName)}
         >
-          <ChevronDown aria-hidden />
-        </RACButton>
-      </div>
-      {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldErrorMessage>{errorMessage}</FieldErrorMessage>
+          <RACInput
+            placeholder={placeholder}
+            className={cx(
+              "min-w-0 flex-1 self-stretch bg-transparent outline-none placeholder:opacity-60",
+              controlPadX[size]
+            )}
+          />
+          <RACButton
+            aria-label="Show options"
+            className={cx(
+              "flex shrink-0 cursor-pointer items-center self-stretch rounded-r pl-1 pr-2",
+              "text-base-content/60 rac-hover:text-base-content"
+            )}
+          >
+            <ChevronDown aria-hidden />
+          </RACButton>
+        </div>
+      </Field>
       <Popover className={popoverStyles}>
         <OptionsList<T>
           itemKey={itemKey}

@@ -57,6 +57,8 @@ export interface ToggleGroupProps
   label?: string;
   /** Accessible name when there's no visible `label`. */
   "aria-label"?: string;
+  /** Muted helper text rendered below the group (matches a field description). */
+  description?: ReactNode;
   size?: ButtonSize;
   /**
    * When `true` (default) the segments stretch to divide the row equally. Set
@@ -71,6 +73,7 @@ export interface ToggleGroupProps
 
 export function ToggleGroup({
   label,
+  description,
   size = "md",
   fill = true,
   className,
@@ -78,6 +81,7 @@ export function ToggleGroup({
   ...props
 }: ToggleGroupProps) {
   const labelId = useId();
+  const descriptionId = useId();
   return (
     <div className="flex flex-col gap-1">
       {/* Label stays at the standard field size regardless of `size` (which sets
@@ -86,6 +90,7 @@ export function ToggleGroup({
       <GroupContext.Provider value={{ size, fill }}>
         <RACToggleButtonGroup
           aria-labelledby={label ? labelId : undefined}
+          aria-describedby={description ? descriptionId : undefined}
           // `w-fit` collapses the surface to its content when not filling; the
           // flex-col parent would otherwise stretch it to the full width.
           className={cx(groupSurface, !fill && "w-fit max-w-full", className)}
@@ -94,6 +99,11 @@ export function ToggleGroup({
           {children}
         </RACToggleButtonGroup>
       </GroupContext.Provider>
+      {description && (
+        <span id={descriptionId} className="text-xs text-base-content opacity-60">
+          {description}
+        </span>
+      )}
     </div>
   );
 }

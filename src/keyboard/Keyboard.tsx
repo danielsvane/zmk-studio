@@ -1152,26 +1152,28 @@ export default function Keyboard({ page }: { page: Page }) {
             />
           )}
         </div>
-        <div className="p-2 col-start-2 overflow-y-auto min-h-0">
-          {keymap && combos && selectedCombo?.combo ? (
-            <ComboEditor
-              index={selectedCombo.index}
-              combo={selectedCombo.combo}
-              behaviors={Object.values(behaviors)}
-              layers={keymap.layers.map(({ id, name }, li) => ({
-                id,
-                name: name || li.toLocaleString(),
-              }))}
-              layoutKeys={comboLayoutKeys}
-              maxKeysPerCombo={combos.maxKeysPerCombo}
-              onApply={doApplyCombo}
-              onDelete={doRemoveCombo}
-            />
-          ) : (
-            <div className="h-full grid place-items-center text-center text-base-content/60">
-              <p>Select a combo to edit, or add a new one.</p>
-            </div>
-          )}
+        <div className="p-6 col-start-2 overflow-y-auto min-h-0">
+          <div className="mx-auto h-full w-full max-w-4xl">
+            {keymap && combos && selectedCombo?.combo ? (
+              <ComboEditor
+                index={selectedCombo.index}
+                combo={selectedCombo.combo}
+                behaviors={Object.values(behaviors)}
+                layers={keymap.layers.map(({ id, name }, li) => ({
+                  id,
+                  name: name || li.toLocaleString(),
+                }))}
+                layoutKeys={comboLayoutKeys}
+                maxKeysPerCombo={combos.maxKeysPerCombo}
+                onApply={doApplyCombo}
+                onDelete={doRemoveCombo}
+              />
+            ) : (
+              <div className="h-full grid place-items-center text-center text-base-content/60">
+                <p>Select a combo to edit, or add a new one.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

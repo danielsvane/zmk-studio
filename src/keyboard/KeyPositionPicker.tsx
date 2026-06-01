@@ -58,7 +58,7 @@ export function KeyPositionPicker({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="overflow-auto rounded bg-base-100 p-2">
+      <div className="flex justify-center overflow-auto rounded bg-base-300 p-2">
         <PhysicalLayout
           positions={positions}
           oneU={oneU}

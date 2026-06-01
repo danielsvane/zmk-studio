@@ -25,6 +25,18 @@ export const controlFocusRing =
 export const controlDisabled =
   "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed";
 
+// Filled-input surface shared by every form control that looks like an input
+// rather than an action: the Select/Combobox triggers and the TextField. A
+// `base-100` fill (a shade lighter than the `base-200` panels it sits on) with
+// a `base-line` hairline edge — the same edge token used by every other control
+// border. Theme tokens are light-dark() with no alpha slot, so hover/press
+// brighten via `brightness-*` rather than fill opacity. Single source of truth:
+// change the input look here and it moves everywhere.
+export const controlSurface = cx(
+  "bg-base-100 border border-base-line text-base-content",
+  "transition-[background-color,filter,border-color]"
+);
+
 const base = cx(
   "inline-flex items-center justify-center gap-1.5 font-medium select-none cursor-pointer transition-[background-color,filter,color]",
   controlFocusRing,

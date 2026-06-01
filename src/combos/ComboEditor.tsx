@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Key } from "react-aria-components";
 
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { Combo } from "@zmkfirmware/zmk-studio-ts-client/combos";
@@ -8,6 +9,9 @@ import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap"
 import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
 import { KeyPositionPicker } from "../keyboard/KeyPositionPicker";
 import { Button } from "../misc/Button";
+import { Checkbox } from "../misc/Checkbox";
+import { TextField } from "../misc/TextField";
+import { ToggleGroup, ToggleGroupItem } from "../misc/ToggleGroup";
 
 export interface ComboEditorProps {
   index: number;
@@ -48,13 +52,12 @@ function KeyPositionsTextInput({
   const [text, setText] = useState(initialValue.join(", "));
 
   return (
-    <input
-      type="text"
-      className="h-8 rounded px-2"
+    <TextField
+      aria-label="Key positions"
       value={text}
-      onChange={(e) => {
-        setText(e.target.value);
-        onChange(parseKeyPositions(e.target.value));
+      onChange={(v) => {
+        setText(v);
+        onChange(parseKeyPositions(v));
       }}
     />
   );
@@ -97,14 +100,25 @@ export const ComboEditor = ({
     keyPositions.length >= 1 && keyPositions.length <= maxKeysPerCombo;
   const canApply = keyCountValid && binding !== undefined;
 
-  const toggleLayer = (layerBit: number, checked: boolean) => {
-    setLayersMask((mask) =>
-      checked ? mask | (1 << layerBit) : mask & ~(1 << layerBit)
-    );
+  // The layer toggle group selects layer *indices* by key; fold the selected
+  // set back into the firmware's `layer_mask & BIT(layer)` bitmask.
+  const selectedLayerKeys = layers
+    .map((_, i) => i)
+    .filter((i) => (layersMask & (1 << i)) !== 0)
+    .map(String);
+
+  const setLayersFromKeys = (keys: Set<Key>) => {
+    let mask = 0;
+    for (const key of keys) {
+      mask |= 1 << Number(key);
+    }
+    setLayersMask(mask);
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    // gap-4 between every field — matches the layers editor's binding drawer
+    // (PickerShell's controls column), incl. the embedded BehaviorBindingPicker.
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase opacity-70">
           Edit combo #{index}
@@ -147,59 +161,44 @@ export const ComboEditor = ({
         </span>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm">Timeout (ms)</label>
-        <input
-          type="number"
-          min={1}
-          className="h-8 rounded px-2"
-          value={timeoutMs}
-          onChange={(e) => setTimeoutMs(parseInt(e.target.value, 10) || 0)}
-        />
-      </div>
+      <TextField
+        label="Timeout (ms)"
+        type="number"
+        inputProps={{ min: 1 }}
+        value={String(timeoutMs)}
+        onChange={(v) => setTimeoutMs(parseInt(v, 10) || 0)}
+      />
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm">Require prior idle (ms)</label>
-        <input
-          type="number"
-          min={-1}
-          className="h-8 rounded px-2"
-          value={requirePriorIdleMs}
-          onChange={(e) => {
-            const v = parseInt(e.target.value, 10);
-            setRequirePriorIdleMs(Number.isNaN(v) ? -1 : v);
-          }}
-        />
-        <span className="text-xs opacity-70">-1 = disabled</span>
-      </div>
+      <TextField
+        label="Require prior idle (ms)"
+        description="-1 = disabled"
+        type="number"
+        inputProps={{ min: -1 }}
+        value={String(requirePriorIdleMs)}
+        onChange={(v) => {
+          const n = parseInt(v, 10);
+          setRequirePriorIdleMs(Number.isNaN(n) ? -1 : n);
+        }}
+      />
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm">Active on layers</label>
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {layers.map((layer, i) => (
-            <label key={layer.id} className="flex items-center gap-1 text-sm">
-              <input
-                type="checkbox"
-                checked={(layersMask & (1 << i)) !== 0}
-                onChange={(e) => toggleLayer(i, e.target.checked)}
-              />
-              {layer.name || i}
-            </label>
-          ))}
-        </div>
-        <span className="text-xs opacity-70">
-          None selected = active on all layers.
-        </span>
-      </div>
+      <ToggleGroup
+        label="Active on layers"
+        description="None selected = active on all layers."
+        selectionMode="multiple"
+        selectedKeys={selectedLayerKeys}
+        onSelectionChange={setLayersFromKeys}
+        fill={false}
+      >
+        {layers.map((layer, i) => (
+          <ToggleGroupItem key={layer.id} id={String(i)}>
+            {layer.name || i}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={slowRelease}
-          onChange={(e) => setSlowRelease(e.target.checked)}
-        />
+      <Checkbox isSelected={slowRelease} onChange={setSlowRelease}>
         Slow release
-      </label>
+      </Checkbox>
 
       {binding && (
         <BehaviorBindingPicker

@@ -110,3 +110,53 @@ export function FieldErrorMessage({
     <RACFieldError className={cx("text-xs text-red-500", className)} {...props} />
   );
 }
+
+/**
+ * The vertical column every field provider lays its pieces out in. Put it on
+ * the react-aria provider (TextField/Select/ComboBox); {@link Field} orders the
+ * label, control, and description/error within it.
+ */
+export const fieldColumn = "flex flex-col gap-1";
+
+export interface FieldProps {
+  /** Label rendered above the control. Omit for an `aria-label`-only field. */
+  label?: ReactNode;
+  /** Muted helper text below the control. */
+  description?: ReactNode;
+  /** Validation message; shown only when the field is invalid. */
+  errorMessage?: ReactNode;
+  /** Matches the control's text size (see {@link FieldLabel}). */
+  size?: ButtonSize;
+  /** The control itself — an input, a select trigger, a combobox surface. */
+  children: ReactNode;
+}
+
+/**
+ * The shared label → control → description/error layout for a single form
+ * control. Every field component (TextField, Select, Combobox) renders this so
+ * the ordering and spacing live in exactly one place.
+ *
+ * MUST be rendered *inside* a react-aria field provider (the `RAC*` wrapper):
+ * react-aria wires the label's `for` and the description/error
+ * `aria-describedby` to the control through context that only exists inside the
+ * provider. The provider also carries {@link fieldColumn} (the flex column);
+ * this component only orders the pieces within it. Anything that must sit inside
+ * the provider but outside the column flow — a Select/Combobox `Popover` — is
+ * rendered as a sibling after this component.
+ */
+export function Field({
+  label,
+  description,
+  errorMessage,
+  size = "md",
+  children,
+}: FieldProps) {
+  return (
+    <>
+      {label && <FieldLabel size={size}>{label}</FieldLabel>}
+      {children}
+      {description && <FieldDescription>{description}</FieldDescription>}
+      <FieldErrorMessage>{errorMessage}</FieldErrorMessage>
+    </>
+  );
+}
