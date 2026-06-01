@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { HidUsageLabel } from "../keyboard/HidUsageLabel";
+import { LabeledGroup } from "../misc/Field";
 import { cx, controlFocusRing } from "../misc/controlStyles";
 import type { PickerRegions } from "../misc/PickerShell";
 import { HidUsagePage } from "./HidUsagePicker";
@@ -72,9 +73,8 @@ export function useKeyParamSlots(slots: KeyParamSlot[]): PickerRegions {
 
   const tabs =
     slots.length > 1 ? (
-      <div
-        role="group"
-        aria-label="Parameters"
+      <LabeledGroup
+        label="Parameters"
         className="flex divide-x divide-white/10 overflow-hidden rounded border border-white/10"
       >
         {slots.map((slot, i) => {
@@ -103,7 +103,7 @@ export function useKeyParamSlots(slots: KeyParamSlot[]): PickerRegions {
             </button>
           );
         })}
-      </div>
+      </LabeledGroup>
     ) : null;
 
   return {

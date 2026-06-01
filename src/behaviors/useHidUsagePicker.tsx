@@ -2,6 +2,7 @@ import { Key } from "react-aria-components";
 import { useCallback, useMemo } from "react";
 
 import { ButtonGroup, ToggleButton } from "../misc/Button";
+import { LabeledGroup } from "../misc/Field";
 import { Combobox, SelectItemContent } from "../misc/Select";
 import { KeyGrid } from "./KeyGrid";
 import type { PickerRegions } from "../misc/PickerShell";
@@ -176,8 +177,7 @@ export function useHidUsagePicker({
   const controls = (
     <>
       <Combobox<UsageItem>
-        label={label}
-        aria-label={label ? undefined : "HID usage"}
+        label={label ?? "Key"}
         placeholder="Search keys…"
         items={usageItems}
         selectedKey={maskedValue ?? null}
@@ -192,14 +192,18 @@ export function useHidUsagePicker({
             : undefined
         }
       />
-      <div className="flex flex-wrap gap-1" role="group" aria-label="Modifiers">
+      <LabeledGroup label="Modifiers" className="flex flex-wrap gap-1">
         {modRow(left_mods)}
         {modRow(right_mods)}
-      </div>
+      </LabeledGroup>
     </>
   );
 
-  const canvas = <KeyGrid value={maskedValue} onPick={selectionChanged} />;
+  const canvas = (
+    <LabeledGroup label="Keyboard">
+      <KeyGrid value={maskedValue} onPick={selectionChanged} />
+    </LabeledGroup>
+  );
 
   return { controls, canvas };
 }

@@ -1,3 +1,4 @@
+import { useId, type ReactNode } from "react";
 import {
   Label as RACLabel,
   Text as RACText,
@@ -33,6 +34,40 @@ export interface FieldLabelProps extends LabelProps {
 /** Label for a form control. Matches the control's text size. */
 export function FieldLabel({ size = "md", className, ...props }: FieldLabelProps) {
   return <RACLabel className={cx(fieldLabelStyles[size], className)} {...props} />;
+}
+
+export interface LabeledGroupProps {
+  /** Visible label, rendered above the group in the same style as {@link FieldLabel}. */
+  label: string;
+  size?: ButtonSize;
+  /** Classes for the inner `role="group"` container that wraps the children. */
+  className?: string;
+  children: ReactNode;
+}
+
+/**
+ * A visibly-labelled `role="group"` for controls that aren't react-aria field
+ * providers — toggle/button groups, the key grid, segmented tabs. Mirrors the
+ * `flex flex-col gap-1` + {@link FieldLabel} layout the field components use, and
+ * wires the label to the group via `aria-labelledby` so it reads the same to AT.
+ */
+export function LabeledGroup({
+  label,
+  size = "md",
+  className,
+  children,
+}: LabeledGroupProps) {
+  const labelId = useId();
+  return (
+    <div className="flex flex-col gap-1">
+      <span id={labelId} className={fieldLabelStyles[size]}>
+        {label}
+      </span>
+      <div role="group" aria-labelledby={labelId} className={className}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 /** Muted helper text below a control (slot="description" wires aria-describedby). */
