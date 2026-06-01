@@ -63,12 +63,12 @@ export const KeyPress: Story = {
 };
 
 /** Two key params (tap + hold): the slot tabs join the controls column and route
- * the shared grid to the active slot. Wide enough (past the 64rem flip) to sit
+ * the shared grid to the active slot. Wide enough (past the 88rem flip) to sit
  * side-by-side. */
 export const ModTapSideBySide: Story = {
   render: (args) => (
     <PickerAt
-      width={1100}
+      width={1500}
       initial={MOD_TAP}
       onBindingChanged={args.onBindingChanged}
     />
@@ -92,7 +92,7 @@ export const ModTapStacked: Story = {
 export const WidthLadder: Story = {
   render: (args) => (
     <div className="flex flex-col gap-4">
-      {[900, 1024, 1056, 1200].map((w) => (
+      {[1280, 1408, 1456, 1560].map((w) => (
         <div key={w}>
           <div className="text-xs opacity-60">{w}px</div>
           <PickerAt
