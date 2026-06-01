@@ -188,6 +188,16 @@ function useLayouts(): [
   ];
 }
 
+// Behaviour kinds the "Add" button can claim from the spare pool. The `kind`
+// string must match a runtime descriptor's `kind` in the firmware (see each
+// driver's *_descriptor). The config form is rendered generically from the
+// schema, so no per-kind UI is needed — adding a kind here + a firmware pool is
+// the whole story (M10).
+const ADDABLE_KINDS: { kind: string; label: string }[] = [
+  { kind: "hold-tap", label: "hold-tap" },
+  { kind: "sticky-key", label: "sticky-key" },
+];
+
 export default function Keyboard({ page }: { page: Page }) {
   const [
     layouts,
@@ -499,19 +509,28 @@ export default function Keyboard({ page }: { page: Page }) {
   );
 
   // Claim a new custom behaviour from the spare pool (M4: RAM-only, lost on
-  // reboot). For now only hold-tap is offered; the firmware seeds the slot with
-  // its DT defaults, which the user then edits via the generic config form. The
-  // claimed behaviour immediately appears in get_custom_behaviors AND in
-  // list_all_behaviors, so we refresh the binding-picker map to make it
-  // selectable as a keymap/combo binding without reconnecting.
-  const addCustomBehavior = useCallback(async () => {
+  // reboot). `kind` selects which spare pool to draw from (M10 proves the path
+  // is kind-agnostic — the firmware matches the kind string against each pool
+  // slot's descriptor). The firmware seeds the slot with its DT defaults, which
+  // the user then edits via the generic config form. The claimed behaviour
+  // immediately appears in get_custom_behaviors AND in list_all_behaviors, so we
+  // refresh the binding-picker map to make it selectable as a keymap/combo
+  // binding without reconnecting.
+  // Which spare pool the "Add" button claims from. Kinds are hardcoded here
+  // (there's no list-available-kinds RPC); the firmware rejects an unknown kind
+  // with NO_SPACE. Adding a kind to the firmware pool + this list is all it
+  // takes to offer it — the config form renders generically (M10).
+  const [newBehaviourKind, setNewBehaviourKind] = useState(ADDABLE_KINDS[0].kind);
+
+  const addCustomBehavior = useCallback(
+    async (kind: string) => {
     if (!conn.conn) {
       return;
     }
 
     const name = window.prompt(
-      "Name for the new hold-tap behaviour:",
-      "hrml"
+      `Name for the new ${kind} behaviour:`,
+      kind === "hold-tap" ? "hrml" : ""
     );
     if (name === null) {
       return; // cancelled
@@ -519,7 +538,7 @@ export default function Keyboard({ page }: { page: Page }) {
 
     const resp = await call_rpc(conn.conn, {
       behaviors: {
-        addCustomBehavior: { kind: "hold-tap", displayName: name, config: [] },
+        addCustomBehavior: { kind, displayName: name, config: [] },
       },
     });
 
@@ -543,13 +562,13 @@ export default function Keyboard({ page }: { page: Page }) {
     console.error("Add custom behaviour error", err);
     // TODO: replace window.alert with a proper toast (matches App.tsx).
     if (err === AddCustomBehaviorErrorCode.ADD_CUSTOM_BEHAVIOR_ERR_NO_SPACE) {
-      window.alert(
-        "Can't add another behaviour: the hold-tap pool is full."
-      );
+      window.alert(`Can't add another behaviour: the ${kind} pool is full.`);
     } else {
       window.alert("Failed to add the behaviour.");
     }
-  }, [conn, refreshBehaviors, setCustomBehaviors]);
+    },
+    [conn, refreshBehaviors, setCustomBehaviors]
+  );
 
   // Delete a custom behaviour (M8: RAM-only until saved). Frees the pool slot;
   // the behaviour vanishes from the list and from the binding picker. Undo
@@ -1033,14 +1052,28 @@ export default function Keyboard({ page }: { page: Page }) {
           <h1 className="text-xl font-medium text-base-content">
             Custom behaviours
           </h1>
-          <Button
-            variant="primary"
-            size="sm"
-            isDisabled={poolFull}
-            onPress={() => addCustomBehavior()}
-          >
-            Add hold-tap
-          </Button>
+          <div className="flex items-center gap-2">
+            <select
+              className="h-8 rounded px-2 bg-base-100 border border-white/15"
+              value={newBehaviourKind}
+              onChange={(e) => setNewBehaviourKind(e.target.value)}
+              aria-label="Behaviour kind to add"
+            >
+              {ADDABLE_KINDS.map((k) => (
+                <option key={k.kind} value={k.kind}>
+                  {k.label}
+                </option>
+              ))}
+            </select>
+            <Button
+              variant="primary"
+              size="sm"
+              isDisabled={poolFull}
+              onPress={() => addCustomBehavior(newBehaviourKind)}
+            >
+              Add
+            </Button>
+          </div>
         </div>
         {behaviours.length === 0 ? (
           <p className="text-base-content/60">
