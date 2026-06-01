@@ -1,6 +1,8 @@
 import {
   Select as RACSelect,
+  ComboBox as RACComboBox,
   Button as RACButton,
+  Input as RACInput,
   SelectValue,
   Popover,
   ListBox,
@@ -8,10 +10,11 @@ import {
   UNSTABLE_Virtualizer as Virtualizer,
   UNSTABLE_ListLayout as ListLayout,
   type SelectProps as RACSelectProps,
+  type ComboBoxProps as RACComboBoxProps,
   type Key,
 } from "react-aria-components";
-import { ChevronDown, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
+import { useMemo, type ReactNode } from "react";
 import {
   cx,
   controlSizeStyles,
@@ -23,13 +26,21 @@ import {
 import { FieldLabel, FieldDescription, FieldErrorMessage } from "./Field";
 
 /**
- * A single-select dropdown built on react-aria's Select.
+ * Form-input-styled pickers built on react-aria.
  *
- * Looks like a *form input* (filled `base-200` with a subtle `base-300`
- * border) rather than an action Button, but shares Button's heights and focus
- * ring so it lines up with everything else. Options are templateable: pass
- * `renderItem` to put an icon / title+description in each row (see
- * `SelectItemContent`), otherwise items render their label.
+ * - `Select` — a non-filtering dropdown (react-aria Select / listbox pattern).
+ *   Best for short lists where you just pick from what's shown.
+ * - `Combobox` — a text field that filters a list as you type (react-aria
+ *   ComboBox / combobox pattern). Best for long lists (e.g. the ~600-entry HID
+ *   usage picker). DOM focus stays on the input the whole time — hovering an
+ *   option only highlights it (via aria-activedescendant), so typing is never
+ *   interrupted, which a Select-with-a-search-box can't guarantee.
+ *
+ * Both look like a *form input* (filled `base-100` with a subtle border) rather
+ * than an action Button, but share Button's heights and focus ring so they line
+ * up with everything else. Options are templateable: pass `renderItem` to put an
+ * icon / title+description in each row (see `SelectItemContent`), otherwise rows
+ * render their text.
  */
 
 // Filled-with-subtle-border input surface. Uses base-100 so it sits a shade
@@ -44,13 +55,24 @@ const triggerBase = cx(
   controlDisabled
 );
 
+// Combobox's outer surface. Same look as `triggerBase`, but it wraps a text
+// input + toggle button rather than being one focusable button, so the ring is
+// driven by focus-within (the input holds focus) instead of rac-focus-visible.
+const comboSurface = cx(
+  "flex items-center rounded font-medium",
+  "text-base-content bg-base-100 border border-white/15",
+  "transition-[background-color,filter,border-color]",
+  "focus-within:outline focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-primary",
+  "has-[input:disabled]:opacity-50 has-[input:disabled]:cursor-not-allowed"
+);
+
 const popoverStyles = cx(
   "min-w-[var(--trigger-width)] p-1",
   "rounded border border-base-300 bg-base-100 text-base-content shadow-lg"
 );
 
-// The list scrolls (not the whole popover) so a searchable Select's search
-// field can stay pinned above it.
+// The list scrolls within a bounded height; combined with virtualization this
+// keeps a long option list cheap to open and filter.
 const listBoxStyles = "max-h-60 overflow-auto outline-none";
 
 const itemStyles = cx(
@@ -87,6 +109,64 @@ export function SelectItemContent({
   );
 }
 
+// `object` (not a structural type) so these stay assignable to the components'
+// `(item: T) => …` defaults for any `T extends object`; the inner cast reads the
+// conventional fields an item may carry.
+function defaultText(item: object): string {
+  const o = item as { label?: unknown; name?: unknown };
+  return String(o.label ?? o.name ?? "");
+}
+function defaultKey(item: object): Key {
+  const o = item as { id?: Key };
+  return o.id ?? defaultText(item);
+}
+
+/**
+ * The shared options list: a (optionally virtualized) ListBox of templated
+ * rows. Pass `layout` to virtualize — only the visible rows mount, so a long
+ * list stays snappy to open and filter. `items` is set for Select; Combobox
+ * omits it and lets react-aria feed the ListBox its filtered collection.
+ */
+function OptionsList<T extends object>({
+  items,
+  itemKey,
+  itemText,
+  renderItem,
+  layout,
+  emptyState,
+}: {
+  items?: Iterable<T>;
+  itemKey: (item: T) => Key;
+  itemText: (item: T) => string;
+  renderItem: (item: T) => ReactNode;
+  layout?: InstanceType<typeof ListLayout>;
+  emptyState?: () => ReactNode;
+}) {
+  const list = (
+    <ListBox items={items} className={listBoxStyles} renderEmptyState={emptyState}>
+      {(data) => (
+        <ListBoxItem
+          id={itemKey(data)}
+          textValue={itemText(data)}
+          className={itemStyles}
+        >
+          {renderItem(data)}
+        </ListBoxItem>
+      )}
+    </ListBox>
+  );
+  return layout ? <Virtualizer layout={layout}>{list}</Virtualizer> : list;
+}
+
+// A stable ListLayout (it's a stateful object) when `rowHeight` is set, else
+// undefined (no virtualization).
+function useListLayout(rowHeight?: number) {
+  return useMemo(
+    () => (rowHeight ? new ListLayout({ rowHeight }) : undefined),
+    [rowHeight]
+  );
+}
+
 export interface SelectProps<T extends object>
   extends Omit<RACSelectProps<T>, "children" | "className"> {
   /** Options to render. Each needs a stable key (see `itemKey`, default `id`). */
@@ -99,18 +179,6 @@ export interface SelectProps<T extends object>
   errorMessage?: ReactNode;
   size?: ButtonSize;
   placeholder?: string;
-  /** Show a search field at the top of the list that filters options by text. */
-  searchable?: boolean;
-  /** Placeholder for the search field (when `searchable`). */
-  searchPlaceholder?: string;
-  /**
-   * Fixed pixel height of an option row. Setting this turns on virtualization:
-   * only the visible rows are mounted, so a long list (e.g. the ~600-entry HID
-   * usage picker) opens and filters instantly instead of reconciling every row.
-   * Must match the rendered row height — see `itemStyles` (single line ≈ 32,
-   * title+description ≈ 48). Leave unset for short lists.
-   */
-  rowHeight?: number;
   /** Render one option's content. Default: `itemText(item)`. */
   renderItem?: (item: T) => ReactNode;
   /** Render the trigger's selected value. Default: same as `renderItem`. */
@@ -125,18 +193,6 @@ export interface SelectProps<T extends object>
   triggerClassName?: string;
 }
 
-// `object` (not a structural type) so these stay assignable to the component's
-// `(item: T) => …` defaults for any `T extends object`; the inner cast reads the
-// conventional fields an item may carry.
-function defaultText(item: object): string {
-  const o = item as { label?: unknown; name?: unknown };
-  return String(o.label ?? o.name ?? "");
-}
-function defaultKey(item: object): Key {
-  const o = item as { id?: Key };
-  return o.id ?? defaultText(item);
-}
-
 export function Select<T extends object>({
   items,
   label,
@@ -144,9 +200,6 @@ export function Select<T extends object>({
   errorMessage,
   size = "md",
   placeholder = "Select…",
-  searchable = false,
-  searchPlaceholder = "Search…",
-  rowHeight,
   renderItem,
   renderValue,
   itemKey = defaultKey,
@@ -158,88 +211,8 @@ export function Select<T extends object>({
   const item = renderItem ?? ((i: T) => itemText(i));
   const value = renderValue ?? item;
 
-  const [query, setQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-
-  // react-aria's Select auto-focuses its listbox on open; pull focus back to
-  // the search field (next frame, after that effect runs) so the user can type
-  // immediately.
-  useEffect(() => {
-    if (!searchable || !isOpen) return;
-    const raf = requestAnimationFrame(() => searchRef.current?.focus());
-    return () => cancelAnimationFrame(raf);
-  }, [searchable, isOpen]);
-
-  // A ListLayout drives virtualization (only mount the visible rows). It's a
-  // stateful object, so keep one instance alive across renders and just feed it
-  // the row height. Undefined when not virtualizing.
-  const layout = useMemo(
-    () => (rowHeight ? new ListLayout({ rowHeight }) : undefined),
-    [rowHeight]
-  );
-
-  const allItems = useMemo(() => [...items], [items]);
-  const visibleItems = useMemo(() => {
-    if (!searchable || !query.trim()) return allItems;
-    const q = query.trim().toLowerCase();
-    return allItems.filter((i) => itemText(i).toLowerCase().includes(q));
-  }, [allItems, query, searchable, itemText]);
-
-  // Only take over the open state when searchable, so we can clear the query on
-  // close; otherwise leave react-aria's Select fully uncontrolled.
-  const openProps = searchable
-    ? {
-        isOpen,
-        onOpenChange: (open: boolean) => {
-          setIsOpen(open);
-          if (!open) setQuery("");
-        },
-      }
-    : {};
-
-  const listBox = (
-    <ListBox
-      ref={listRef}
-      items={visibleItems}
-      className={cx(listBoxStyles, searchable && "mt-1")}
-      renderEmptyState={
-        searchable
-          ? () => (
-              <div className="px-2 py-1.5 text-sm opacity-60">No matches</div>
-            )
-          : undefined
-      }
-    >
-      {(data) => (
-        <ListBoxItem
-          id={itemKey(data)}
-          textValue={itemText(data)}
-          className={itemStyles}
-        >
-          {item(data)}
-        </ListBoxItem>
-      )}
-    </ListBox>
-  );
-
-  // ArrowDown from the search field hands keyboard focus to the list.
-  const onSearchKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      listRef.current?.querySelector<HTMLElement>('[role="option"]')?.focus();
-    } else if (e.key === "Escape") {
-      setIsOpen(false);
-    }
-  };
-
   return (
-    <RACSelect
-      className={cx("flex flex-col gap-1", className)}
-      {...openProps}
-      {...props}
-    >
+    <RACSelect className={cx("flex flex-col gap-1", className)} {...props}>
       {label && <FieldLabel size={size}>{label}</FieldLabel>}
       <RACButton
         className={cx(
@@ -263,28 +236,123 @@ export function Select<T extends object>({
       {description && <FieldDescription>{description}</FieldDescription>}
       <FieldErrorMessage>{errorMessage}</FieldErrorMessage>
       <Popover className={popoverStyles}>
-        {searchable && (
-          <div className="flex items-center gap-2 border-b border-base-300 px-2 pb-1">
-            <Search aria-hidden className="size-4 shrink-0 opacity-60" />
-            <input
-              ref={searchRef}
-              autoFocus
-              type="text"
-              value={query}
-              placeholder={searchPlaceholder}
-              aria-label={searchPlaceholder}
-              className="w-full bg-transparent py-1 text-sm outline-none placeholder:opacity-60"
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={onSearchKeyDown}
-            />
-          </div>
-        )}
-        {layout ? (
-          <Virtualizer layout={layout}>{listBox}</Virtualizer>
-        ) : (
-          listBox
-        )}
+        <OptionsList<T>
+          items={items}
+          itemKey={itemKey}
+          itemText={itemText}
+          renderItem={item}
+        />
       </Popover>
     </RACSelect>
+  );
+}
+
+export interface ComboboxProps<T extends object>
+  extends Omit<
+    RACComboBoxProps<T>,
+    "children" | "className" | "items" | "defaultItems"
+  > {
+  /** Options to render. Each needs a stable key (see `itemKey`, default `id`). */
+  items: Iterable<T>;
+  /** Field label rendered above the field. */
+  label?: ReactNode;
+  /** Muted helper text below the field. */
+  description?: ReactNode;
+  /** Validation message; shown only when the field is invalid. */
+  errorMessage?: ReactNode;
+  size?: ButtonSize;
+  placeholder?: string;
+  /**
+   * Fixed pixel height of an option row. Setting this turns on virtualization:
+   * only the visible rows are mounted, so a long list (e.g. the ~600-entry HID
+   * usage picker) opens and filters instantly instead of reconciling every row.
+   * Must match the rendered row height — see `itemStyles` (single line ≈ 32,
+   * title+description ≈ 48). Leave unset for short lists.
+   */
+  rowHeight?: number;
+  /** Render one option's content. Default: `itemText(item)`. */
+  renderItem?: (item: T) => ReactNode;
+  /** Stable key for an item. Default: `item.id`. */
+  itemKey?: (item: T) => Key;
+  /** Accessible/typeahead + filter text for an item. Default: `item.label` ?? `item.name`. */
+  itemText?: (item: T) => string;
+  /** Wrapper (the field column) className. */
+  className?: string;
+  /** Field surface className (e.g. `w-full`, `min-w-40`). */
+  triggerClassName?: string;
+}
+
+export function Combobox<T extends object>({
+  items,
+  label,
+  description,
+  errorMessage,
+  size = "md",
+  placeholder = "Select…",
+  rowHeight,
+  renderItem,
+  itemKey = defaultKey,
+  itemText = defaultText,
+  className,
+  triggerClassName,
+  ...props
+}: ComboboxProps<T>) {
+  const item = renderItem ?? ((i: T) => itemText(i));
+  const layout = useListLayout(rowHeight);
+
+  // Spread the iterable into a stable array so react-aria can rebuild + filter
+  // the collection without re-spreading on every keystroke.
+  const allItems = useMemo(() => [...items], [items]);
+
+  return (
+    <RACComboBox<T>
+      className={cx("flex flex-col gap-1", className)}
+      // `defaultItems` (not `items`) lets react-aria own the filtering — it
+      // matches each option's textValue against what's typed (contains).
+      defaultItems={allItems}
+      // Opening via focus or the toggle button shows the full list; typing
+      // filters. So re-opening a field with a selected value still lists
+      // everything instead of just the current value.
+      menuTrigger="focus"
+      // Keep the popover (with the "No matches" state) open when a query
+      // filters everything out, rather than snapping shut.
+      allowsEmptyCollection
+      {...props}
+    >
+      {label && <FieldLabel size={size}>{label}</FieldLabel>}
+      <div
+        className={cx(comboSurface, controlSizeStyles[size], triggerClassName)}
+      >
+        <RACInput
+          placeholder={placeholder}
+          className={cx(
+            "min-w-0 flex-1 self-stretch bg-transparent outline-none placeholder:opacity-60",
+            controlPadX[size]
+          )}
+        />
+        <RACButton
+          aria-label="Show options"
+          className={cx(
+            "flex shrink-0 cursor-pointer items-center self-stretch rounded-r pl-1 pr-2",
+            "text-base-content/60 rac-hover:text-base-content"
+          )}
+        >
+          <ChevronDown aria-hidden />
+        </RACButton>
+      </div>
+      {description && <FieldDescription>{description}</FieldDescription>}
+      <FieldErrorMessage>{errorMessage}</FieldErrorMessage>
+      <Popover className={popoverStyles}>
+        <OptionsList<T>
+          itemKey={itemKey}
+          itemText={itemText}
+          renderItem={item}
+          layout={layout}
+          emptyState={() => (
+            <div className="px-2 py-1.5 text-sm opacity-60">No matches</div>
+          )}
+        />
+      </Popover>
+    </RACComboBox>
   );
 }

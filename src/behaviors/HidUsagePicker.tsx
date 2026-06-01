@@ -1,6 +1,6 @@
 import { Key } from "react-aria-components";
 import { ButtonGroup, ToggleButton } from "../misc/Button";
-import { Select, SelectItemContent } from "../misc/Select";
+import { Combobox, SelectItemContent } from "../misc/Select";
 import { KeyGrid } from "./KeyGrid";
 import {
   hid_usage_from_page_and_id,
@@ -150,12 +150,10 @@ export const HidUsagePicker = ({
         />
       )}
       <div className="flex items-end gap-2">
-        <Select<UsageItem>
+        <Combobox<UsageItem>
         label={label}
         aria-label={label ? undefined : "HID usage"}
-        searchable
-        searchPlaceholder="Search keys…"
-        placeholder="Select a key…"
+        placeholder="Search keys…"
         items={usageItems}
         selectedKey={value ? mask_mods(value) : null}
         onSelectionChange={selectionChanged}
@@ -168,7 +166,6 @@ export const HidUsagePicker = ({
             ? (u) => <SelectItemContent title={u.name} description={u.page} />
             : undefined
         }
-        renderValue={multiPage ? (u) => u.name : undefined}
       />
       <ButtonGroup>
         {all_mods.map((m) => {

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "@storybook/test";
 import { useState } from "react";
 import { Keyboard, ArrowRightLeft, Layers, ToggleLeft } from "lucide-react";
-import { Select, SelectItemContent } from "./Select";
+import { Select, Combobox, SelectItemContent } from "./Select";
 import type { Key } from "react-aria-components";
 
 const meta = {
@@ -97,8 +97,9 @@ export const ScalePicker: Story = {
 };
 
 /**
- * A searchable Select — a search field is pinned above the list and filters
- * options by text. For long lists (e.g. the HID usage picker).
+ * A Combobox — a text field that filters the list as you type (the combobox
+ * pattern). Focus stays on the input, so hovering an option only highlights it.
+ * For long lists (e.g. the HID usage picker).
  */
 export const Searchable: Story = {
   render: () => {
@@ -119,11 +120,10 @@ export const Searchable: Story = {
       { id: 129, name: "Volume Down" },
     ];
     return (
-      <Select
+      <Combobox
         label="Key"
-        searchable
         items={keys}
-        placeholder="Select a key…"
+        placeholder="Search keys…"
         triggerClassName="min-w-56"
       />
     );
