@@ -46,8 +46,6 @@ import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
 import { produce, type Draft } from "immer";
 import { LockStateContext } from "../rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
-import { deserializeLayoutZoom, type LayoutZoom } from "./layoutZoom";
-import { Select } from "../misc/Select";
 import { Button } from "../misc/Button";
 import { ConfigFieldEdit } from "../behaviours/ConfigFieldEditor";
 import { BehaviourNameEditor } from "../behaviours/BehaviourNameEditor";
@@ -61,20 +59,6 @@ function editData<T>(recipe: (draft: Draft<T>) => void) {
     if (draft) recipe(draft);
   });
 }
-
-// Keymap zoom levels for the overlay picker. Keys are the serialized zoom value
-// (see deserializeLayoutZoom); "auto" fits the layout to the available space.
-const SCALE_ITEMS = [
-  { id: "auto", name: "Auto" },
-  { id: "0.25", name: "25%" },
-  { id: "0.5", name: "50%" },
-  { id: "0.75", name: "75%" },
-  { id: "1", name: "100%" },
-  { id: "1.25", name: "125%" },
-  { id: "1.5", name: "150%" },
-  { id: "2", name: "200%" },
-];
-import { useLocalStorageState } from "../misc/useLocalStorageState";
 
 /** Top-level sections selectable from the header navigation. */
 export type Page = "layers" | "combos" | "behaviours";
@@ -245,10 +229,6 @@ export default function Keyboard({ page }: { page: Page }) {
       (resp) => resp?.behaviors?.getCustomBehaviors,
       true
     );
-
-  const [keymapScale, setKeymapScale] = useLocalStorageState<LayoutZoom>("keymapScale", "auto", {
-    deserialize: deserializeLayoutZoom,
-  });
 
   const [selectedLayerIndex, setSelectedLayerIndex] = useState<number>(0);
   const [selectedKeyPosition, setSelectedKeyPosition] = useState<
@@ -1198,7 +1178,7 @@ export default function Keyboard({ page }: { page: Page }) {
   }
 
   return (
-    <div className="grid grid-cols-[auto_1fr] grid-rows-[1fr_minmax(10em,45vh)] bg-base-300 max-w-full min-w-0 min-h-0">
+    <div className="grid grid-cols-[auto_1fr] grid-rows-[1fr_auto] bg-base-300 max-w-full min-w-0 min-h-0">
       <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
         {/* Layout picker temporarily hidden — not needed for now.
         {layouts && (
@@ -1230,26 +1210,14 @@ export default function Keyboard({ page }: { page: Page }) {
             keymap={keymap}
             layout={layouts[selectedPhysicalLayoutIndex]}
             behaviors={behaviors}
-            scale={keymapScale}
             selectedLayerIndex={selectedLayerIndex}
             selectedKeyPosition={selectedKeyPosition}
             onKeyPositionClicked={setSelectedKeyPosition}
           />
-          <Select
-            aria-label="Zoom"
-            className="absolute top-2 right-2"
-            triggerClassName="w-28"
-            size="sm"
-            items={SCALE_ITEMS}
-            selectedKey={String(keymapScale)}
-            onSelectionChange={(key) =>
-              setKeymapScale(deserializeLayoutZoom(String(key)))
-            }
-          />
         </div>
       )}
       {keymap && selectedBinding && (
-        <div className="p-2 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0">
+        <div className="p-2 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0 max-h-[45vh]">
           <BehaviorBindingPicker
             binding={selectedBinding}
             behaviors={Object.values(behaviors)}

@@ -6,7 +6,10 @@ import {
   useState,
 } from "react";
 import { Key } from "./Key";
-import type { LayoutZoom } from "./layoutZoom";
+
+// Zoom level for the layout view: a number is an explicit scale factor, "auto"
+// fits the layout to the available space.
+export type LayoutZoom = number | "auto";
 
 export type KeyPosition = PropsWithChildren<{
   id: string;
@@ -19,11 +22,6 @@ export type KeyPosition = PropsWithChildren<{
   rx?: number;
   ry?: number;
 }>;
-
-// `deserializeLayoutZoom` and `LayoutZoom` now live in layoutZoom.ts (plain
-// helpers, not components — keeping them here broke Fast Refresh). Re-exported
-// so existing importers of this module keep working.
-export type { LayoutZoom };
 
 interface PhysicalLayoutProps {
   positions: Array<KeyPosition>;

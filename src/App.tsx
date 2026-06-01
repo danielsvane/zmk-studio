@@ -41,7 +41,6 @@ import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { LockStateContext } from "./rpc/LockStateContext";
 import { UnlockModal } from "./UnlockModal";
 import { valueAfter } from "./misc/async";
-import { AppFooter } from "./AppFooter";
 import { AboutModal } from "./AboutModal";
 import { LicenseNoticeModal } from "./misc/LicenseNoticeModal";
 
@@ -541,7 +540,7 @@ function App() {
             open={showLicenseNotice}
             onClose={() => setShowLicenseNotice(false)}
           />
-          <div className="bg-base-100 text-base-content h-full max-h-[100vh] w-full max-w-[100vw] inline-grid grid-cols-[auto] grid-rows-[auto_1fr_auto] overflow-hidden">
+          <div className="bg-base-100 text-base-content h-full max-h-[100vh] w-full max-w-[100vw] inline-grid grid-cols-[auto] grid-rows-[auto_1fr] overflow-hidden">
             <AppHeader
               connectedDeviceLabel={connectedDeviceName}
               page={page}
@@ -556,10 +555,6 @@ function App() {
               onResetSettings={resetSettings}
             />
             <Keyboard page={page} />
-            <AppFooter
-              onShowAbout={() => setShowAbout(true)}
-              onShowLicenseNotice={() => setShowLicenseNotice(true)}
-            />
           </div>
         </UndoRedoContext.Provider>
       </LockStateContext.Provider>

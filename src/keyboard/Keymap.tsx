@@ -4,10 +4,7 @@ import {
 } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 
-import {
-  LayoutZoom,
-  PhysicalLayout as PhysicalLayoutComp,
-} from "./PhysicalLayout";
+import { PhysicalLayout as PhysicalLayoutComp } from "./PhysicalLayout";
 import { HidUsageLabel } from "./HidUsageLabel";
 
 type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
@@ -16,7 +13,6 @@ export interface KeymapProps {
   layout: PhysicalLayout;
   keymap: KeymapMsg;
   behaviors: BehaviorMap;
-  scale: LayoutZoom;
   selectedLayerIndex: number;
   selectedKeyPosition: number | undefined;
   onKeyPositionClicked: (keyPosition: number) => void;
@@ -26,7 +22,6 @@ export const Keymap = ({
   layout,
   keymap,
   behaviors,
-  scale,
   selectedLayerIndex,
   selectedKeyPosition,
   onKeyPositionClicked,
@@ -76,7 +71,7 @@ export const Keymap = ({
     <PhysicalLayoutComp
       positions={positions}
       oneU={48}
-      zoom={scale}
+      zoom="auto"
       selectedPosition={selectedKeyPosition}
       onPositionClicked={onKeyPositionClicked}
     />
