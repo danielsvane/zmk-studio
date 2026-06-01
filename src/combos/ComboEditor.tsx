@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { Key } from "react-aria-components";
 import { Trash2 } from "lucide-react";
 
@@ -11,6 +11,8 @@ import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
 import { KeyPositionPicker } from "../keyboard/KeyPositionPicker";
 import { Button } from "../misc/Button";
 import { Checkbox } from "../misc/Checkbox";
+import { Disclosure } from "../misc/Disclosure";
+import { GroupLabel } from "../misc/Field";
 import { TextField } from "../misc/TextField";
 import { ToggleGroup, ToggleGroupItem } from "../misc/ToggleGroup";
 
@@ -86,6 +88,7 @@ export const ComboEditor = ({
   const [layersMask, setLayersMask] = useState(0);
   const [slowRelease, setSlowRelease] = useState(false);
   const [binding, setBinding] = useState<BehaviorBinding | undefined>(undefined);
+  const keyPositionsLabelId = useId();
 
   // Reload local state whenever a different combo (or a fresh copy) is selected.
   useEffect(() => {
@@ -137,17 +140,19 @@ export const ComboEditor = ({
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm">
+        <GroupLabel id={keyPositionsLabelId}>
           Key positions (max {maxKeysPerCombo})
-        </label>
+        </GroupLabel>
         {layoutKeys ? (
-          <KeyPositionPicker
-            layoutKeys={layoutKeys}
-            value={keyPositions}
-            max={maxKeysPerCombo}
-            oneU={48}
-            onChange={setKeyPositions}
-          />
+          <div role="group" aria-labelledby={keyPositionsLabelId}>
+            <KeyPositionPicker
+              layoutKeys={layoutKeys}
+              value={keyPositions}
+              max={maxKeysPerCombo}
+              oneU={48}
+              onChange={setKeyPositions}
+            />
+          </div>
         ) : (
           <KeyPositionsTextInput
             key={index}
@@ -171,46 +176,48 @@ export const ComboEditor = ({
         />
       )}
 
-      <TextField
-        className="max-w-sm"
-        label="Timeout (ms)"
-        type="number"
-        inputProps={{ min: 1 }}
-        value={String(timeoutMs)}
-        onChange={(v) => setTimeoutMs(parseInt(v, 10) || 0)}
-      />
+      <Disclosure title="Advanced">
+        <TextField
+          className="max-w-sm"
+          label="Timeout (ms)"
+          type="number"
+          inputProps={{ min: 1 }}
+          value={String(timeoutMs)}
+          onChange={(v) => setTimeoutMs(parseInt(v, 10) || 0)}
+        />
 
-      <TextField
-        className="max-w-sm"
-        label="Require prior idle (ms)"
-        description="-1 = disabled"
-        type="number"
-        inputProps={{ min: -1 }}
-        value={String(requirePriorIdleMs)}
-        onChange={(v) => {
-          const n = parseInt(v, 10);
-          setRequirePriorIdleMs(Number.isNaN(n) ? -1 : n);
-        }}
-      />
+        <TextField
+          className="max-w-sm"
+          label="Require prior idle (ms)"
+          description="-1 = disabled"
+          type="number"
+          inputProps={{ min: -1 }}
+          value={String(requirePriorIdleMs)}
+          onChange={(v) => {
+            const n = parseInt(v, 10);
+            setRequirePriorIdleMs(Number.isNaN(n) ? -1 : n);
+          }}
+        />
 
-      <ToggleGroup
-        label="Active on layers"
-        description="None selected = active on all layers."
-        selectionMode="multiple"
-        selectedKeys={selectedLayerKeys}
-        onSelectionChange={setLayersFromKeys}
-        fill={false}
-      >
-        {layers.map((layer, i) => (
-          <ToggleGroupItem key={layer.id} id={String(i)}>
-            {layer.name || i}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+        <ToggleGroup
+          label="Active on layers"
+          description="None selected = active on all layers."
+          selectionMode="multiple"
+          selectedKeys={selectedLayerKeys}
+          onSelectionChange={setLayersFromKeys}
+          fill={false}
+        >
+          {layers.map((layer, i) => (
+            <ToggleGroupItem key={layer.id} id={String(i)}>
+              {layer.name || i}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
 
-      <Checkbox isSelected={slowRelease} onChange={setSlowRelease}>
-        Slow release
-      </Checkbox>
+        <Checkbox isSelected={slowRelease} onChange={setSlowRelease}>
+          Slow release
+        </Checkbox>
+      </Disclosure>
 
       <Button
         className="self-start"

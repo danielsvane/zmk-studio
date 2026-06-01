@@ -84,6 +84,7 @@ wired for you):
 | Segmented single/multi select | `ToggleGroup` + `ToggleGroupItem` (`ToggleGroup.tsx`) |
 | Boolean | `Checkbox` (`Checkbox.tsx`) |
 | Action | `Button` (`Button.tsx`) |
+| Collapsible section (advanced/secondary fields) | `Disclosure` (`Disclosure.tsx`) |
 | Two-region picker (controls + canvas) | `PickerShell` (`PickerShell.tsx`) |
 
 `Field` must render **inside** the react-aria provider (`RACTextField`,
