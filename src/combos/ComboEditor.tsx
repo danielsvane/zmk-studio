@@ -162,6 +162,15 @@ export const ComboEditor = ({
         )}
       </div>
 
+      {binding && (
+        <BehaviorBindingPicker
+          binding={binding}
+          behaviors={behaviors}
+          layers={layers}
+          onBindingChanged={setBinding}
+        />
+      )}
+
       <TextField
         className="max-w-sm"
         label="Timeout (ms)"
@@ -202,15 +211,6 @@ export const ComboEditor = ({
       <Checkbox isSelected={slowRelease} onChange={setSlowRelease}>
         Slow release
       </Checkbox>
-
-      {binding && (
-        <BehaviorBindingPicker
-          binding={binding}
-          behaviors={behaviors}
-          layers={layers}
-          onBindingChanged={setBinding}
-        />
-      )}
 
       <Button
         className="self-start"
