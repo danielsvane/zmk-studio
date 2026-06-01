@@ -1152,8 +1152,12 @@ export default function Keyboard({ page }: { page: Page }) {
             />
           )}
         </div>
-        <div className="p-6 col-start-2 overflow-y-auto min-h-0 min-w-0">
-          <div className="mx-auto h-full w-full max-w-4xl">
+        <div className="px-6 pt-6 col-start-2 overflow-y-auto min-h-0 min-w-0">
+          {/* min-h-full + flex-col so the empty-state can center vertically,
+              while pb-6 lives on the *content* (not the scroll container, whose
+              bottom padding gets dropped at the scroll end) to keep a gap below
+              the Apply button. */}
+          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col pb-6">
             {keymap && combos && selectedCombo?.combo ? (
               <ComboEditor
                 index={selectedCombo.index}
@@ -1169,7 +1173,7 @@ export default function Keyboard({ page }: { page: Page }) {
                 onDelete={doRemoveCombo}
               />
             ) : (
-              <div className="h-full grid place-items-center text-center text-base-content/60">
+              <div className="grid flex-1 place-items-center text-center text-base-content/60">
                 <p>Select a combo to edit, or add a new one.</p>
               </div>
             )}
