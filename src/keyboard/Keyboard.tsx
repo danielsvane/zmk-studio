@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -263,13 +264,24 @@ export default function Keyboard({ page }: { page: Page }) {
     setSelectedComboIndex(undefined);
   }, [conn]);
 
+  // `conn`/`layouts` are read as guards only — this request must fire when the
+  // user *picks* a different physical layout, not when the connection or the
+  // layout list loads (that would push setActivePhysicalLayout on every connect
+  // and clobber the freshly-loaded keymap). Hold them in refs so the effect sees
+  // current values without taking them as triggers.
+  const connRef = useRef(conn);
+  connRef.current = conn;
+  const layoutsRef = useRef(layouts);
+  layoutsRef.current = layouts;
+
   useEffect(() => {
     async function performSetRequest() {
-      if (!conn.conn || !layouts) {
+      const c = connRef.current.conn;
+      if (!c || !layoutsRef.current) {
         return;
       }
 
-      const resp = await call_rpc(conn.conn, {
+      const resp = await call_rpc(c, {
         keymap: { setActivePhysicalLayout: selectedPhysicalLayoutIndex },
       });
 
@@ -285,7 +297,7 @@ export default function Keyboard({ page }: { page: Page }) {
     }
 
     performSetRequest();
-  }, [selectedPhysicalLayoutIndex]);
+  }, [selectedPhysicalLayoutIndex, setKeymap]);
 
   const doSelectPhysicalLayout = useCallback(
     (i: number) => {
@@ -298,7 +310,7 @@ export default function Keyboard({ page }: { page: Page }) {
         };
       });
     },
-    [undoRedo, selectedPhysicalLayoutIndex]
+    [undoRedo, selectedPhysicalLayoutIndex, setSelectedPhysicalLayoutIndex]
   );
 
   const doUpdateBinding = useCallback(
@@ -359,7 +371,7 @@ export default function Keyboard({ page }: { page: Page }) {
         };
       });
     },
-    [conn, keymap, undoRedo, selectedLayerIndex, selectedKeyPosition]
+    [conn, keymap, undoRedo, selectedLayerIndex, selectedKeyPosition, setKeymap]
   );
 
   const selectedBinding = useMemo(() => {
@@ -872,7 +884,7 @@ export default function Keyboard({ page }: { page: Page }) {
         return () => doMove(end, start);
       });
     },
-    [undoRedo]
+    [conn, undoRedo, setKeymap]
   );
 
   const addLayer = useCallback(() => {
@@ -930,7 +942,7 @@ export default function Keyboard({ page }: { page: Page }) {
       const index = await doAdd();
       return () => doRemove(index);
     });
-  }, [conn, undoRedo, keymap]);
+  }, [conn, undoRedo, keymap, setKeymap]);
 
   const removeLayer = useCallback(() => {
     async function doRemove(layerIndex: number): Promise<void> {
@@ -996,7 +1008,7 @@ export default function Keyboard({ page }: { page: Page }) {
       await doRemove(index);
       return () => doRestore(layerId, index);
     });
-  }, [conn, undoRedo, selectedLayerIndex]);
+  }, [conn, undoRedo, selectedLayerIndex, keymap, setKeymap]);
 
   const changeLayerName = useCallback(
     (id: number, oldName: string, newName: string) => {
@@ -1035,7 +1047,7 @@ export default function Keyboard({ page }: { page: Page }) {
         };
       });
     },
-    [conn, undoRedo, keymap]
+    [conn, undoRedo, setKeymap]
   );
 
   useEffect(() => {

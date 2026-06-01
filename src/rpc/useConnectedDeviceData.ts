@@ -1,4 +1,10 @@
-import React, { SetStateAction, useContext, useEffect, useState } from "react";
+import React, {
+  SetStateAction,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ConnectionContext } from "./ConnectionContext";
 
 import { call_rpc } from "./logging";
@@ -16,41 +22,51 @@ export function useConnectedDeviceData<T>(
   const lockState = useContext(LockStateContext);
   const [data, setData] = useState<T | undefined>(undefined);
 
-  useEffect(
-    () => {
-      if (
-        !connection.conn ||
-        (requireUnlock &&
-          lockState != LockState.ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED)
-      ) {
-        setData(undefined);
+  // `req` is a fresh object literal and `response_mapper` a fresh closure on
+  // every render at the call sites, so they can't be effect deps directly
+  // (that would re-issue the RPC every render). Read them through refs, and
+  // re-fetch only when the request's *content* changes (reqKey).
+  const reqRef = useRef(req);
+  reqRef.current = req;
+  const mapperRef = useRef(response_mapper);
+  mapperRef.current = response_mapper;
+  const reqKey = JSON.stringify(req);
+
+  // Whether we're allowed to fetch right now. A primitive so the effect re-runs
+  // only when permission actually flips — and, as before, lock state only
+  // matters when `requireUnlock` is set.
+  const canFetch = requireUnlock
+    ? lockState === LockState.ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED
+    : true;
+
+  useEffect(() => {
+    if (!connection.conn || !canFetch) {
+      setData(undefined);
+      return;
+    }
+
+    async function startRequest() {
+      setData(undefined);
+      if (!connection.conn) {
         return;
       }
 
-      async function startRequest() {
-        setData(undefined);
-        if (!connection.conn) {
-          return;
-        }
+      const response = mapperRef.current(
+        await call_rpc(connection.conn, reqRef.current)
+      );
 
-        const response = response_mapper(await call_rpc(connection.conn, req));
-
-        if (!ignore) {
-          setData(response);
-        }
+      if (!ignore) {
+        setData(response);
       }
+    }
 
-      let ignore = false;
-      startRequest();
+    let ignore = false;
+    startRequest();
 
-      return () => {
-        ignore = true;
-      };
-    },
-    requireUnlock
-      ? [connection, requireUnlock, lockState]
-      : [connection, requireUnlock]
-  );
+    return () => {
+      ignore = true;
+    };
+  }, [connection, canFetch, reqKey]);
 
   return [data, setData];
 }

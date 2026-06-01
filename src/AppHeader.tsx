@@ -58,7 +58,7 @@ export const AppHeader = ({
     ) {
       setShowSettingsReset(false);
     }
-  }, [lockState, showSettingsReset]);
+  }, [lockState, showSettingsReset, connectionState.conn]);
 
   const showSettingsRef = useModalRef(showSettingsReset);
   const [keymapUnsaved, setKeymapUnsaved] = useConnectedDeviceData<boolean>(

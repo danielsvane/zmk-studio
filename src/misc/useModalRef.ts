@@ -46,7 +46,7 @@ export function useModalRef(
       ref.current?.close();
       ref.current?.removeEventListener("cancel", reopen);
     }
-  }, [open, closeOnOutsideClick]);
+  }, [open, closeOnOutsideClick, allowCancel]);
 
   return ref;
 }

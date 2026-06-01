@@ -237,7 +237,7 @@ function App() {
     }
 
     updateLockState();
-  }, [conn, setLockState]);
+  }, [conn, setLockState, reset]);
 
   // While connected but still locked, the keyboard normally reports unlocking
   // via a `lockStateChanged` notification. If that push never arrives, the app
@@ -355,7 +355,7 @@ function App() {
     }
 
     doDiscard();
-  }, [conn]);
+  }, [conn, reset]);
 
   const resetSettings = useCallback(() => {
     async function doReset() {
@@ -375,7 +375,7 @@ function App() {
     }
 
     doReset();
-  }, [conn]);
+  }, [conn, reset]);
 
   const disconnect = useCallback(() => {
     async function doDisconnect() {
@@ -389,7 +389,7 @@ function App() {
     }
 
     doDisconnect();
-  }, [conn]);
+  }, [conn, connectionAbort]);
 
   // Human-readable status shown in the connect modal while probing ports, so a
   // multi-second auto-reconnect doesn't look like the app is stuck.

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
+import { expect, fn, screen, userEvent, waitFor, within } from "@storybook/test";
 import { BehaviorBindingPicker } from "./BehaviorBindingPicker";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
@@ -46,6 +46,56 @@ export const Example: Story = {
         ],
       },
     ],
+  },
+};
+
+// Switching to a behaviour that takes no parameters validates trivially, so it
+// exercises the propagate-up path (onBindingChanged) via the behaviour selector.
+export const NoParamBehavior: Story = {
+  args: {
+    binding: { behaviorId: 0, param1: 0, param2: 0 },
+    behaviors: [
+      {
+        id: 0,
+        displayName: "Key Press",
+        metadata: [
+          {
+            param1: [
+              { name: "Key", hidUsage: { consumerMax: 0, keyboardMax: 0 } },
+            ],
+            param2: [],
+          },
+        ],
+      },
+      {
+        id: 1,
+        displayName: "Caps Word",
+        metadata: [{ param1: [], param2: [] }],
+      },
+    ],
+  },
+  // Selecting a no-param behaviour must propagate up via onBindingChanged. This
+  // guards the propagate-up effect (the one whose deps were refactored to refs).
+  play: async ({ args, canvasElement, step }) => {
+    const canvas = within(canvasElement);
+
+    await step("switch to the no-param behaviour", async () => {
+      await userEvent.click(canvas.getByRole("button", { name: /Key Press/ }));
+      // react-aria renders the listbox in a portal on document.body, so query
+      // the option document-wide rather than within the story canvas.
+      await userEvent.click(await screen.findByRole("option", { name: "Caps Word" }));
+    });
+
+    await step("onBindingChanged fires once with the new behaviour", async () => {
+      await waitFor(() =>
+        expect(args.onBindingChanged).toHaveBeenCalledWith({
+          behaviorId: 1,
+          param1: 0,
+          param2: 0,
+        })
+      );
+      expect(args.onBindingChanged).toHaveBeenCalledTimes(1);
+    });
   },
 };
 

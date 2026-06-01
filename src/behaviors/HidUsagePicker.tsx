@@ -138,7 +138,7 @@ export const HidUsagePicker = ({
       const new_value = mask_mods(value) | (mod_flags << 24);
       onValueChanged(new_value);
     },
-    [value]
+    [value, onValueChanged]
   );
 
   return (

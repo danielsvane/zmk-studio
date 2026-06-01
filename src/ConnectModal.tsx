@@ -49,7 +49,7 @@ function DeviceList({
   const [selectedDev, setSelectedDev] = useState(new Set<Key>());
   const [refreshing, setRefreshing] = useState(false);
 
-  async function LoadEm() {
+  const LoadEm = useCallback(async () => {
     setRefreshing(true);
     const entries: Array<[TransportFactory, AvailableDevice]> = [];
     for (const t of transports.filter((t) => t.pick_and_connect)) {
@@ -67,21 +67,21 @@ function DeviceList({
 
     setDevices(entries);
     setRefreshing(false);
-  }
+  }, [transports]);
 
   useEffect(() => {
     setSelectedDev(new Set());
     setDevices([]);
 
     LoadEm();
-  }, [transports, open, setDevices]);
+  }, [open, LoadEm]);
 
   const onRefresh = useCallback(() => {
     setSelectedDev(new Set());
     setDevices([]);
 
     LoadEm();
-  }, [setDevices]);
+  }, [LoadEm]);
 
   const onSelect = useCallback(
     async (keys: Selection) => {
@@ -215,7 +215,7 @@ function SimpleDevicePicker({
     return () => {
       ignore = true;
     };
-  }, [selectedTransport]);
+  }, [selectedTransport, onTransportCreated]);
 
   const connections = transports.map((t) => (
     <li key={t.label} className="list-none">

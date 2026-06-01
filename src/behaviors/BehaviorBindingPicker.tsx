@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   GetBehaviorDetailsResponse,
@@ -67,7 +67,23 @@ export const BehaviorBindingPicker = ({
     [behaviors]
   );
 
+  // This effect propagates *user edits* (local behaviorId/param1/param2) up via
+  // onBindingChanged. The incoming `binding`, `metadata`, `layers`, and the
+  // callback are consulted only at the moment of such an edit — they must not
+  // themselves re-trigger it (the sibling sync-down effect already mirrors
+  // `binding` into local state, and re-firing on metadata/callback changes can
+  // loop). Read them through refs so the trigger stays the three edited values.
+  const bindingRef = useRef(binding);
+  bindingRef.current = binding;
+  const metadataRef = useRef(metadata);
+  metadataRef.current = metadata;
+  const layersRef = useRef(layers);
+  layersRef.current = layers;
+  const onBindingChangedRef = useRef(onBindingChanged);
+  onBindingChangedRef.current = onBindingChanged;
+
   useEffect(() => {
+    const binding = bindingRef.current;
     if (
       binding.behaviorId === behaviorId &&
       binding.param1 === param1 &&
@@ -76,6 +92,7 @@ export const BehaviorBindingPicker = ({
       return;
     }
 
+    const metadata = metadataRef.current;
     if (!metadata) {
       console.error(
         "Can't find metadata for the selected behaviorId",
@@ -87,12 +104,12 @@ export const BehaviorBindingPicker = ({
     if (
       validateBinding(
         metadata,
-        layers.map(({ id }) => id),
+        layersRef.current.map(({ id }) => id),
         param1,
         param2
       )
     ) {
-      onBindingChanged({
+      onBindingChangedRef.current({
         behaviorId,
         param1: param1 || 0,
         param2: param2 || 0,

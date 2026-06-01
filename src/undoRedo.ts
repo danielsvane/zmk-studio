@@ -1,4 +1,4 @@
-import { createContext, useMemo, useState } from "react";
+import { createContext, useCallback, useMemo, useState } from "react";
 
 export type UndoCallback = () => Promise<void>;
 
@@ -73,10 +73,12 @@ export function useUndoRedo(): [
     return await doIt(doCb, true);
   };
 
-  const reset = () => {
+  // Stable identity (only touches the two stable setters) so callers can list
+  // `reset` in their effect/callback dep arrays without re-running every render.
+  const reset = useCallback(() => {
     setRedoStack([]);
     setUndoStack([]);
-  };
+  }, []);
 
   return [doIt, undo, redo, canUndo, canRedo, reset];
 }
