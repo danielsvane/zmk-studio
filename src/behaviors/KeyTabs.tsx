@@ -49,7 +49,6 @@ export const KeyTabs = ({ value, onPick, tabs }: KeyTabsProps) => {
       {tabs.length > 1 && (
         <ToggleGroup
           aria-label="Key category"
-          size="sm"
           selectionMode="single"
           disallowEmptySelection
           selectedKeys={new Set([activeTab.id])}

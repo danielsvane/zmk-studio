@@ -1178,7 +1178,7 @@ export default function Keyboard({ page }: { page: Page }) {
   }
 
   return (
-    <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)_45vh] bg-base-300 max-w-full min-w-0 min-h-0">
+    <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)_50vh] bg-base-300 max-w-full min-w-0 min-h-0">
       <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
         {/* Layout picker temporarily hidden — not needed for now.
         {layouts && (

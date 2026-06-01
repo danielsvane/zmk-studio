@@ -36,11 +36,12 @@ const itemBase = cx(
   controlFocusRing
 );
 
-// Heights track the shared control sizes so a single-line segment lines up with
-// the selects; multi-line content (a name over a value) grows past the minimum.
+// Every segment is at least one `control` (48px) hit target so it lines up with
+// the selects and keys; multi-line content (a name over a value) grows past the
+// minimum. `size` only tunes text/padding density, not the height.
 const itemSize: Record<ButtonSize, string> = {
-  sm: "min-h-6 px-2 py-1 text-xs",
-  md: "min-h-8 px-3 py-1.5 text-sm",
+  sm: "min-h-control px-2 py-1 text-xs",
+  md: "min-h-control px-3 py-1.5 text-sm",
 };
 
 const SizeContext = createContext<ButtonSize>("md");

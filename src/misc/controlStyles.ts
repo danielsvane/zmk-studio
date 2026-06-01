@@ -51,16 +51,18 @@ const variants: Record<ButtonVariant, string> = {
     "rac-selected:bg-red-600 rac-selected:text-white",
 };
 
-// Height/text/icon size apply to every variant (incl. link) so they all line
-// up; only the horizontal footprint differs per size/shape. Exported so other
-// controls (Select, future Input) adopt the exact same heights.
+// Every control is one comfortable `h-control` (48px) hit target regardless of
+// size — `size` only tunes the text/icon scale and horizontal footprint, not the
+// height, so Selects, ToggleGroups, keys, and Buttons all line up. Exported so
+// other controls (Select, future Input) adopt the exact same height.
 export const controlSizeStyles: Record<ButtonSize, string> = {
-  md: "h-8 text-sm [&_svg]:size-4",
-  sm: "h-6 text-xs [&_svg]:size-3.5",
+  md: "h-control text-sm [&_svg]:size-4",
+  sm: "h-control text-xs [&_svg]:size-3.5",
 };
 /** Horizontal padding for a control showing a text label. */
 export const controlPadX: Record<ButtonSize, string> = { md: "px-3", sm: "px-2" };
-const iconWidth: Record<ButtonSize, string> = { md: "w-8", sm: "w-6" };
+// Icon-only buttons stay square at the shared hit-target size.
+const iconWidth: Record<ButtonSize, string> = { md: "w-control", sm: "w-control" };
 
 export interface ButtonStyleOptions {
   variant?: ButtonVariant;

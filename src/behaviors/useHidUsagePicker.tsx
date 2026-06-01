@@ -181,7 +181,6 @@ export function useHidUsagePicker({
           on top of a base key, so the row is disabled until one is chosen. */}
       <ToggleGroup
         label="Modifiers"
-        size="sm"
         selectionMode="multiple"
         selectedKeys={new Set(activeMods)}
         onSelectionChange={modifiersChanged}

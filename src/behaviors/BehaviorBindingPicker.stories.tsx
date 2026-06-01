@@ -63,11 +63,12 @@ export const KeyPress: Story = {
 };
 
 /** Two key params (tap + hold): the slot tabs join the controls column and route
- * the shared grid to the active slot. */
+ * the shared grid to the active slot. Wide enough (past the 64rem flip) to sit
+ * side-by-side. */
 export const ModTapSideBySide: Story = {
   render: (args) => (
     <PickerAt
-      width={720}
+      width={1100}
       initial={MOD_TAP}
       onBindingChanged={args.onBindingChanged}
     />

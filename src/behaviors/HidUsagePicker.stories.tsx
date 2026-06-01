@@ -78,12 +78,12 @@ export const WithGrid: Story = {
 };
 
 /**
- * The same key-press variant in a wide container: past ~36rem the shell flips
+ * The same key-press variant in a wide container: past 64rem the shell flips
  * to side-by-side — controls on the left, the key grid on the right.
  */
 export const WithGridSideBySide: Story = {
   render: (args) => (
-    <PickerAt width={720} showGrid onValueChanged={args.onValueChanged} />
+    <PickerAt width={1100} showGrid onValueChanged={args.onValueChanged} />
   ),
 };
 

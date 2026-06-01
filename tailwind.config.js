@@ -12,6 +12,14 @@ export default {
       fontSize: {
         "2xs": "0.4rem",
       },
+      spacing: {
+        // Comfortable single hit target shared by every interactive control
+        // (Select/Combobox triggers, ToggleGroup segments, keyboard keys, and
+        // Buttons). 48px clears the WCAG 2.5.5 (AAA) 44px target-size minimum
+        // with margin and lines them all up at one height. Single source of
+        // truth — exposed as h-control / min-h-control / w-control / min-w-control.
+        control: "3rem",
+      },
       colors: {
         primary:
           "light-dark(oklch(49.12% 0.3096 285.75), oklch(65.69% 0.196 285.75))",
