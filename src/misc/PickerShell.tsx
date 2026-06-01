@@ -31,8 +31,9 @@ export const PickerShell = ({ controls, canvas }: PickerShellProps) => {
     <div className="@container">
       <div className="flex flex-col gap-3 @[64rem]:flex-row @[64rem]:items-start @[64rem]:gap-4">
         {/* Cap the controls when stacked so the selects don't stretch across a
-            wide panel; side-by-side they're a fixed column instead. */}
-        <div className="flex min-w-0 max-w-sm flex-col gap-2 @[64rem]:w-56 @[64rem]:max-w-none @[64rem]:shrink-0">
+            wide panel; side-by-side they're a fixed column at the same width, wide
+            enough for the eight modifier segments to sit on one line. */}
+        <div className="flex min-w-0 max-w-sm flex-col gap-2 @[64rem]:w-96 @[64rem]:max-w-none @[64rem]:shrink-0">
           {controls}
         </div>
         <div className="min-w-0 @[64rem]:flex-1">{canvas}</div>

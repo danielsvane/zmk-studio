@@ -1,8 +1,8 @@
 import { Key } from "react-aria-components";
 import { useCallback, useMemo } from "react";
 
-import { ButtonGroup, ToggleButton } from "../misc/Button";
 import { LabeledGroup } from "../misc/Field";
+import { ToggleGroup, ToggleGroupItem } from "../misc/ToggleGroup";
 import { Combobox, SelectItemContent } from "../misc/Select";
 import { KeyGrid } from "./KeyGrid";
 import type { PickerRegions } from "../misc/PickerShell";
@@ -70,8 +70,8 @@ const mod_labels: Record<Mods, string> = {
   [Mods.RightGUI]: "R GUI",
 };
 
-// Split into left/right rows so the eight toggles read as two compact groups and
-// fit a narrow controls column (the picker can go side-by-side from ~36rem).
+// Left modifiers first, then right — the order the eight toggles appear in the
+// single segmented row.
 const left_mods = [
   Mods.LeftControl,
   Mods.LeftShift,
@@ -116,32 +116,30 @@ export function useHidUsagePicker({
   // page as a hint under each option.
   const multiPage = usagePages.length > 1;
 
-  const mods = useMemo(() => {
+  const activeMods = useMemo(() => {
     const flags = value ? value >> 24 : 0;
-
-    return all_mods.filter((m) => m & flags).map((m) => m.toLocaleString());
+    return all_mods.filter((m) => m & flags);
   }, [value]);
 
   const selectionChanged = useCallback(
     (e: Key | null) => {
       let value = typeof e == "number" ? e : undefined;
       if (value !== undefined) {
-        const mod_flags = mods_to_flags(mods.map((m) => parseInt(m)));
-        value = value | (mod_flags << 24);
+        value = value | (mods_to_flags(activeMods) << 24);
       }
 
       onValueChanged(value);
     },
-    [onValueChanged, mods]
+    [onValueChanged, activeMods]
   );
 
   const modifiersChanged = useCallback(
-    (m: string[]) => {
+    (keys: Set<Key>) => {
       if (!value) {
         return;
       }
 
-      const mod_flags = mods_to_flags(m.map((m) => parseInt(m)));
+      const mod_flags = mods_to_flags([...keys].map(Number));
       const new_value = mask_mods(value) | (mod_flags << 24);
       onValueChanged(new_value);
     },
@@ -149,30 +147,6 @@ export function useHidUsagePicker({
   );
 
   const maskedValue = value ? mask_mods(value) : undefined;
-
-  const modRow = (row: Mods[]) => (
-    <ButtonGroup>
-      {row.map((m) => {
-        const key = m.toLocaleString();
-        return (
-          <ToggleButton
-            key={m}
-            size="sm"
-            isSelected={mods.includes(key)}
-            onChange={(isSelected) =>
-              modifiersChanged(
-                isSelected
-                  ? [...mods, key]
-                  : mods.filter((existing) => existing !== key)
-              )
-            }
-          >
-            {mod_labels[m]}
-          </ToggleButton>
-        );
-      })}
-    </ButtonGroup>
-  );
 
   const controls = (
     <>
@@ -192,10 +166,22 @@ export function useHidUsagePicker({
             : undefined
         }
       />
-      <LabeledGroup label="Modifiers" className="flex flex-wrap gap-1">
-        {modRow(left_mods)}
-        {modRow(right_mods)}
-      </LabeledGroup>
+      {/* Modifiers ride along with whichever key is picked. They only make sense
+          on top of a base key, so the row is disabled until one is chosen. */}
+      <ToggleGroup
+        label="Modifiers"
+        size="sm"
+        selectionMode="multiple"
+        selectedKeys={new Set(activeMods)}
+        onSelectionChange={modifiersChanged}
+        isDisabled={!value}
+      >
+        {all_mods.map((m) => (
+          <ToggleGroupItem key={m} id={m}>
+            {mod_labels[m]}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
     </>
   );
 

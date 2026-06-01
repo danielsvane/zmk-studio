@@ -1,8 +1,7 @@
 import { useState } from "react";
 
 import { HidUsageLabel } from "../keyboard/HidUsageLabel";
-import { LabeledGroup } from "../misc/Field";
-import { cx, controlFocusRing } from "../misc/controlStyles";
+import { ToggleGroup, ToggleGroupItem } from "../misc/ToggleGroup";
 import type { PickerRegions } from "../misc/PickerShell";
 import { HidUsagePage } from "./HidUsagePicker";
 import { useHidUsagePicker } from "./useHidUsagePicker";
@@ -18,12 +17,6 @@ export interface KeyParamSlot {
 }
 
 const EMPTY_PAGES: HidUsagePage[] = [];
-
-const segment = cx(
-  "flex min-w-20 flex-1 flex-col items-center gap-0.5 px-3 py-1.5",
-  "cursor-pointer select-none transition-[background-color,filter]",
-  controlFocusRing
-);
 
 /**
  * Edits one or more key/HID-usage params from a single shared key picker.
@@ -73,37 +66,29 @@ export function useKeyParamSlots(slots: KeyParamSlot[]): PickerRegions {
 
   const tabs =
     slots.length > 1 ? (
-      <LabeledGroup
+      <ToggleGroup
         label="Parameters"
-        className="flex divide-x divide-white/10 overflow-hidden rounded border border-white/10"
+        selectionMode="single"
+        disallowEmptySelection
+        selectedKeys={new Set([idx])}
+        onSelectionChange={(keys) => {
+          const next = [...keys][0];
+          if (next != null) setActive(Number(next));
+        }}
       >
-        {slots.map((slot, i) => {
-          const selected = i === idx;
-          return (
-            <button
-              key={slot.name}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => setActive(i)}
-              className={cx(
-                segment,
-                selected
-                  ? "bg-primary text-primary-content"
-                  : "bg-base-100 text-base-content rac-hover:brightness-110 hover:brightness-110"
+        {slots.map((slot, i) => (
+          <ToggleGroupItem key={i} id={i} className="flex-col min-w-20">
+            <span className="text-xs opacity-60">{slot.name}</span>
+            <span className="@container flex h-5 w-full items-center justify-center [&_svg]:size-4">
+              {slot.value ? (
+                <HidUsageLabel hid_usage={slot.value} />
+              ) : (
+                <span className="opacity-40">—</span>
               )}
-            >
-              <span className="text-xs opacity-60">{slot.name}</span>
-              <span className="@container flex h-5 w-full items-center justify-center text-sm font-medium [&_svg]:size-4">
-                {slot.value ? (
-                  <HidUsageLabel hid_usage={slot.value} />
-                ) : (
-                  <span className="opacity-40">—</span>
-                )}
-              </span>
-            </button>
-          );
-        })}
-      </LabeledGroup>
+            </span>
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
     ) : null;
 
   return {

@@ -25,6 +25,10 @@ export default {
         "base-100": "light-dark(oklch(100% 0 0), #1d232a)",
         "base-200": "light-dark(#F2F2F2, #191e24)",
         "base-300": "light-dark(#E5E6E6, #15191e)",
+        // Subtle hairline for input/segment borders and dividers. Theme-aware so
+        // it stays visible in both schemes (a flat white/15 vanishes on a white
+        // surface in light mode). Single source of truth for every control edge.
+        "base-line": "light-dark(rgb(0 0 0 / 0.12), rgb(255 255 255 / 0.15))",
       },
     },
 

@@ -36,6 +36,26 @@ export function FieldLabel({ size = "md", className, ...props }: FieldLabelProps
   return <RACLabel className={cx(fieldLabelStyles[size], className)} {...props} />;
 }
 
+export interface GroupLabelProps {
+  id?: string;
+  size?: ButtonSize;
+  className?: string;
+  children: ReactNode;
+}
+
+/**
+ * A label for a *group* of controls — a plain `<span>` (not a `<label>`, which
+ * targets a single control). Style-matches {@link FieldLabel}; pair its `id`
+ * with the group's `aria-labelledby` so the group is named for AT.
+ */
+export function GroupLabel({ id, size = "md", className, children }: GroupLabelProps) {
+  return (
+    <span id={id} className={cx(fieldLabelStyles[size], className)}>
+      {children}
+    </span>
+  );
+}
+
 export interface LabeledGroupProps {
   /** Visible label, rendered above the group in the same style as {@link FieldLabel}. */
   label: string;
@@ -47,7 +67,7 @@ export interface LabeledGroupProps {
 
 /**
  * A visibly-labelled `role="group"` for controls that aren't react-aria field
- * providers — toggle/button groups, the key grid, segmented tabs. Mirrors the
+ * providers — the key grid and other non-selection surfaces. Mirrors the
  * `flex flex-col gap-1` + {@link FieldLabel} layout the field components use, and
  * wires the label to the group via `aria-labelledby` so it reads the same to AT.
  */
@@ -60,9 +80,9 @@ export function LabeledGroup({
   const labelId = useId();
   return (
     <div className="flex flex-col gap-1">
-      <span id={labelId} className={fieldLabelStyles[size]}>
+      <GroupLabel id={labelId} size={size}>
         {label}
-      </span>
+      </GroupLabel>
       <div role="group" aria-labelledby={labelId} className={className}>
         {children}
       </div>
