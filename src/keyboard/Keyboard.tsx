@@ -1178,7 +1178,7 @@ export default function Keyboard({ page }: { page: Page }) {
   }
 
   return (
-    <div className="grid grid-cols-[auto_1fr] grid-rows-[1fr_auto] bg-base-300 max-w-full min-w-0 min-h-0">
+    <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)_45vh] bg-base-300 max-w-full min-w-0 min-h-0">
       <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
         {/* Layout picker temporarily hidden — not needed for now.
         {layouts && (
@@ -1216,17 +1216,27 @@ export default function Keyboard({ page }: { page: Page }) {
           />
         </div>
       )}
-      {keymap && selectedBinding && (
-        <div className="p-2 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0 max-h-[45vh]">
-          <BehaviorBindingPicker
-            binding={selectedBinding}
-            behaviors={Object.values(behaviors)}
-            layers={keymap.layers.map(({ id, name }, li) => ({
-              id,
-              name: name || li.toLocaleString(),
-            }))}
-            onBindingChanged={doUpdateBinding}
-          />
+      {/* The binding drawer keeps a fixed reserved height (the grid's second row)
+          whether or not a key is selected, so the physical keyboard above stays
+          one stable size — opening/closing the drawer or switching key-category
+          tabs (which have different row counts) never reflows it. */}
+      {layouts && keymap && behaviors && (
+        <div className="p-2 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0">
+          {selectedBinding ? (
+            <BehaviorBindingPicker
+              binding={selectedBinding}
+              behaviors={Object.values(behaviors)}
+              layers={keymap.layers.map(({ id, name }, li) => ({
+                id,
+                name: name || li.toLocaleString(),
+              }))}
+              onBindingChanged={doUpdateBinding}
+            />
+          ) : (
+            <div className="h-full grid place-items-center text-center text-base-content/60">
+              <p>Select a key to edit its binding.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
