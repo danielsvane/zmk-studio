@@ -133,7 +133,7 @@ export const LayerPicker = ({
     [onLayerClicked, layer_items]
   );
 
-  let { dragAndDropHooks } = useDragAndDrop({
+  const { dragAndDropHooks } = useDragAndDrop({
     renderDropIndicator(target) {
       return (
         <DropIndicator
@@ -145,8 +145,8 @@ export const LayerPicker = ({
     getItems: (keys) =>
       [...keys].map((key) => ({ "text/plain": key.toLocaleString() })),
     onReorder(e) {
-      let startIndex = layer_items.findIndex((l) => e.keys.has(l.id));
-      let endIndex = layer_items.findIndex((l) => l.id === e.target.key);
+      const startIndex = layer_items.findIndex((l) => e.keys.has(l.id));
+      const endIndex = layer_items.findIndex((l) => l.id === e.target.key);
       onLayerMoved?.(startIndex, endIndex);
     },
   });

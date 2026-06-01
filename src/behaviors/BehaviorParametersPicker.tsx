@@ -6,7 +6,7 @@ import {
 } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import { ParameterValuePicker } from "./ParameterValuePicker";
 import { KeyParamSlot, KeyParamSlots } from "./KeyParamSlots";
-import { usagePagesFor } from "./HidUsagePicker";
+import { usagePagesFor } from "../hid-usages";
 import { validateValue } from "./parameters";
 
 export interface BehaviorParametersPickerProps {

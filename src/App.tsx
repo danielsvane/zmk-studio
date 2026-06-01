@@ -36,7 +36,7 @@ import {
 } from "./tauri/serial";
 import Keyboard, { type Page } from "./keyboard/Keyboard";
 import { UndoRedoContext, useUndoRedo } from "./undoRedo";
-import { usePub, useSub } from "./usePubSub";
+import { publish, useSub } from "./usePubSub";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { LockStateContext } from "./rpc/LockStateContext";
 import { UnlockModal } from "./UnlockModal";
@@ -87,17 +87,15 @@ async function listen_for_notifications(
   notification_stream: ReadableStream<Notification>,
   signal: AbortSignal
 ): Promise<void> {
-  let reader = notification_stream.getReader();
+  const reader = notification_stream.getReader();
   const onAbort = () => {
     reader.cancel();
     reader.releaseLock();
   };
   signal.addEventListener("abort", onAbort, { once: true });
-  do {
-    let pub = usePub();
-
+  for (;;) {
     try {
-      let { done, value } = await reader.read();
+      const { done, value } = await reader.read();
       if (done) {
         break;
       }
@@ -107,17 +105,17 @@ async function listen_for_notifications(
       }
 
       console.log("Notification", value);
-      pub("rpc_notification", value);
+      publish("rpc_notification", value);
 
       const subsystem = Object.entries(value).find(
-        ([_k, v]) => v !== undefined
+        ([, v]) => v !== undefined
       );
       if (!subsystem) {
         continue;
       }
 
       const [subId, subData] = subsystem;
-      const event = Object.entries(subData).find(([_k, v]) => v !== undefined);
+      const event = Object.entries(subData).find(([, v]) => v !== undefined);
 
       if (!event) {
         continue;
@@ -126,13 +124,13 @@ async function listen_for_notifications(
       const [eventName, eventData] = event;
       const topic = ["rpc_notification", subId, eventName].join(".");
 
-      pub(topic, eventData);
+      publish(topic, eventData);
     } catch (e) {
       signal.removeEventListener("abort", onAbort);
       reader.releaseLock();
       throw e;
     }
-  } while (true);
+  }
 
   signal.removeEventListener("abort", onAbort);
   reader.releaseLock();
@@ -189,7 +187,7 @@ function commitConnection(
       setConnectedDeviceName(undefined);
       setConn({ conn: null });
     })
-    .catch((_e) => {
+    .catch(() => {
       setConnectedDeviceName(undefined);
       setConn({ conn: null });
     });
@@ -213,7 +211,7 @@ function App() {
     LockState.ZMK_STUDIO_CORE_LOCK_STATE_LOCKED
   );
 
-  useSub("rpc_notification.core.lockStateChanged", (ls) => {
+  useSub<LockState>("rpc_notification.core.lockStateChanged", (ls) => {
     setLockState(ls);
   });
 
@@ -228,7 +226,7 @@ function App() {
         return;
       }
 
-      let locked_resp = await call_rpc(conn.conn, {
+      const locked_resp = await call_rpc(conn.conn, {
         core: { getLockState: true },
       });
 
@@ -293,12 +291,12 @@ function App() {
         return;
       }
 
-      let resp = await call_rpc(conn.conn, { keymap: { saveChanges: true } });
+      const resp = await call_rpc(conn.conn, { keymap: { saveChanges: true } });
       if (!resp.keymap?.saveChanges || resp.keymap?.saveChanges.err) {
         console.error("Failed to save changes", resp.keymap?.saveChanges);
       }
 
-      let comboResp = await call_rpc(conn.conn, {
+      const comboResp = await call_rpc(conn.conn, {
         combos: { saveChanges: true },
       });
       if (!comboResp.combos?.saveChanges || comboResp.combos?.saveChanges.err) {
@@ -308,7 +306,7 @@ function App() {
         );
       }
 
-      let behaviorResp = await call_rpc(conn.conn, {
+      const behaviorResp = await call_rpc(conn.conn, {
         behaviors: { saveChanges: true },
       });
       if (
@@ -331,21 +329,21 @@ function App() {
         return;
       }
 
-      let resp = await call_rpc(conn.conn, {
+      const resp = await call_rpc(conn.conn, {
         keymap: { discardChanges: true },
       });
       if (!resp.keymap?.discardChanges) {
         console.error("Failed to discard changes", resp);
       }
 
-      let comboResp = await call_rpc(conn.conn, {
+      const comboResp = await call_rpc(conn.conn, {
         combos: { discardChanges: true },
       });
       if (!comboResp.combos?.discardChanges) {
         console.error("Failed to discard combo changes", comboResp);
       }
 
-      let behaviorResp = await call_rpc(conn.conn, {
+      const behaviorResp = await call_rpc(conn.conn, {
         behaviors: { discardChanges: true },
       });
       if (!behaviorResp.behaviors?.discardChanges) {
@@ -365,7 +363,7 @@ function App() {
         return;
       }
 
-      let resp = await call_rpc(conn.conn, {
+      const resp = await call_rpc(conn.conn, {
         core: { resetSettings: true },
       });
       if (!resp.core?.resetSettings) {

@@ -34,11 +34,15 @@ export interface ConnectModalProps {
   status?: string | null;
 }
 
-function deviceList(
-  open: boolean,
-  transports: TransportFactory[],
-  onTransportCreated: (t: RpcTransport) => void
-) {
+function DeviceList({
+  open,
+  transports,
+  onTransportCreated,
+}: {
+  open: boolean;
+  transports: TransportFactory[];
+  onTransportCreated: (t: RpcTransport) => void;
+}) {
   const [devices, setDevices] = useState<
     Array<[TransportFactory, AvailableDevice]>
   >([]);
@@ -47,7 +51,7 @@ function deviceList(
 
   async function LoadEm() {
     setRefreshing(true);
-    let entries: Array<[TransportFactory, AvailableDevice]> = [];
+    const entries: Array<[TransportFactory, AvailableDevice]> = [];
     for (const t of transports.filter((t) => t.pick_and_connect)) {
       const devices = await t.pick_and_connect?.list();
       if (!devices) {
@@ -84,7 +88,7 @@ function deviceList(
       if (keys === "all") {
         return;
       }
-      const dev = devices.find(([_t, d]) => keys.has(d.id));
+      const dev = devices.find(([, d]) => keys.has(d.id));
       if (dev) {
         dev[0]
           .pick_and_connect!.connect(dev[1])
@@ -132,10 +136,13 @@ function deviceList(
   );
 }
 
-function simpleDevicePicker(
-  transports: TransportFactory[],
-  onTransportCreated: (t: RpcTransport) => void
-) {
+function SimpleDevicePicker({
+  transports,
+  onTransportCreated,
+}: {
+  transports: TransportFactory[];
+  onTransportCreated: (t: RpcTransport) => void;
+}) {
   const [availableDevices, setAvailableDevices] = useState<
     AvailableDevice[] | undefined
   >(undefined);
@@ -152,7 +159,7 @@ function simpleDevicePicker(
     let ignore = false;
 
     if (selectedTransport.establish) {
-      async function establishTransport() {
+      const establishTransport = async () => {
         try {
           await selectedTransport?.establish?.();
         } catch (e) {
@@ -167,11 +174,11 @@ function simpleDevicePicker(
             setSelectedTransport(undefined);
           }
         }
-      }
+      };
 
       establishTransport();
     } else if (selectedTransport.connect) {
-      async function connectTransport() {
+      const connectTransport = async () => {
         try {
           const transport = await selectedTransport?.connect?.();
 
@@ -190,17 +197,17 @@ function simpleDevicePicker(
             setSelectedTransport(undefined);
           }
         }
-      }
+      };
 
       connectTransport();
     } else {
-      async function loadAvailableDevices() {
+      const loadAvailableDevices = async () => {
         const devices = await selectedTransport?.pick_and_connect?.list();
 
         if (!ignore) {
           setAvailableDevices(devices);
         }
-      }
+      };
 
       loadAvailableDevices();
     }
@@ -210,7 +217,7 @@ function simpleDevicePicker(
     };
   }, [selectedTransport]);
 
-  let connections = transports.map((t) => (
+  const connections = transports.map((t) => (
     <li key={t.label} className="list-none">
       <Button
         variant="secondary"
@@ -282,19 +289,32 @@ function noTransportsOptionsPrompt() {
   );
 }
 
-function connectOptions(
-  transports: TransportFactory[],
-  onTransportCreated: (t: RpcTransport) => void,
-  open?: boolean
-) {
+function ConnectOptions({
+  transports,
+  onTransportCreated,
+  open,
+}: {
+  transports: TransportFactory[];
+  onTransportCreated: (t: RpcTransport) => void;
+  open?: boolean;
+}) {
   const useSimplePicker = useMemo(
     () => transports.every((t) => !t.pick_and_connect),
     [transports]
   );
 
-  return useSimplePicker
-    ? simpleDevicePicker(transports, onTransportCreated)
-    : deviceList(open || false, transports, onTransportCreated);
+  return useSimplePicker ? (
+    <SimpleDevicePicker
+      transports={transports}
+      onTransportCreated={onTransportCreated}
+    />
+  ) : (
+    <DeviceList
+      open={open || false}
+      transports={transports}
+      onTransportCreated={onTransportCreated}
+    />
+  );
 }
 
 export const ConnectModal = ({
@@ -310,9 +330,15 @@ export const ConnectModal = ({
   return (
     <GenericModal ref={dialog} className="max-w-xl">
       <h1 className="text-xl">Welcome to ZMK Studio</h1>
-      {haveTransports
-        ? connectOptions(transports, onTransportCreated, open)
-        : noTransportsOptionsPrompt()}
+      {haveTransports ? (
+        <ConnectOptions
+          transports={transports}
+          onTransportCreated={onTransportCreated}
+          open={open}
+        />
+      ) : (
+        noTransportsOptionsPrompt()
+      )}
       {status && (
         <p className="pt-3 text-sm opacity-70" aria-live="polite">
           {status}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { HidUsageLabel } from "../keyboard/HidUsageLabel";
-import { cx, controlFocusRing } from "../misc/Button";
+import { cx, controlFocusRing } from "../misc/controlStyles";
 import { HidUsagePage, HidUsagePicker } from "./HidUsagePicker";
 
 export interface KeyParamSlot {

@@ -66,7 +66,7 @@ export const AppHeader = ({
     (r) => r.keymap?.checkUnsavedChanges
   );
 
-  useSub("rpc_notification.keymap.unsavedChangesStatusChanged", (unsaved) =>
+  useSub<boolean>("rpc_notification.keymap.unsavedChangesStatusChanged", (unsaved) =>
     setKeymapUnsaved(unsaved)
   );
 
@@ -77,7 +77,7 @@ export const AppHeader = ({
     (r) => r.combos?.checkUnsavedChanges
   );
 
-  useSub("rpc_notification.combos.unsavedChangesStatusChanged", (unsaved) =>
+  useSub<boolean>("rpc_notification.combos.unsavedChangesStatusChanged", (unsaved) =>
     setCombosUnsaved(unsaved)
   );
 
@@ -88,7 +88,7 @@ export const AppHeader = ({
     (r) => r.behaviors?.checkUnsavedChanges
   );
 
-  useSub("rpc_notification.behaviors.unsavedChangesStatusChanged", (unsaved) =>
+  useSub<boolean>("rpc_notification.behaviors.unsavedChangesStatusChanged", (unsaved) =>
     setBehaviorsUnsaved(unsaved)
   );
 

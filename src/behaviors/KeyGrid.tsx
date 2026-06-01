@@ -1,4 +1,4 @@
-import { cx, controlFocusRing } from "../misc/Button";
+import { cx, controlFocusRing } from "../misc/controlStyles";
 import { HidUsageLabel } from "../keyboard/HidUsageLabel";
 import { hid_usage_from_page_and_id, hid_usage_get_label } from "../hid-usages";
 

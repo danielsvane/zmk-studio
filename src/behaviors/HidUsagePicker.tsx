@@ -5,29 +5,14 @@ import { KeyGrid } from "./KeyGrid";
 import {
   hid_usage_from_page_and_id,
   hid_usage_page_get_ids,
+  type HidUsagePage,
 } from "../hid-usages";
 import { useCallback, useMemo } from "react";
 
-export interface HidUsagePage {
-  id: number;
-  min?: number;
-  max?: number;
-}
-
-/**
- * The usage pages a hidUsage parameter descriptor can pick from: keyboard
- * (page 7, ids 4..keyboardMax, plus the modifier usages) and consumer
- * (page 12, up to consumerMax).
- */
-export function usagePagesFor(hidUsage: {
-  keyboardMax: number;
-  consumerMax: number;
-}): HidUsagePage[] {
-  return [
-    { id: 7, min: 4, max: hidUsage.keyboardMax },
-    { id: 12, max: hidUsage.consumerMax },
-  ];
-}
+// `usagePagesFor` and `HidUsagePage` now live in hid-usages.ts (they're plain
+// domain helpers, not components — keeping them here broke Fast Refresh). Re-
+// exported so existing importers of this module keep working.
+export type { HidUsagePage };
 
 export interface HidUsagePickerProps {
   label?: string;
@@ -125,7 +110,7 @@ export const HidUsagePicker = ({
   const multiPage = usagePages.length > 1;
 
   const mods = useMemo(() => {
-    let flags = value ? value >> 24 : 0;
+    const flags = value ? value >> 24 : 0;
 
     return all_mods.filter((m) => m & flags).map((m) => m.toLocaleString());
   }, [value]);
@@ -134,7 +119,7 @@ export const HidUsagePicker = ({
     (e: Key | null) => {
       let value = typeof e == "number" ? e : undefined;
       if (value !== undefined) {
-        let mod_flags = mods_to_flags(mods.map((m) => parseInt(m)));
+        const mod_flags = mods_to_flags(mods.map((m) => parseInt(m)));
         value = value | (mod_flags << 24);
       }
 
@@ -149,8 +134,8 @@ export const HidUsagePicker = ({
         return;
       }
 
-      let mod_flags = mods_to_flags(m.map((m) => parseInt(m)));
-      let new_value = mask_mods(value) | (mod_flags << 24);
+      const mod_flags = mods_to_flags(m.map((m) => parseInt(m)));
+      const new_value = mask_mods(value) | (mod_flags << 24);
       onValueChanged(new_value);
     },
     [value]

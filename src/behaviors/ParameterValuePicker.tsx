@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
-import { HidUsagePicker, usagePagesFor } from "./HidUsagePicker";
+import { HidUsagePicker } from "./HidUsagePicker";
+import { usagePagesFor } from "../hid-usages";
 import { Select } from "../misc/Select";
 
 export interface ParameterValuePickerProps {

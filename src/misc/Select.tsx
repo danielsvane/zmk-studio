@@ -17,7 +17,7 @@ import {
   controlFocusRing,
   controlDisabled,
   type ButtonSize,
-} from "./Button";
+} from "./controlStyles";
 import { FieldLabel, FieldDescription, FieldErrorMessage } from "./Field";
 
 /**
@@ -115,11 +115,16 @@ export interface SelectProps<T extends object>
   triggerClassName?: string;
 }
 
-function defaultText(item: any): string {
-  return String(item?.label ?? item?.name ?? "");
+// `object` (not a structural type) so these stay assignable to the component's
+// `(item: T) => …` defaults for any `T extends object`; the inner cast reads the
+// conventional fields an item may carry.
+function defaultText(item: object): string {
+  const o = item as { label?: unknown; name?: unknown };
+  return String(o.label ?? o.name ?? "");
 }
-function defaultKey(item: any): Key {
-  return item?.id ?? defaultText(item);
+function defaultKey(item: object): Key {
+  const o = item as { id?: Key };
+  return o.id ?? defaultText(item);
 }
 
 export function Select<T extends object>({

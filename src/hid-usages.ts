@@ -51,3 +51,24 @@ export const hid_usage_get_labels = (
       (u) => u.Id === usage_id
     )?.Name,
   };
+
+export interface HidUsagePage {
+  id: number;
+  min?: number;
+  max?: number;
+}
+
+/**
+ * The usage pages a hidUsage parameter descriptor can pick from: keyboard
+ * (page 7, ids 4..keyboardMax, plus the modifier usages) and consumer
+ * (page 12, up to consumerMax).
+ */
+export function usagePagesFor(hidUsage: {
+  keyboardMax: number;
+  consumerMax: number;
+}): HidUsagePage[] {
+  return [
+    { id: 7, min: 4, max: hidUsage.keyboardMax },
+    { id: 12, max: hidUsage.consumerMax },
+  ];
+}

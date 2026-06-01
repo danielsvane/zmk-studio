@@ -41,14 +41,24 @@ import { useConnectedDeviceData } from "../rpc/useConnectedDeviceData";
 import { ConnectionContext } from "../rpc/ConnectionContext";
 import { UndoRedoContext } from "../undoRedo";
 import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
-import { produce } from "immer";
+import { produce, type Draft } from "immer";
 import { LockStateContext } from "../rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
-import { deserializeLayoutZoom, LayoutZoom } from "./PhysicalLayout";
+import { deserializeLayoutZoom, type LayoutZoom } from "./layoutZoom";
 import { Select } from "../misc/Select";
 import { Button } from "../misc/Button";
 import { ConfigFieldEdit } from "../behaviours/ConfigFieldEditor";
 import { BehaviourNameEditor } from "../behaviours/BehaviourNameEditor";
+
+// useConnectedDeviceData state is `T | undefined` until the device responds.
+// These mutation handlers only fire once data is loaded, so this wraps an immer
+// recipe to give it a non-null draft (and safely no-ops if state is still
+// undefined), keeping every call site free of repeated null guards.
+function editData<T>(recipe: (draft: Draft<T>) => void) {
+  return produce((draft: Draft<T> | undefined) => {
+    if (draft) recipe(draft);
+  });
+}
 
 // Keymap zoom levels for the overlay picker. Keys are the serialized zoom value
 // (see deserializeLayoutZoom); "auto" fits the layout to the available space.
@@ -73,8 +83,8 @@ type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
 // connect/unlock; `refresh` re-fetches it so a behaviour claimed at runtime
 // (add_custom_behavior) shows up in the binding pickers without a reconnect.
 function useBehaviors(): [BehaviorMap, () => Promise<void>] {
-  let connection = useContext(ConnectionContext);
-  let lockState = useContext(LockStateContext);
+  const connection = useContext(ConnectionContext);
+  const lockState = useContext(LockStateContext);
 
   const [behaviors, setBehaviors] = useState<BehaviorMap>({});
 
@@ -84,21 +94,21 @@ function useBehaviors(): [BehaviorMap, () => Promise<void>] {
       return {};
     }
 
-    let get_behaviors: Request = {
+    const get_behaviors: Request = {
       behaviors: { listAllBehaviors: true },
       requestId: 0,
     };
 
-    let behavior_list = await call_rpc(conn, get_behaviors);
-    let behavior_map: BehaviorMap = {};
-    for (let behaviorId of behavior_list.behaviors?.listAllBehaviors
+    const behavior_list = await call_rpc(conn, get_behaviors);
+    const behavior_map: BehaviorMap = {};
+    for (const behaviorId of behavior_list.behaviors?.listAllBehaviors
       ?.behaviors || []) {
-      let details_req = {
+      const details_req = {
         behaviors: { getBehaviorDetails: { behaviorId } },
         requestId: 0,
       };
-      let behavior_details = await call_rpc(conn, details_req);
-      let dets: GetBehaviorDetailsResponse | undefined =
+      const behavior_details = await call_rpc(conn, details_req);
+      const dets: GetBehaviorDetailsResponse | undefined =
         behavior_details?.behaviors?.getBehaviorDetails;
 
       if (dets) {
@@ -135,8 +145,8 @@ function useLayouts(): [
   number,
   React.Dispatch<SetStateAction<number>>
 ] {
-  let connection = useContext(ConnectionContext);
-  let lockState = useContext(LockStateContext);
+  const connection = useContext(ConnectionContext);
+  const lockState = useContext(LockStateContext);
 
   const [layouts, setLayouts] = useState<PhysicalLayout[] | undefined>(
     undefined
@@ -160,7 +170,7 @@ function useLayouts(): [
         return;
       }
 
-      let response = await call_rpc(connection.conn, {
+      const response = await call_rpc(connection.conn, {
         keymap: { getPhysicalLayouts: true },
       });
 
@@ -201,7 +211,7 @@ const ADDABLE_KINDS: { kind: string; label: string }[] = [
 export default function Keyboard({ page }: { page: Page }) {
   const [
     layouts,
-    _setLayouts,
+    ,
     selectedPhysicalLayoutIndex,
     setSelectedPhysicalLayoutIndex,
   ] = useLayouts();
@@ -259,11 +269,11 @@ export default function Keyboard({ page }: { page: Page }) {
         return;
       }
 
-      let resp = await call_rpc(conn.conn, {
+      const resp = await call_rpc(conn.conn, {
         keymap: { setActivePhysicalLayout: selectedPhysicalLayoutIndex },
       });
 
-      let new_keymap = resp?.keymap?.setActivePhysicalLayout?.ok;
+      const new_keymap = resp?.keymap?.setActivePhysicalLayout?.ok;
       if (new_keymap) {
         setKeymap(new_keymap);
       } else {
@@ -277,9 +287,9 @@ export default function Keyboard({ page }: { page: Page }) {
     performSetRequest();
   }, [selectedPhysicalLayoutIndex]);
 
-  let doSelectPhysicalLayout = useCallback(
+  const doSelectPhysicalLayout = useCallback(
     (i: number) => {
-      let oldLayout = selectedPhysicalLayoutIndex;
+      const oldLayout = selectedPhysicalLayoutIndex;
       undoRedo?.(async () => {
         setSelectedPhysicalLayoutIndex(i);
 
@@ -291,7 +301,7 @@ export default function Keyboard({ page }: { page: Page }) {
     [undoRedo, selectedPhysicalLayoutIndex]
   );
 
-  let doUpdateBinding = useCallback(
+  const doUpdateBinding = useCallback(
     (binding: BehaviorBinding) => {
       if (!keymap || selectedKeyPosition === undefined) {
         console.error(
@@ -309,7 +319,7 @@ export default function Keyboard({ page }: { page: Page }) {
           throw new Error("Not connected");
         }
 
-        let resp = await call_rpc(conn.conn, {
+        const resp = await call_rpc(conn.conn, {
           keymap: { setLayerBinding: { layerId, keyPosition, binding } },
         });
 
@@ -318,7 +328,7 @@ export default function Keyboard({ page }: { page: Page }) {
           SetLayerBindingResponse.SET_LAYER_BINDING_RESP_OK
         ) {
           setKeymap(
-            produce((draft: any) => {
+            editData<Keymap>((draft) => {
               draft.layers[layer].bindings[keyPosition] = binding;
             })
           );
@@ -331,7 +341,7 @@ export default function Keyboard({ page }: { page: Page }) {
             return;
           }
 
-          let resp = await call_rpc(conn.conn, {
+          const resp = await call_rpc(conn.conn, {
             keymap: {
               setLayerBinding: { layerId, keyPosition, binding: oldBinding },
             },
@@ -341,11 +351,10 @@ export default function Keyboard({ page }: { page: Page }) {
             SetLayerBindingResponse.SET_LAYER_BINDING_RESP_OK
           ) {
             setKeymap(
-              produce((draft: any) => {
+              editData<Keymap>((draft) => {
                 draft.layers[layer].bindings[keyPosition] = oldBinding;
               })
             );
-          } else {
           }
         };
       });
@@ -353,7 +362,7 @@ export default function Keyboard({ page }: { page: Page }) {
     [conn, keymap, undoRedo, selectedLayerIndex, selectedKeyPosition]
   );
 
-  let selectedBinding = useMemo(() => {
+  const selectedBinding = useMemo(() => {
     if (keymap == null || selectedKeyPosition == null || !keymap.layers[selectedLayerIndex]) {
       return null;
     }
@@ -395,8 +404,8 @@ export default function Keyboard({ page }: { page: Page }) {
         const result = resp.combos?.setCombo;
         if (result === SetComboResponse.SET_COMBO_RESP_OK) {
           setCombos(
-            produce((draft: any) => {
-              const entry = draft.combos.find((e: any) => e.index === index);
+            editData<Combos>((draft) => {
+              const entry = draft.combos.find((e) => e.index === index);
               if (entry) {
                 entry.combo = target;
               }
@@ -441,9 +450,9 @@ export default function Keyboard({ page }: { page: Page }) {
         const result = resp.behaviors?.setCustomBehavior;
         if (result === SetCustomBehaviorResponse.SET_CUSTOM_BEHAVIOR_RESP_OK) {
           setCustomBehaviors(
-            produce((draft: any) => {
-              const beh = draft.behaviors.find((b: any) => b.id === behaviorId);
-              const field = beh?.config.find((f: any) => f.key === fieldKey);
+            editData<CustomBehaviors>((draft) => {
+              const beh = draft.behaviors.find((b) => b.id === behaviorId);
+              const field = beh?.config.find((f) => f.key === fieldKey);
               if (field) {
                 field.value = value;
               }
@@ -484,8 +493,8 @@ export default function Keyboard({ page }: { page: Page }) {
         const result = resp.behaviors?.setCustomBehavior;
         if (result === SetCustomBehaviorResponse.SET_CUSTOM_BEHAVIOR_RESP_OK) {
           setCustomBehaviors(
-            produce((draft: any) => {
-              const beh = draft.behaviors.find((b: any) => b.id === behaviorId);
+            editData<CustomBehaviors>((draft) => {
+              const beh = draft.behaviors.find((b) => b.id === behaviorId);
               if (beh) {
                 beh.displayName = name;
               }
@@ -546,7 +555,7 @@ export default function Keyboard({ page }: { page: Page }) {
     if (ok?.behavior) {
       const behavior = ok.behavior as CustomBehavior;
       setCustomBehaviors(
-        produce((draft: any) => {
+        editData<CustomBehaviors>((draft) => {
           if (!draft.behaviors) {
             draft.behaviors = [];
           }
@@ -597,9 +606,9 @@ export default function Keyboard({ page }: { page: Page }) {
 
         if (resp.behaviors?.removeCustomBehavior?.ok) {
           setCustomBehaviors(
-            produce((draft: any) => {
+            editData<CustomBehaviors>((draft) => {
               const i = draft.behaviors.findIndex(
-                (b: any) => b.id === behaviorId
+                (b) => b.id === behaviorId
               );
               if (i >= 0) {
                 draft.behaviors.splice(i, 1);
@@ -644,12 +653,13 @@ export default function Keyboard({ page }: { page: Page }) {
 
         const ok = resp.behaviors?.addCustomBehavior?.ok;
         if (ok?.behavior) {
+          const behavior = ok.behavior;
           setCustomBehaviors(
-            produce((draft: any) => {
+            editData<CustomBehaviors>((draft) => {
               if (!draft.behaviors) {
                 draft.behaviors = [];
               }
-              draft.behaviors.push(ok.behavior);
+              draft.behaviors.push(behavior);
             })
           );
           await refreshBehaviors();
@@ -705,9 +715,9 @@ export default function Keyboard({ page }: { page: Page }) {
       const ok = resp.combos?.addCombo?.ok;
       if (ok) {
         setCombos(
-          produce((draft: any) => {
+          editData<Combos>((draft) => {
             draft.combos.push({ index: ok.index, combo: ok.combo ?? newCombo });
-            draft.combos.sort((a: any, b: any) => a.index - b.index);
+            draft.combos.sort((a, b) => a.index - b.index);
           })
         );
         setSelectedComboIndex(ok.index);
@@ -738,8 +748,8 @@ export default function Keyboard({ page }: { page: Page }) {
 
       if (resp.combos?.removeCombo?.ok) {
         setCombos(
-          produce((draft: any) => {
-            const i = draft.combos.findIndex((e: any) => e.index === index);
+          editData<Combos>((draft) => {
+            const i = draft.combos.findIndex((e) => e.index === index);
             if (i >= 0) {
               draft.combos.splice(i, 1);
             }
@@ -790,8 +800,8 @@ export default function Keyboard({ page }: { page: Page }) {
 
         if (resp.combos?.removeCombo?.ok) {
           setCombos(
-            produce((draft: any) => {
-              const i = draft.combos.findIndex((e: any) => e.index === index);
+            editData<Combos>((draft) => {
+              const i = draft.combos.findIndex((e) => e.index === index);
               if (i >= 0) {
                 draft.combos.splice(i, 1);
               }
@@ -817,9 +827,9 @@ export default function Keyboard({ page }: { page: Page }) {
 
         if (resp.combos?.setCombo === SetComboResponse.SET_COMBO_RESP_OK) {
           setCombos(
-            produce((draft: any) => {
+            editData<Combos>((draft) => {
               draft.combos.push({ index, combo });
-              draft.combos.sort((a: any, b: any) => a.index - b.index);
+              draft.combos.sort((a, b) => a.index - b.index);
             })
           );
           setSelectedComboIndex(index);
@@ -845,7 +855,7 @@ export default function Keyboard({ page }: { page: Page }) {
           return;
         }
 
-        let resp = await call_rpc(conn.conn, {
+        const resp = await call_rpc(conn.conn, {
           keymap: { moveLayer: { startIndex, destIndex } },
         });
 
@@ -876,8 +886,8 @@ export default function Keyboard({ page }: { page: Page }) {
       if (resp.keymap?.addLayer?.ok) {
         const newSelection = keymap.layers.length;
         setKeymap(
-          produce((draft: any) => {
-            draft.layers.push(resp.keymap!.addLayer!.ok!.layer);
+          editData<Keymap>((draft) => {
+            draft.layers.push(resp.keymap!.addLayer!.ok!.layer!);
             draft.availableLayers--;
           })
         );
@@ -903,7 +913,7 @@ export default function Keyboard({ page }: { page: Page }) {
       console.log(resp);
       if (resp.keymap?.removeLayer?.ok) {
         setKeymap(
-          produce((draft: any) => {
+          editData<Keymap>((draft) => {
             draft.layers.splice(layerIndex, 1);
             draft.availableLayers++;
           })
@@ -917,7 +927,7 @@ export default function Keyboard({ page }: { page: Page }) {
     }
 
     undoRedo?.(async () => {
-      let index = await doAdd();
+      const index = await doAdd();
       return () => doRemove(index);
     });
   }, [conn, undoRedo, keymap]);
@@ -937,7 +947,7 @@ export default function Keyboard({ page }: { page: Page }) {
           setSelectedLayerIndex(layerIndex - 1);
         }
         setKeymap(
-          produce((draft: any) => {
+          editData<Keymap>((draft) => {
             draft.layers.splice(layerIndex, 1);
             draft.availableLayers++;
           })
@@ -962,8 +972,8 @@ export default function Keyboard({ page }: { page: Page }) {
       console.log(resp);
       if (resp.keymap?.restoreLayer?.ok) {
         setKeymap(
-          produce((draft: any) => {
-            draft.layers.splice(atIndex, 0, resp!.keymap!.restoreLayer!.ok);
+          editData<Keymap>((draft) => {
+            draft.layers.splice(atIndex, 0, resp!.keymap!.restoreLayer!.ok!);
             draft.availableLayers--;
           })
         );
@@ -980,8 +990,8 @@ export default function Keyboard({ page }: { page: Page }) {
       throw new Error("No keymap loaded");
     }
 
-    let index = selectedLayerIndex;
-    let layerId = keymap.layers[index].id;
+    const index = selectedLayerIndex;
+    const layerId = keymap.layers[index].id;
     undoRedo?.(async () => {
       await doRemove(index);
       return () => doRestore(layerId, index);
@@ -1004,7 +1014,7 @@ export default function Keyboard({ page }: { page: Page }) {
           SetLayerPropsResponse.SET_LAYER_PROPS_RESP_OK
         ) {
           setKeymap(
-            produce((draft: any) => {
+            editData<Keymap>((draft) => {
               const layer_index = draft.layers.findIndex(
                 (l: Layer) => l.id == layerId
               );

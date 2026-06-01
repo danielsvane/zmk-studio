@@ -6,7 +6,7 @@ import {
   type TextProps,
   type FieldErrorProps,
 } from "react-aria-components";
-import { cx, type ButtonSize } from "./Button";
+import { cx, type ButtonSize } from "./controlStyles";
 
 /**
  * Shared form-field building blocks.
@@ -21,7 +21,7 @@ import { cx, type ButtonSize } from "./Button";
  * `<FieldErrorMessage/>` in that order.
  */
 
-export const fieldLabelStyles: Record<ButtonSize, string> = {
+const fieldLabelStyles: Record<ButtonSize, string> = {
   md: "text-sm font-medium text-base-content",
   sm: "text-xs font-medium text-base-content",
 };
