@@ -80,7 +80,7 @@ export const ComboList = ({
                   className={cx(
                     "w-full rounded border p-3 text-left transition-colors",
                     selected
-                      ? "border-primary bg-base-100"
+                      ? "border-primary bg-base-300"
                       : "border-transparent hover:bg-base-300",
                   )}
                 >
