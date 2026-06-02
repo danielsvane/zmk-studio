@@ -59,9 +59,12 @@ Decided deliberately over making the box itself 48px.
 - `base-300` — app background (`#15191e` in dark).
 - `base-line` — **the hairline edge for every control border/divider.** Use this,
   never a hardcoded `border-white/15` (which is invisible on a light surface).
-- `primary` / `primary-content` — selected/active fill + its text. (`primary`,
-  `base-100/200/300` have no alpha slot — use `brightness-*` for hover/press,
-  not `/opacity`.)
+- `primary` / `primary-content` — selected/active fill + its text. `primary`
+  carries an `<alpha-value>` slot, so `bg-primary/15` gives a tint (used by the
+  selected `SidebarCard`); bare `bg-primary`/`border-primary` stay fully opaque.
+  Reserve the tint for static states — for button hover/press still use
+  `brightness-*`, not `/opacity`, so solid fills don't go translucent.
+  `base-100/200/300` have no alpha slot — always `brightness-*` for those.
 - `base-content` — default text. Written with an `<alpha-value>` slot, so it
   **does** take opacity modifiers: `bg-base-content/40` gives a muted surface
   that contrasts with the panel in both themes (~2.3:1) where the
@@ -86,6 +89,7 @@ wired for you):
 | Action | `Button` (`Button.tsx`) |
 | Collapsible section (advanced/secondary fields) | `Disclosure` (`Disclosure.tsx`) |
 | Two-region picker (controls + canvas) | `PickerShell` (`PickerShell.tsx`) |
+| Selectable master-list row (sidebar → detail) | `SidebarCard` (`SidebarCard.tsx`) |
 
 `Field` must render **inside** the react-aria provider (`RACTextField`,
 `RACSelect`, …) — that's where the aria wiring context exists. The provider
@@ -98,8 +102,37 @@ Adopt the components above when you next touch these:
 
 ## Verifying UI changes
 
-There's no mock transport — verify in **Storybook + agent-browser**, not the
-live app. Add/extend a story for the component you changed and screenshot it.
+There's no mock RPC transport — the live app (`npm run dev`) can't render the
+editor without connected hardware. So **verify components in Storybook**, not
+the live app. Add or extend a `*.stories.tsx` for the variant you changed
+(selected/empty/long-label/…) if none covers it.
+
+Use the `shoot` script — it owns the whole sequence (start/reuse Storybook,
+wait for the story to actually render, screenshot), so you don't re-derive it:
+
+```sh
+npm run shoot -- --list            # every story id
+npm run shoot -- --list combo      # ids matching "combo"
+npm run shoot -- <story-id> ...    # screenshot each → prints the PNG path(s)
+```
+
+Then read the PNG(s) it prints. It starts Storybook on first use and **leaves
+it running**, so repeat calls are instant. Script: `scripts/shoot-story.mjs`.
+
+Gotchas it already handles, so you don't trip on them again:
+- Storybook `--quiet` never prints a `Local:` line — poll the port, don't grep.
+- Stories compile on demand (Vite); the first hit shows a spinner. Wait for
+  `body.sb-show-main`, not a fixed delay, `wait --text` (flaky), or
+  `--load networkidle` (HMR holds a socket open).
+- Story iframe URL: `iframe.html?id=<kebab-title>--<kebab-story>&viewMode=story`.
+- Stories render dark (the app's default theme).
+
+**The script is the source of truth — fix it, don't route around it.** If
+`shoot` is flaky, slow, or fails (a new Storybook version, a changed ready
+signal, an agent-browser quirk), improve the script so the next person gets the
+fix for free; don't quietly fall back to hand-running agent-browser, which just
+lets the recipe rot. When you change how verification works, update the script
+and this section together — this is the map to it.
 
 ## Adding a new pattern
 

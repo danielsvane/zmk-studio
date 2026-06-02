@@ -15,7 +15,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "shoot": "node scripts/shoot-story.mjs"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.1",
