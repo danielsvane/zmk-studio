@@ -50,6 +50,14 @@ import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { BehaviourList } from "../behaviours/BehaviourList";
 import { BehaviourEditor } from "../behaviours/BehaviourEditor";
 
+// The left sidebar (master list) on every editor page — Layers, Combos,
+// Behaviours. A fixed `w-64` so all three pages line up exactly; their `auto`
+// grid column otherwise sizes to content, which would make the combo list (with
+// its key previews) wider than the text-only lists. The keymap page appends
+// `row-span-2` to span its keyboard + binding-drawer rows.
+const SIDEBAR_REGION =
+  "flex w-64 flex-col gap-2 bg-base-200 p-4 overflow-y-auto min-h-0";
+
 // useConnectedDeviceData state is `T | undefined` until the device responds.
 // These mutation handlers only fire once data is loaded, so this wraps an immer
 // recipe to give it a non-null draft (and safely no-ops if state is still
@@ -1064,7 +1072,7 @@ export default function Keyboard({ page }: { page: Page }) {
     // the left and the editor for the selected one on the right.
     return (
       <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)] bg-base-300 max-w-full min-w-0 min-h-0">
-        <div className="p-4 flex flex-col gap-2 bg-base-200 overflow-y-auto min-h-0 min-w-48 max-w-64">
+        <div className={SIDEBAR_REGION}>
           <BehaviourList
             behaviours={behaviours}
             addableKinds={ADDABLE_KINDS}
@@ -1130,7 +1138,7 @@ export default function Keyboard({ page }: { page: Page }) {
     const comboLayoutKeys = layouts?.[selectedPhysicalLayoutIndex]?.keys;
     return (
       <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)] bg-base-300 max-w-full min-w-0 min-h-0">
-        <div className="p-4 flex flex-col gap-2 bg-base-200 overflow-y-auto min-h-0 min-w-48 max-w-64">
+        <div className={SIDEBAR_REGION}>
           {combos && (
             <ComboList
               combos={combos}
@@ -1176,7 +1184,7 @@ export default function Keyboard({ page }: { page: Page }) {
 
   return (
     <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)_min(54vh,28rem)] bg-base-300 max-w-full min-w-0 min-h-0">
-      <div className="p-2 flex flex-col gap-2 bg-base-200 row-span-2">
+      <div className={`${SIDEBAR_REGION} row-span-2`}>
         {/* Layout picker temporarily hidden — not needed for now.
         {layouts && (
           <PhysicalLayoutPicker

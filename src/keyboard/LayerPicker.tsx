@@ -82,7 +82,7 @@ export const LayerPicker = ({
   });
 
   return (
-    <div className="flex min-w-44 flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <h2 className="text-sm font-bold uppercase opacity-70">Layers</h2>
       <Button
         className="w-full justify-center"
