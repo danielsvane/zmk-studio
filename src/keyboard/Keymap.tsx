@@ -2,17 +2,13 @@ import {
   PhysicalLayout,
   Keymap as KeymapMsg,
 } from "@zmkfirmware/zmk-studio-ts-client/keymap";
-import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 
 import { PhysicalLayout as PhysicalLayoutComp } from "./PhysicalLayout";
 import { HidUsageLabel } from "./HidUsageLabel";
 
-type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
-
 export interface KeymapProps {
   layout: PhysicalLayout;
   keymap: KeymapMsg;
-  behaviors: BehaviorMap;
   selectedLayerIndex: number;
   selectedKeyPosition: number | undefined;
   onKeyPositionClicked: (keyPosition: number) => void;
@@ -21,7 +17,6 @@ export interface KeymapProps {
 export const Keymap = ({
   layout,
   keymap,
-  behaviors,
   selectedLayerIndex,
   selectedKeyPosition,
   onKeyPositionClicked,
@@ -34,7 +29,6 @@ export const Keymap = ({
     if (i >= keymap.layers[selectedLayerIndex].bindings.length) {
       return {
         id: `${keymap.layers[selectedLayerIndex].id}-${i}`,
-        header: "Unknown",
         x: k.x / 100.0,
         y: k.y / 100.0,
         width: k.width / 100,
@@ -44,7 +38,6 @@ export const Keymap = ({
     }
 
     const binding = keymap.layers[selectedLayerIndex].bindings[i];
-    const behavior = behaviors[binding.behaviorId];
 
     // Render every non-empty param (e.g. both hold and tap of a mod-tap),
     // most-significant param first.
@@ -55,7 +48,6 @@ export const Keymap = ({
 
     return {
       id: `${keymap.layers[selectedLayerIndex].id}-${i}`,
-      header: behavior?.displayName || "Unknown",
       x: k.x / 100.0,
       y: k.y / 100.0,
       width: k.width / 100,

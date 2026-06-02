@@ -1223,7 +1223,6 @@ export default function Keyboard({ page }: { page: Page }) {
           <KeymapComp
             keymap={keymap}
             layout={layouts[selectedPhysicalLayoutIndex]}
-            behaviors={behaviors}
             selectedLayerIndex={selectedLayerIndex}
             selectedKeyPosition={selectedKeyPosition}
             onKeyPositionClicked={setSelectedKeyPosition}
