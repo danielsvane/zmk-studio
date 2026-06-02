@@ -46,9 +46,8 @@ import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
 import { produce, type Draft } from "immer";
 import { LockStateContext } from "../rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
-import { Button } from "../misc/Button";
-import { ConfigFieldEdit } from "../behaviours/ConfigFieldEditor";
-import { BehaviourNameEditor } from "../behaviours/BehaviourNameEditor";
+import { BehaviourList } from "../behaviours/BehaviourList";
+import { BehaviourEditor } from "../behaviours/BehaviourEditor";
 
 // useConnectedDeviceData state is `T | undefined` until the device responds.
 // These mutation handlers only fire once data is loaded, so this wraps an immer
@@ -221,6 +220,10 @@ export default function Keyboard({ page }: { page: Page }) {
     number | undefined
   >(undefined);
 
+  const [selectedBehaviourId, setSelectedBehaviourId] = useState<
+    number | undefined
+  >(undefined);
+
   // Read the custom-behaviour pool, now editable in place (M3: RAM-only, lost
   // on reboot) via the generic schema-driven config editor.
   const [customBehaviors, setCustomBehaviors] =
@@ -243,6 +246,7 @@ export default function Keyboard({ page }: { page: Page }) {
     setSelectedLayerIndex(0);
     setSelectedKeyPosition(undefined);
     setSelectedComboIndex(undefined);
+    setSelectedBehaviourId(undefined);
   }, [conn]);
 
   // `conn`/`layouts` are read as guards only — this request must fire when the
@@ -518,13 +522,11 @@ export default function Keyboard({ page }: { page: Page }) {
   // the user then edits via the generic config form. The claimed behaviour
   // immediately appears in get_custom_behaviors AND in list_all_behaviors, so we
   // refresh the binding-picker map to make it selectable as a keymap/combo
-  // binding without reconnecting.
-  // Which spare pool the "Add" button claims from. Kinds are hardcoded here
-  // (there's no list-available-kinds RPC); the firmware rejects an unknown kind
-  // with NO_SPACE. Adding a kind to the firmware pool + this list is all it
-  // takes to offer it — the config form renders generically (M10).
-  const [newBehaviourKind, setNewBehaviourKind] = useState(ADDABLE_KINDS[0].kind);
-
+  // binding without reconnecting. Which spare pool to claim from is chosen by
+  // the user in the "Add behaviour" modal (see ADDABLE_KINDS); the firmware
+  // rejects an unknown kind with NO_SPACE. Adding a kind to the firmware pool +
+  // ADDABLE_KINDS is all it takes to offer it — the config form renders
+  // generically (M10).
   const addCustomBehavior = useCallback(
     async (kind: string) => {
     if (!conn.conn) {
@@ -556,6 +558,8 @@ export default function Keyboard({ page }: { page: Page }) {
           draft.behaviors.push(behavior);
         })
       );
+      // Open the new behaviour in the editor right away.
+      setSelectedBehaviourId(behavior.id);
       // Make the new behaviour selectable as a binding right away.
       await refreshBehaviors();
       return;
@@ -609,6 +613,7 @@ export default function Keyboard({ page }: { page: Page }) {
               }
             })
           );
+          setSelectedBehaviourId(undefined);
           // Drop it from the binding-picker map too.
           await refreshBehaviors();
         } else {
@@ -656,6 +661,7 @@ export default function Keyboard({ page }: { page: Page }) {
               draft.behaviors.push(behavior);
             })
           );
+          setSelectedBehaviourId(behavior.id);
           await refreshBehaviors();
         } else {
           console.error(
@@ -1050,90 +1056,69 @@ export default function Keyboard({ page }: { page: Page }) {
     // Raw key positions aren't remapped across layouts, so any layout is just a
     // visual aid for the key-position picker; use the active/selected one.
     const layoutKeys = layouts?.[selectedPhysicalLayoutIndex]?.keys;
+    const selectedBehaviour = behaviours.find(
+      (b) => b.id === selectedBehaviourId
+    );
+    // Master-detail, mirroring the combos page: a sidebar list of behaviours on
+    // the left and the editor for the selected one on the right.
     return (
-      <div className="bg-base-300 max-w-full min-w-0 min-h-0 h-full overflow-y-auto p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-medium text-base-content">
-            Custom behaviours
-          </h1>
-          <div className="flex items-center gap-2">
-            <select
-              className="h-8 rounded px-2 bg-base-100 border border-white/15"
-              value={newBehaviourKind}
-              onChange={(e) => setNewBehaviourKind(e.target.value)}
-              aria-label="Behaviour kind to add"
-            >
-              {ADDABLE_KINDS.map((k) => (
-                <option key={k.kind} value={k.kind}>
-                  {k.label}
-                </option>
-              ))}
-            </select>
-            <Button
-              variant="primary"
-              size="sm"
-              isDisabled={poolFull}
-              onPress={() => addCustomBehavior(newBehaviourKind)}
-            >
-              Add
-            </Button>
-          </div>
+      <div className="grid grid-cols-[auto_1fr] grid-rows-[minmax(0,1fr)] bg-base-300 max-w-full min-w-0 min-h-0">
+        <div className="p-4 flex flex-col gap-2 bg-base-200 overflow-y-auto min-h-0 min-w-48 max-w-64">
+          <BehaviourList
+            behaviours={behaviours}
+            addableKinds={ADDABLE_KINDS}
+            canAdd={!poolFull}
+            selectedId={selectedBehaviourId}
+            onSelect={setSelectedBehaviourId}
+            onAdd={addCustomBehavior}
+          />
         </div>
-        {behaviours.length === 0 ? (
-          <div className="text-base-content/60">
-            <p>No custom behaviours yet. Add one to get started.</p>
-            <p className="text-sm text-base-content/50 mt-2">
-              Any factory behaviours that ship with this keyboard reload after
-              the board restarts — e.g. after restoring stock settings, reset
-              the board (or unplug and reconnect) to see them again.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {behaviours.map((beh) => (
-            <div
-              key={beh.id}
-              className="rounded bg-base-200 p-4 flex flex-col gap-3"
-            >
-              <div className="flex items-baseline gap-2">
-                <BehaviourNameEditor
-                  name={beh.displayName ?? ""}
-                  placeholder={`Behaviour #${beh.id}`}
-                  onCommit={(name) =>
-                    doRenameBehavior(beh.id, name, beh.displayName ?? "")
-                  }
-                />
-                <span className="text-xs text-base-content/60">{beh.kind}</span>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="ml-auto"
-                  onPress={() => removeCustomBehavior(beh.id)}
-                >
-                  Delete
-                </Button>
-              </div>
-                <div className="flex flex-col gap-3">
-                  {beh.config.map((field) => (
-                    <ConfigFieldEdit
-                      key={field.key}
-                      field={field}
-                      layoutKeys={layoutKeys}
-                      onCommit={(value) =>
-                        doApplyConfigField(
-                          beh.id,
-                          field.key,
-                          value,
-                          field.value ?? {}
-                        )
-                      }
-                    />
-                  ))}
+        <div className="px-6 pt-6 col-start-2 overflow-y-auto min-h-0 min-w-0">
+          {/* min-h-full + flex-col so the empty-state can center vertically,
+              while pb-6 lives on the *content* (not the scroll container, whose
+              bottom padding gets dropped at the scroll end). Matches combos. */}
+          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col pb-6">
+            {selectedBehaviour ? (
+              <BehaviourEditor
+                key={selectedBehaviour.id}
+                behaviour={selectedBehaviour}
+                layoutKeys={layoutKeys}
+                onRename={(name) =>
+                  doRenameBehavior(
+                    selectedBehaviour.id,
+                    name,
+                    selectedBehaviour.displayName ?? ""
+                  )
+                }
+                onApplyField={(fieldKey, value, oldValue) =>
+                  doApplyConfigField(
+                    selectedBehaviour.id,
+                    fieldKey,
+                    value,
+                    oldValue
+                  )
+                }
+                onDelete={() => removeCustomBehavior(selectedBehaviour.id)}
+              />
+            ) : (
+              <div className="grid flex-1 place-items-center text-center text-base-content/60">
+                <div>
+                  <p>
+                    {behaviours.length === 0
+                      ? "No custom behaviours yet. Add one to get started."
+                      : "Select a behaviour to edit, or add a new one."}
+                  </p>
+                  <p className="mt-2 text-sm text-base-content/50">
+                    Any factory behaviours that ship with this keyboard reload
+                    after the board restarts — e.g. after restoring stock
+                    settings, reset the board (or unplug and reconnect) to see
+                    them again.
+                  </p>
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   }

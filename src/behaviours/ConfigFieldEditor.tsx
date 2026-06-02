@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type {
   ConfigField,
   ConfigValue,
 } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
-import { FieldLabel } from "../misc/Field";
+import { FieldLabel, GroupLabel } from "../misc/Field";
+import { TextField } from "../misc/TextField";
+import { Select } from "../misc/Select";
+import { Checkbox } from "../misc/Checkbox";
 import { KeyPositionPicker } from "../keyboard/KeyPositionPicker";
 
 /**
@@ -14,12 +17,14 @@ import { KeyPositionPicker } from "../keyboard/KeyPositionPicker";
  * component — the firmware just reports new fields with the same schema vocab.
  *
  * `ConfigFieldView` is the read-only rendering (M1). `ConfigFieldEdit` (M3) is
- * the editable form: int → number input, enum → select, bool → checkbox,
- * key-positions → a click-to-toggle physical-layout picker (M9; falls back to a
- * comma-separated text box when no layout is available, M5), all keyed off the
- * same schema discriminant. It commits a new `ConfigValue` via `onCommit`; the
- * caller turns that into a set_custom_behavior RPC. Field kinds not yet editable
- * (behaviour-ref / hold-tap sub-bindings) fall back to the read-only rendering.
+ * the editable form, built entirely on the shared design-system controls so it
+ * lines up with the combo editor: int → {@link TextField}, enum →
+ * {@link Select}, bool → {@link Checkbox}, key-positions → a click-to-toggle
+ * physical-layout picker (falls back to a comma-separated {@link TextField} when
+ * no layout is available), all keyed off the same schema discriminant. It
+ * commits a new `ConfigValue` via `onCommit`; the caller turns that into a
+ * set_custom_behavior RPC. Field kinds not yet editable (behaviour-ref /
+ * hold-tap sub-bindings) fall back to the read-only rendering.
  */
 export interface ConfigFieldViewProps {
   field: ConfigField;
@@ -97,7 +102,7 @@ export interface ConfigFieldEditProps {
 }
 
 /** Editable number input for an int-range field; commits on blur / Enter. */
-function IntEditor({ field, onCommit }: ConfigFieldEditProps) {
+function IntField({ field, onCommit }: ConfigFieldEditProps) {
   const current = field.value?.intValue ?? 0;
   const min = field.schema?.intRange?.min;
   const max = field.schema?.intRange?.max;
@@ -124,28 +129,62 @@ function IntEditor({ field, onCommit }: ConfigFieldEditProps) {
   };
 
   return (
-    <input
+    <TextField
+      label={field.displayName || field.key}
+      description={renderSchemaHint(field)}
       type="number"
-      min={min}
-      max={max}
-      className="h-8 rounded px-2 bg-base-100 border border-white/15"
+      className="max-w-xs"
       value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
+      onChange={setText}
+      inputProps={{
+        min,
+        max,
+        inputMode: "numeric",
+        onBlur: commit,
+        onKeyDown: (e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        },
       }}
     />
   );
 }
 
+/** Pick-one editor for an enum field; commits immediately on change. */
+function EnumField({ field, onCommit }: ConfigFieldEditProps) {
+  const names = field.schema?.enumOptions?.names ?? [];
+  const value = field.value?.enumValue ?? 0;
+  const items = names.map((name, id) => ({ id, name }));
+
+  return (
+    <Select
+      label={field.displayName || field.key}
+      className="max-w-xs"
+      items={items}
+      selectedKey={value}
+      onSelectionChange={(key) => onCommit({ enumValue: Number(key) })}
+    />
+  );
+}
+
+/** Boolean toggle; the field's display name is the checkbox label. */
+function BoolField({ field, onCommit }: ConfigFieldEditProps) {
+  return (
+    <Checkbox
+      isSelected={field.value?.boolValue ?? false}
+      onChange={(selected) => onCommit({ boolValue: selected })}
+    >
+      {field.displayName || field.key}
+    </Checkbox>
+  );
+}
+
 /**
- * Minimal editable key-positions field: a comma/space-separated list of position
- * numbers, committed on blur / Enter. Enough to exercise a long
- * hold_trigger_key_positions list end-to-end (M5 RX-buffer sizing). A proper
- * KeyGrid picker replaces this in M9.
+ * Comma/space-separated list of key positions, committed on blur / Enter. The
+ * text fallback for a key-positions field when no physical layout is available
+ * to click on. Keeps its own raw-text buffer so typing "1, 2," doesn't get
+ * reformatted mid-edit, and emits the parsed list on commit.
  */
-function PositionsEditor({ field, onCommit }: ConfigFieldEditProps) {
+function PositionsTextField({ field, onCommit }: ConfigFieldEditProps) {
   const current = field.value?.positions?.positions ?? [];
   const max = field.schema?.positions?.max;
   const [text, setText] = useState(current.join(", "));
@@ -162,25 +201,53 @@ function PositionsEditor({ field, onCommit }: ConfigFieldEditProps) {
       .filter((t) => t.length > 0)
       .map((t) => parseInt(t, 10))
       .filter((n) => !Number.isNaN(n) && n >= 0);
-    const bounded =
-      max !== undefined ? parsed.slice(0, max) : parsed;
+    const bounded = max !== undefined ? parsed.slice(0, max) : parsed;
     setText(bounded.join(", "));
     onCommit({ positions: { positions: bounded } });
   };
 
   return (
-    <input
-      type="text"
-      inputMode="numeric"
+    <TextField
+      label={field.displayName || field.key}
+      description={renderSchemaHint(field)}
       placeholder="e.g. 0, 1, 2"
-      className="h-8 rounded px-2 bg-base-100 border border-white/15 min-w-0 flex-1"
       value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
+      onChange={setText}
+      inputProps={{
+        inputMode: "numeric",
+        onBlur: commit,
+        onKeyDown: (e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        },
       }}
     />
+  );
+}
+
+/**
+ * Key-positions field: the click-to-toggle physical-layout picker when we have
+ * a layout, falling back to {@link PositionsTextField} otherwise. Rendered as a
+ * full-width labelled group (the picker has its own selection counter).
+ */
+function PositionsField({ field, onCommit, layoutKeys }: ConfigFieldEditProps) {
+  const labelId = useId();
+
+  if (!layoutKeys || layoutKeys.length === 0) {
+    return <PositionsTextField field={field} onCommit={onCommit} />;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <GroupLabel id={labelId}>{field.displayName || field.key}</GroupLabel>
+      <div role="group" aria-labelledby={labelId}>
+        <KeyPositionPicker
+          layoutKeys={layoutKeys}
+          value={field.value?.positions?.positions ?? []}
+          max={field.schema?.positions?.max}
+          onChange={(positions) => onCommit({ positions: { positions } })}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -191,78 +258,22 @@ export function ConfigFieldEdit({
   layoutKeys,
 }: ConfigFieldEditProps) {
   const { value, schema } = field;
-  const hint = renderSchemaHint(field);
 
-  // Key-positions field: prefer the physical-layout picker when we have a
-  // layout, falling back to the comma-separated text editor otherwise. Rendered
-  // here (not in the shared control block) so it can span the full width.
   if (schema?.positions) {
     return (
-      <div className="flex flex-col gap-1">
-        <FieldLabel>{field.displayName || field.key}</FieldLabel>
-        {layoutKeys && layoutKeys.length > 0 ? (
-          <KeyPositionPicker
-            layoutKeys={layoutKeys}
-            value={value?.positions?.positions ?? []}
-            max={schema.positions.max}
-            onChange={(positions) => onCommit({ positions: { positions } })}
-          />
-        ) : (
-          <div className="flex items-center gap-2">
-            <PositionsEditor field={field} onCommit={onCommit} />
-            {hint && (
-              <span className="text-xs text-base-content/60">({hint})</span>
-            )}
-          </div>
-        )}
-      </div>
+      <PositionsField field={field} onCommit={onCommit} layoutKeys={layoutKeys} />
     );
   }
-
-  let control;
   if (schema?.enumOptions && value?.enumValue !== undefined) {
-    const names = schema.enumOptions.names;
-    control = (
-      <select
-        className="h-8 rounded px-2 bg-base-100 border border-white/15"
-        value={value.enumValue}
-        onChange={(e) => onCommit({ enumValue: parseInt(e.target.value, 10) })}
-      >
-        {names.map((name, i) => (
-          <option key={i} value={i}>
-            {name}
-          </option>
-        ))}
-      </select>
-    );
-  } else if (schema?.boolSchema && value?.boolValue !== undefined) {
-    control = (
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={value.boolValue}
-          onChange={(e) => onCommit({ boolValue: e.target.checked })}
-        />
-        <span className="text-sm text-base-content/80">
-          {value.boolValue ? "On" : "Off"}
-        </span>
-      </label>
-    );
-  } else if (value?.intValue !== undefined) {
-    control = <IntEditor field={field} onCommit={onCommit} />;
-  } else {
-    // Not yet editable (behaviour-ref): show read-only value. (Key-positions
-    // are handled by the early return above.)
-    control = <span className="text-base-content">{renderValue(field)}</span>;
+    return <EnumField field={field} onCommit={onCommit} />;
+  }
+  if (schema?.boolSchema && value?.boolValue !== undefined) {
+    return <BoolField field={field} onCommit={onCommit} />;
+  }
+  if (value?.intValue !== undefined) {
+    return <IntField field={field} onCommit={onCommit} />;
   }
 
-  return (
-    <div className="flex flex-col gap-1">
-      <FieldLabel>{field.displayName || field.key}</FieldLabel>
-      <div className="flex items-center gap-2">
-        {control}
-        {hint && <span className="text-xs text-base-content/60">({hint})</span>}
-      </div>
-    </div>
-  );
+  // Not yet editable (behaviour-ref): show the read-only value.
+  return <ConfigFieldView field={field} />;
 }

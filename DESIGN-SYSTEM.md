@@ -94,7 +94,6 @@ carries `fieldColumn`; `Field` just orders the pieces within it.
 ### Raw inputs not yet migrated
 
 Adopt the components above when you next touch these:
-`behaviours/ConfigFieldEditor.tsx`, `behaviours/BehaviourNameEditor.tsx`,
 `keyboard/LayerPicker.tsx`, `behaviors/ParameterValuePicker.tsx`.
 
 ## Verifying UI changes
