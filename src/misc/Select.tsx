@@ -7,6 +7,9 @@ import {
   Popover,
   ListBox,
   ListBoxItem,
+  ListBoxSection,
+  Header,
+  Collection,
   Virtualizer,
   ListLayout,
   type SelectProps as RACSelectProps,
@@ -67,22 +70,61 @@ const comboSurface = cx(
   "has-[input:disabled]:opacity-50 has-[input:disabled]:cursor-not-allowed"
 );
 
-const popoverStyles = cx(
-  "min-w-[var(--trigger-width)] p-1",
+const popoverBase = cx(
+  "min-w-[var(--trigger-width)]",
   "rounded border border-base-300 bg-base-100 text-base-content shadow-lg"
 );
 
+// Select: vertical padding only — the horizontal inset lives on the list so a
+// full-bleed section divider can reach the popover edge without overflowing.
+const selectPopoverStyles = cx(popoverBase, "py-1");
+// Combobox: uniform padding. Its list is virtualized and relies on `overflow`
+// to bound the scroll port, so it keeps the original layout untouched.
+const comboboxPopoverStyles = cx(popoverBase, "p-1");
+
 // The list scrolls within a bounded height; combined with virtualization this
 // keeps a long option list cheap to open and filter.
-const listBoxStyles = "max-h-60 overflow-auto outline-none";
+const listBoxBase = "max-h-60 outline-none";
+// Select: `px-1` is the option inset (moved off the popover); `overflow-x-clip`
+// lets the edge-to-edge section divider bleed into that padding without ever
+// showing a horizontal scrollbar.
+const selectListBoxStyles = cx(listBoxBase, "px-1 overflow-y-auto overflow-x-clip");
+// Combobox: plain `overflow-auto` so the Virtualizer can measure the scroll
+// port and bound row width (clipping it here makes the list grow to full width).
+const comboboxListBoxStyles = cx(listBoxBase, "overflow-auto");
 
+// Text size is left to the caller (`itemTextSize` below): the Select dropdowns
+// use `text-base`, while the virtualized Combobox keeps `text-sm` so its fixed
+// `rowHeight` measurements stay correct.
 const itemStyles = cx(
-  "group flex items-center gap-2 px-2 py-1.5 text-sm outline-none",
+  "group flex items-center gap-2 px-2 py-1.5 outline-none",
   "cursor-pointer select-none rounded-sm",
   "rac-hover:bg-base-300 rac-focus:bg-base-300",
   "rac-selected:bg-primary rac-selected:text-primary-content",
   "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed"
 );
+
+// Section header for a grouped options list. Muted, uppercase, and offset from
+// the section above so the groups read as distinct without a hard divider.
+const sectionHeaderStyles =
+  "px-2 pb-1 pt-2 text-2xs font-semibold uppercase tracking-wide text-base-content/50 first:pt-0.5";
+
+// A titleless section (after the first) is set off by the classic `base-line`
+// hairline instead of a label. `-mx-1` cancels the list's `px-1` so the border
+// spans edge to edge (clipped at the popover edge by `overflow-x-clip`); the
+// matching `px-1` keeps the items aligned with the group above.
+const sectionDividerStyles = "mt-1 -mx-1 border-t border-base-line px-1 pt-1";
+
+/** A group of options for the grouped (`sections`) list form. Give a `title`
+ * to label the group with a header, or omit it to set the group off with a
+ * hairline divider instead (the first group never gets a leading divider). Keys
+ * must be unique across ALL sections (a react-aria collection requirement) —
+ * never repeat the same option in two sections. */
+export interface SelectSection<T> {
+  id: Key;
+  title?: string;
+  items: Iterable<T>;
+}
 
 /** The standard rich-option layout: optional icon + title + optional description. */
 export interface SelectItemContentProps {
@@ -130,30 +172,69 @@ function defaultKey(item: object): Key {
  */
 function OptionsList<T extends object>({
   items,
+  sections,
   itemKey,
   itemText,
   renderItem,
+  itemTextSize,
+  listBoxClassName,
   layout,
   emptyState,
 }: {
   items?: Iterable<T>;
+  sections?: Array<SelectSection<T>>;
   itemKey: (item: T) => Key;
   itemText: (item: T) => string;
   renderItem: (item: T) => ReactNode;
+  itemTextSize: string;
+  listBoxClassName: string;
   layout?: InstanceType<typeof ListLayout>;
   emptyState?: () => ReactNode;
 }) {
+  const renderRow = (data: T) => (
+    <ListBoxItem
+      id={itemKey(data)}
+      textValue={itemText(data)}
+      className={cx(itemStyles, itemTextSize)}
+    >
+      {renderItem(data)}
+    </ListBoxItem>
+  );
+
+  // Grouped form: one ListBoxSection per group, each either labeled with a
+  // header or set off by a hairline divider. Not virtualized — the grouped
+  // lists (e.g. behaviors) are short; virtualization is for the flat long lists
+  // below.
+  if (sections) {
+    const firstSectionId = sections[0]?.id;
+    return (
+      <ListBox
+        items={sections}
+        className={listBoxClassName}
+        renderEmptyState={emptyState}
+      >
+        {(section) => (
+          <ListBoxSection
+            id={section.id}
+            className={cx(
+              !section.title &&
+                section.id !== firstSectionId &&
+                sectionDividerStyles
+            )}
+          >
+            {section.title && (
+              <Header className={sectionHeaderStyles}>{section.title}</Header>
+            )}
+            <Collection items={section.items}>{renderRow}</Collection>
+          </ListBoxSection>
+        )}
+      </ListBox>
+    );
+  }
+
   const list = (
-    <ListBox items={items} className={listBoxStyles} renderEmptyState={emptyState}>
-      {(data) => (
-        <ListBoxItem
-          id={itemKey(data)}
-          textValue={itemText(data)}
-          className={itemStyles}
-        >
-          {renderItem(data)}
-        </ListBoxItem>
-      )}
+    <ListBox items={items} className={listBoxClassName} renderEmptyState={emptyState}>
+      {renderRow}
     </ListBox>
   );
   return layout ? <Virtualizer layout={layout}>{list}</Virtualizer> : list;
@@ -170,8 +251,12 @@ function useListLayout(rowHeight?: number) {
 
 export interface SelectProps<T extends object>
   extends Omit<RACSelectProps<T>, "children" | "className"> {
-  /** Options to render. Each needs a stable key (see `itemKey`, default `id`). */
-  items: Iterable<T>;
+  /** Options to render as one flat list. Each needs a stable key (see
+   * `itemKey`, default `id`). Ignored when `sections` is provided. */
+  items?: Iterable<T>;
+  /** Render options grouped into labeled sections instead of one flat list
+   * (e.g. a "Recently used" group on top). Takes precedence over `items`. */
+  sections?: Array<SelectSection<T>>;
   /** Field label rendered above the trigger. */
   label?: ReactNode;
   /** Muted helper text below the trigger. */
@@ -196,6 +281,7 @@ export interface SelectProps<T extends object>
 
 export function Select<T extends object>({
   items,
+  sections,
   label,
   description,
   errorMessage,
@@ -240,12 +326,15 @@ export function Select<T extends object>({
           <ChevronDown aria-hidden className="shrink-0 opacity-60" />
         </RACButton>
       </Field>
-      <Popover className={popoverStyles}>
+      <Popover className={selectPopoverStyles}>
         <OptionsList<T>
           items={items}
+          sections={sections}
           itemKey={itemKey}
           itemText={itemText}
           renderItem={item}
+          itemTextSize="text-base"
+          listBoxClassName={selectListBoxStyles}
         />
       </Popover>
     </RACSelect>
@@ -351,11 +440,13 @@ export function Combobox<T extends object>({
           </RACButton>
         </div>
       </Field>
-      <Popover className={popoverStyles}>
+      <Popover className={comboboxPopoverStyles}>
         <OptionsList<T>
           itemKey={itemKey}
           itemText={itemText}
           renderItem={item}
+          itemTextSize="text-sm"
+          listBoxClassName={comboboxListBoxStyles}
           layout={layout}
           emptyState={() => (
             <div className="px-2 py-1.5 text-sm opacity-60">No matches</div>

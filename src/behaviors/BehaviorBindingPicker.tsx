@@ -6,9 +6,10 @@ import {
 } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import { BehaviorBinding } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { useBehaviorParameters } from "./useBehaviorParameters";
+import { useRecentBehaviors } from "./useRecentBehaviors";
 import { validateValue } from "./parameters";
 import { PickerShell } from "../misc/PickerShell";
-import { Select } from "../misc/Select";
+import { Select, type SelectSection } from "../misc/Select";
 
 export interface BehaviorBindingPickerProps {
   binding: BehaviorBinding;
@@ -67,6 +68,31 @@ export const BehaviorBindingPicker = ({
       ),
     [behaviors]
   );
+
+  // Lift the behaviors the user keeps reaching for into a group on top, so
+  // filling a layer doesn't mean scrolling the full list for the same few
+  // behaviors each time. The groups are set off by a hairline divider (no
+  // labels); the lower group lists the rest (recents are lifted out, not
+  // duplicated — react-aria needs unique keys per list).
+  const { recentIds, recordUse } = useRecentBehaviors();
+  const behaviorSections = useMemo<
+    SelectSection<GetBehaviorDetailsResponse>[] | undefined
+  >(() => {
+    const recents = recentIds
+      .map((id) => behaviors.find((b) => b.id === id))
+      .filter((b): b is GetBehaviorDetailsResponse => b !== undefined);
+    if (recents.length === 0) {
+      return undefined; // No recents yet — fall back to the flat list.
+    }
+    const recentSet = new Set(recents.map((b) => b.id));
+    return [
+      { id: "recent", items: recents },
+      {
+        id: "all",
+        items: sortedBehaviors.filter((b) => !recentSet.has(b.id)),
+      },
+    ];
+  }, [recentIds, behaviors, sortedBehaviors]);
 
   // This effect propagates *user edits* (local behaviorId/param1/param2) up via
   // onBindingChanged. The incoming `binding`, `metadata`, `layers`, and the
@@ -141,13 +167,16 @@ export const BehaviorBindingPicker = ({
           <Select
             label="Behavior"
             items={sortedBehaviors}
+            sections={behaviorSections}
             selectedKey={behaviorId}
             itemKey={(b) => b.id}
             itemText={(b) => b.displayName}
             onSelectionChange={(key) => {
-              setBehaviorId(Number(key));
+              const id = Number(key);
+              setBehaviorId(id);
               setParam1(0);
               setParam2(0);
+              recordUse(id);
             }}
           />
           {controls}

@@ -130,6 +130,72 @@ export const Searchable: Story = {
   },
 };
 
+/**
+ * Grouped options — `sections` splits the list into groups (e.g. a recent group
+ * on top of the full list) so common picks don't require scrolling. Keys stay
+ * unique across groups: recents are lifted out of "all". A section with a
+ * `title` gets a labeled header; omit it to set the group off with a hairline
+ * divider instead (used by the behavior picker).
+ */
+export const Sections: Story = {
+  render: () => (
+    <Select
+      label="Behavior (labeled groups)"
+      defaultSelectedKey="mt"
+      triggerClassName="min-w-56"
+      defaultOpen
+      sections={[
+        {
+          id: "recent",
+          title: "Recently used",
+          items: [
+            { id: "mt", name: "Mod-Tap" },
+            { id: "kp", name: "Key Press" },
+          ],
+        },
+        {
+          id: "all",
+          title: "All behaviors",
+          items: [
+            { id: "lt", name: "Layer-Tap" },
+            { id: "mo", name: "Momentary Layer" },
+            { id: "trans", name: "Transparent" },
+          ],
+        },
+      ]}
+    />
+  ),
+};
+
+/** Titleless groups separated by the classic `base-line` hairline divider. */
+export const DividedSections: Story = {
+  render: () => (
+    <Select
+      label="Behavior (divider)"
+      defaultSelectedKey="mt"
+      triggerClassName="min-w-56"
+      defaultOpen
+      sections={[
+        {
+          id: "recent",
+          items: [
+            { id: "mt", name: "Mod-Tap" },
+            { id: "kp", name: "Key Press" },
+          ],
+        },
+        {
+          id: "all",
+          items: [
+            { id: "lt", name: "Layer-Tap" },
+            { id: "mo", name: "Momentary Layer" },
+            { id: "trans", name: "Transparent" },
+          ],
+        },
+      ]}
+    />
+  ),
+};
+
 /** A description + validation error attached to the field. */
 export const WithDescriptionAndError: Story = {
   render: () => (
