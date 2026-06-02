@@ -71,6 +71,13 @@ Decided deliberately over making the box itself 48px.
   Reserve the tint for static states — for button hover/press still use
   `brightness-*`, not `/opacity`, so solid fills don't go translucent.
   `base-100/200/300` have no alpha slot — always `brightness-*` for those.
+- `action` / `action-content` — the blue **call-to-action** fill (the blue end
+  of the ZMK logo, `#0b69c6`) + white, used by the primary button
+  (`variant="primary"`: Apply, modal OK/Save, the Download button). Kept distinct
+  from `primary` so a page's main *action* doesn't read like a *selected*
+  element — together they're the two ends of the logo gradient. Don't reach for
+  it directly — use `<Button variant="primary">`; the mapping lives in
+  `controlStyles.ts`.
 - `base-content` — default text. Written with an `<alpha-value>` slot, so it
   **does** take opacity modifiers: `bg-base-content/40` gives a muted surface
   that contrasts with the panel in both themes (~2.3:1) where the

@@ -60,14 +60,15 @@ const base = cx(
   controlDisabled
 );
 
-// `bg-primary` is a solid fill: for hover/press use brightness, not opacity
-// (a translucent button would let the panel bleed through). `primary` does
-// carry an <alpha-value> slot, but reserve `bg-primary/<n>` for static tints
-// like the selected SidebarCard, not button hover states.
+// `bg-action` is a solid fill: for hover/press use brightness, not opacity
+// (a translucent button would let the panel bleed through). The `primary`
+// *button* is the page's call-to-action and uses the blue `action` token —
+// deliberately distinct from the `primary` token, which is reserved for
+// selection/active state and static tints (e.g. the selected SidebarCard).
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary text-primary-content rac-hover:brightness-110 rac-pressed:brightness-95 " +
-    "rac-selected:bg-primary rac-selected:text-primary-content",
+    "bg-action text-action-content rac-hover:brightness-110 rac-pressed:brightness-95 " +
+    "rac-selected:bg-action rac-selected:text-action-content",
   secondary:
     "bg-base-200 text-base-content rac-hover:bg-base-300 rac-pressed:brightness-95 " +
     "rac-selected:bg-primary rac-selected:text-primary-content",

@@ -129,7 +129,7 @@ export const Download = () => {
                 <a
                   key={link.name}
                   href={getUrlFromPattern(ReleaseAssets, link.urlPattern)}
-                  className="p-3 text-lg bg-primary hover:opacity-85 active:opacity-70 text-primary-content rounded-lg justify-center items-center gap-3 flex"
+                  className="p-3 text-lg bg-action hover:brightness-110 active:brightness-95 text-action-content rounded-lg justify-center items-center gap-3 flex"
                 >
                   <FontAwesomeIcon icon={PlatformMetadata[platform].icon} className="h-6"/>{" "}
                   Download for {link.name}

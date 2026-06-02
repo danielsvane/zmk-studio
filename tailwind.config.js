@@ -28,6 +28,13 @@ export default {
           "light-dark(oklch(49.12% 0.3096 285.75 / <alpha-value>), oklch(65.69% 0.196 285.75 / <alpha-value>))",
         "primary-content":
           "light-dark(oklch(0.89824 0.06192 285.75), oklch(0.13138 0.0392 285.75))",
+        // Call-to-action fill for primary buttons (Apply, modal OK/Save, the
+        // Download button): the blue end of the ZMK logo (#0b69c6) + white.
+        // Kept distinct from `primary` so a page's main action reads differently
+        // from a selected/active element. White label hits APCA Lc ~82.
+        // `<alpha-value>` slot for future tints.
+        action: "rgb(11 105 198 / <alpha-value>)",
+        "action-content": "#ffffff",
         secondary:
           "light-dark(oklch(69.71% 0.329 342.55), oklch(74.8% 0.26 342.55))",
         accent:
