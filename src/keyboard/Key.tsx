@@ -68,7 +68,7 @@ export const Key = ({
   const className = cx(
     "group rounded relative flex justify-center items-center transition-all",
     interactive &&
-      "cursor-pointer hover:shadow-xl hover:ring-1 hover:ring-gray-300 hover:scale-125",
+      "cursor-pointer hover:shadow-xl hover:ring-1 hover:ring-base-line hover:scale-125 hover:brightness-125",
     selected ? "bg-primary text-primary-content" : unselected,
   );
 
