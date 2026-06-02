@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import type { CustomBehavior } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 
 import { Button } from "../misc/Button";
-import { cx } from "../misc/controlStyles";
+import { SidebarCard } from "../misc/SidebarCard";
 import { AddBehaviourModal } from "./AddBehaviourModal";
 
 /** One option for the "Add" kind picker (the kind string + its display label). */
@@ -58,28 +58,20 @@ export const BehaviourList = ({
           {behaviours.map((beh) => {
             const selected = beh.id === selectedId;
             return (
-              <li key={beh.id}>
-                <button
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => onSelect?.(beh.id)}
-                  className={cx(
-                    "w-full rounded border p-3 text-left transition-colors",
-                    selected
-                      ? "border-primary bg-base-300"
-                      : "border-transparent hover:bg-base-300",
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="min-w-0 truncate text-sm font-medium">
-                      {beh.displayName || `Behaviour #${beh.id}`}
-                    </span>
-                    <span className="ml-auto shrink-0 text-xs opacity-60">
-                      {beh.kind}
-                    </span>
-                  </div>
-                </button>
-              </li>
+              <SidebarCard
+                key={beh.id}
+                selected={selected}
+                onSelect={() => onSelect?.(beh.id)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 truncate text-sm font-medium">
+                    {beh.displayName || `Behaviour #${beh.id}`}
+                  </span>
+                  <span className="ml-auto shrink-0 text-xs opacity-60">
+                    {beh.kind}
+                  </span>
+                </div>
+              </SidebarCard>
             );
           })}
         </ul>

@@ -43,8 +43,10 @@ const base = cx(
   controlDisabled
 );
 
-// `bg-primary` is defined with light-dark() and has no <alpha-value> slot, so
-// opacity modifiers (bg-primary/90) won't work — use brightness for hover/press.
+// `bg-primary` is a solid fill: for hover/press use brightness, not opacity
+// (a translucent button would let the panel bleed through). `primary` does
+// carry an <alpha-value> slot, but reserve `bg-primary/<n>` for static tints
+// like the selected SidebarCard, not button hover states.
 const variants: Record<ButtonVariant, string> = {
   primary:
     "bg-primary text-primary-content rac-hover:brightness-110 rac-pressed:brightness-95 " +

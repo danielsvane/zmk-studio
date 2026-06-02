@@ -9,7 +9,7 @@ import { HidUsageLabel } from "./HidUsageLabel";
 import { PhysicalLayout } from "./PhysicalLayout";
 import { keyPhysicalAttrsToPositions } from "./layoutKeyPositions";
 import { Button } from "../misc/Button";
-import { cx } from "../misc/controlStyles";
+import { SidebarCard } from "../misc/SidebarCard";
 
 type BehaviorMap = Record<number, GetBehaviorDetailsResponse>;
 
@@ -71,47 +71,39 @@ export const ComboList = ({
             const selected = entry.index === selectedIndex;
 
             return (
-              <li key={entry.index}>
-                <button
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => onComboSelected?.(entry.index)}
-                  className={cx(
-                    "w-full rounded border p-3 text-left transition-colors",
-                    selected
-                      ? "border-primary bg-base-300"
-                      : "border-transparent hover:bg-base-300",
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium opacity-50">
-                      #{entry.index}
+              <SidebarCard
+                key={entry.index}
+                selected={selected}
+                onSelect={() => onComboSelected?.(entry.index)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium opacity-50">
+                    #{entry.index}
+                  </span>
+                  <span className="min-w-0 truncate text-sm font-medium">
+                    {behaviorName}
+                  </span>
+                  {binding ? (
+                    <span className="ml-auto inline-flex shrink-0 text-xs opacity-70 [&_svg]:size-3.5">
+                      <HidUsageLabel hid_usage={binding.param1} />
                     </span>
-                    <span className="min-w-0 truncate text-sm font-medium">
-                      {behaviorName}
-                    </span>
-                    {binding ? (
-                      <span className="ml-auto inline-flex shrink-0 text-xs opacity-70 [&_svg]:size-3.5">
-                        <HidUsageLabel hid_usage={binding.param1} />
-                      </span>
-                    ) : null}
+                  ) : null}
+                </div>
+                {previewPositions ? (
+                  <div className="mt-1.5 flex justify-center">
+                    <PhysicalLayout
+                      positions={previewPositions}
+                      oneU={11}
+                      keyVariant="preview"
+                      selectedPositions={positions}
+                    />
                   </div>
-                  {previewPositions ? (
-                    <div className="mt-1.5 flex justify-center">
-                      <PhysicalLayout
-                        positions={previewPositions}
-                        oneU={11}
-                        keyVariant="preview"
-                        selectedPositions={positions}
-                      />
-                    </div>
-                  ) : (
-                    <div className="mt-1 font-mono text-xs opacity-60">
-                      {positions.join(", ") || "no keys"}
-                    </div>
-                  )}
-                </button>
-              </li>
+                ) : (
+                  <div className="mt-1 font-mono text-xs opacity-60">
+                    {positions.join(", ") || "no keys"}
+                  </div>
+                )}
+              </SidebarCard>
             );
           })}
         </ul>

@@ -21,8 +21,11 @@ export default {
         control: "3rem",
       },
       colors: {
+        // `<alpha-value>` slot so opacity modifiers work (`bg-primary/15` powers
+        // the selected SidebarCard tint). Bare `bg-primary`/`border-primary`/
+        // `text-primary` still default to full opacity.
         primary:
-          "light-dark(oklch(49.12% 0.3096 285.75), oklch(65.69% 0.196 285.75))",
+          "light-dark(oklch(49.12% 0.3096 285.75 / <alpha-value>), oklch(65.69% 0.196 285.75 / <alpha-value>))",
         "primary-content":
           "light-dark(oklch(0.89824 0.06192 285.75), oklch(0.13138 0.0392 285.75))",
         secondary:
