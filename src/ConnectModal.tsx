@@ -328,8 +328,7 @@ export const ConnectModal = ({
   const haveTransports = useMemo(() => transports.length > 0, [transports]);
 
   return (
-    <GenericModal ref={dialog} className="max-w-xl">
-      <h1 className="text-xl">Welcome to ZMK Studio</h1>
+    <GenericModal ref={dialog} className="max-w-xl" title="Welcome to ZMK Studio">
       {haveTransports ? (
         <ConnectOptions
           transports={transports}

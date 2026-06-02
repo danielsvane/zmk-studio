@@ -103,6 +103,14 @@ wired for you):
 | Collapsible section (advanced/secondary fields) | `Disclosure` (`Disclosure.tsx`) |
 | Two-region picker (controls + canvas) | `PickerShell` (`PickerShell.tsx`) |
 | Selectable master-list row (sidebar → detail) | `SidebarCard` (`SidebarCard.tsx`) |
+| Dialog / modal | `GenericModal` (`GenericModal.tsx`) |
+
+`GenericModal` is a native `<dialog>` on the `base-200` panel surface (so it
+matches the header and sidebars) with three slots: `title` (rendered as the
+standard `text-lg font-medium` heading), `children` (body), and `actions`
+(a right-aligned `justify-end gap-3` footer — drop `<Button>`s straight in).
+Don't hand-roll the heading or the button row; pass them as slots so every
+dialog lines up. Open/close is driven by `useModalRef` (`misc/useModalRef.ts`).
 
 `Field` must render **inside** the react-aria provider (`RACTextField`,
 `RACSelect`, …) — that's where the aria wiring context exists. The provider

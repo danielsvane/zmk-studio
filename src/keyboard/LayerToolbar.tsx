@@ -103,8 +103,26 @@ function RenameLayerModal({
   };
 
   return (
-    <GenericModal ref={ref} className="min-w-[20rem]" onClose={onClose}>
-      <h2 className="mb-3 text-lg font-medium">Rename layer</h2>
+    <GenericModal
+      ref={ref}
+      className="min-w-[20rem]"
+      onClose={onClose}
+      title="Rename layer"
+      actions={
+        <>
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            isDisabled={text.trim().length === 0}
+            onPress={save}
+          >
+            Save
+          </Button>
+        </>
+      }
+    >
       <TextField
         label="Name"
         placeholder={placeholder}
@@ -121,18 +139,6 @@ function RenameLayerModal({
           },
         }}
       />
-      <div className="mt-5 flex justify-end gap-3">
-        <Button variant="secondary" onPress={onClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          isDisabled={text.trim().length === 0}
-          onPress={save}
-        >
-          Save
-        </Button>
-      </div>
     </GenericModal>
   );
 }
@@ -155,26 +161,32 @@ function DeleteLayerModal({
   const ref = useModalRef(open, true);
 
   return (
-    <GenericModal ref={ref} className="min-w-[20rem]" onClose={onClose}>
-      <h2 className="mb-3 text-lg font-medium">Delete layer</h2>
+    <GenericModal
+      ref={ref}
+      className="min-w-[20rem]"
+      onClose={onClose}
+      title="Delete layer"
+      actions={
+        <>
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            icon={<Trash2 aria-hidden />}
+            onPress={() => {
+              onDelete();
+              onClose();
+            }}
+          >
+            Delete
+          </Button>
+        </>
+      }
+    >
       <p className="text-sm opacity-80">
         Delete <span className="font-medium">{name}</span>? You can undo this.
       </p>
-      <div className="mt-5 flex justify-end gap-3">
-        <Button variant="secondary" onPress={onClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="danger"
-          icon={<Trash2 aria-hidden />}
-          onPress={() => {
-            onDelete();
-            onClose();
-          }}
-        >
-          Delete
-        </Button>
-      </div>
     </GenericModal>
   );
 }

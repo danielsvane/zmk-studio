@@ -37,8 +37,29 @@ export const AddBehaviourModal = ({
   }, [open, kinds]);
 
   return (
-    <GenericModal ref={ref} className="min-w-[20rem]" onClose={onClose}>
-      <h2 className="mb-3 text-lg font-medium">Add behaviour</h2>
+    <GenericModal
+      ref={ref}
+      className="min-w-[20rem]"
+      onClose={onClose}
+      title="Add behaviour"
+      actions={
+        <>
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            isDisabled={!kind}
+            onPress={() => {
+              onAdd(kind);
+              onClose();
+            }}
+          >
+            Add
+          </Button>
+        </>
+      }
+    >
       <ToggleGroup
         label="Kind"
         selectionMode="single"
@@ -55,21 +76,6 @@ export const AddBehaviourModal = ({
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
-      <div className="mt-5 flex justify-end gap-3">
-        <Button variant="secondary" onPress={onClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          isDisabled={!kind}
-          onPress={() => {
-            onAdd(kind);
-            onClose();
-          }}
-        >
-          Add
-        </Button>
-      </div>
     </GenericModal>
   );
 };

@@ -30,8 +30,7 @@ export const UnlockModal = () => {
   const dialog = useModalRef(open, false, false);
 
   return (
-    <GenericModal ref={dialog}>
-      <h1 className="text-xl">Unlock To Continue</h1>
+    <GenericModal ref={dialog} title="Unlock To Continue">
       <p>
         For security reasons, your keyboard requires unlocking before using ZMK
         Studio.

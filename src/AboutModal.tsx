@@ -180,23 +180,28 @@ export const AboutModal = ({ open, onClose }: AboutModalProps) => {
   const ref = useModalRef(open, true);
 
   return (
-    <GenericModal ref={ref} className="min-w-min w-[70vw]" onClose={onClose}>
-      <div className="flex justify-between items-start">
-        <p>
-          The ZMK Project:{" "}
-          <ExternalLink href="https://zmk.dev/">website</ExternalLink>,{" "}
-          <ExternalLink href="https://github.com/zmkfirmware/zmk/issues/">
-            GitHub Issues
-          </ExternalLink>
-          ,{" "}
-          <ExternalLink href="https://zmk.dev/community/discord/invite">
-            Discord Server
-          </ExternalLink>
-        </p>
+    <GenericModal
+      ref={ref}
+      className="min-w-min w-[70vw]"
+      onClose={onClose}
+      title="About ZMK Studio"
+      actions={
         <Button variant="secondary" onPress={onClose}>
           Close
         </Button>
-      </div>
+      }
+    >
+      <p>
+        The ZMK Project:{" "}
+        <ExternalLink href="https://zmk.dev/">website</ExternalLink>,{" "}
+        <ExternalLink href="https://github.com/zmkfirmware/zmk/issues/">
+          GitHub Issues
+        </ExternalLink>
+        ,{" "}
+        <ExternalLink href="https://zmk.dev/community/discord/invite">
+          Discord Server
+        </ExternalLink>
+      </p>
       <div>
         <p className="py-1 mr-2">
           ZMK Studio is made possible thanks to the generous donation of time
