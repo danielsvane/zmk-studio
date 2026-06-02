@@ -1084,8 +1084,8 @@ export default function Keyboard({ page }: { page: Page }) {
             <p>No custom behaviours yet. Add one to get started.</p>
             <p className="text-sm text-base-content/50 mt-2">
               Any factory behaviours that ship with this keyboard reload after
-              the board restarts — e.g. after restoring stock settings,
-              unplug and reconnect to see them again.
+              the board restarts — e.g. after restoring stock settings, reset
+              the board (or unplug and reconnect) to see them again.
             </p>
           </div>
         ) : (
