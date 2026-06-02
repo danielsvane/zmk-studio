@@ -122,7 +122,7 @@ export const LayerPicker = ({
           >
             {({ isSelected }) => (
               <>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                <span className="min-w-0 flex-1 truncate text-base font-medium">
                   {layer_item.name}
                 </span>
                 <ChevronRight
