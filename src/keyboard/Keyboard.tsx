@@ -34,6 +34,7 @@ import {
 } from "@zmkfirmware/zmk-studio-ts-client/combos";
 
 import { LayerPicker } from "./LayerPicker";
+import { LayerToolbar } from "./LayerToolbar";
 // Layout picker temporarily hidden — not needed for now.
 // import { PhysicalLayoutPicker } from "./PhysicalLayoutPicker";
 import { Keymap as KeymapComp } from "./Keymap";
@@ -1193,15 +1194,24 @@ export default function Keyboard({ page }: { page: Page }) {
             onLayerClicked={setSelectedLayerIndex}
             onLayerMoved={moveLayer}
             canAdd={(keymap.availableLayers || 0) > 0}
-            canRemove={(keymap.layers?.length || 0) > 1}
             onAddClicked={addLayer}
-            onRemoveClicked={removeLayer}
-            onLayerNameChanged={changeLayerName}
           />
         )}
       </div>
       {layouts && keymap && behaviors && (
         <div className="p-2 col-start-2 row-start-1 grid items-center justify-center relative min-w-0">
+          {keymap.layers[selectedLayerIndex] && (
+            <LayerToolbar
+              name={keymap.layers[selectedLayerIndex].name ?? ""}
+              placeholder={selectedLayerIndex.toString()}
+              canDelete={(keymap.layers?.length || 0) > 1}
+              onRename={(newName) => {
+                const layer = keymap.layers[selectedLayerIndex];
+                changeLayerName(layer.id, layer.name ?? "", newName);
+              }}
+              onDelete={removeLayer}
+            />
+          )}
           <KeymapComp
             keymap={keymap}
             layout={layouts[selectedPhysicalLayoutIndex]}

@@ -1,15 +1,13 @@
-import { Pencil, Minus, Plus } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { ChevronRight, Plus } from "lucide-react";
+import { useCallback, useMemo } from "react";
 import {
   DropIndicator,
-  Label,
   ListBox,
   ListBoxItem,
   Selection,
   useDragAndDrop,
 } from "react-aria-components";
-import { useModalRef } from "../misc/useModalRef";
-import { GenericModal } from "../GenericModal";
+
 import { Button } from "../misc/Button";
 import { controlFocusRing, cx, selectableCard } from "../misc/controlStyles";
 
@@ -25,95 +23,26 @@ interface LayerPickerProps {
   layers: Array<Layer>;
   selectedLayerIndex: number;
   canAdd?: boolean;
-  canRemove?: boolean;
 
   onLayerClicked?: LayerClickCallback;
   onLayerMoved?: LayerMovedCallback;
   onAddClicked?: () => void | Promise<void>;
-  onRemoveClicked?: () => void | Promise<void>;
-  onLayerNameChanged?: (
-    id: number,
-    oldName: string,
-    newName: string
-  ) => void | Promise<void>;
 }
 
-interface EditLabelData {
-  id: number;
-  name: string;
-}
-
-const EditLabelModal = ({
-  open,
-  onClose,
-  editLabelData,
-  handleSaveNewLabel,
-}: {
-  open: boolean;
-  onClose: () => void;
-  editLabelData: EditLabelData;
-  handleSaveNewLabel: (
-    id: number,
-    oldName: string,
-    newName: string | null
-  ) => void;
-}) => {
-  const ref = useModalRef(open);
-  const [newLabelName, setNewLabelName] = useState(editLabelData.name);
-
-  const handleSave = () => {
-    handleSaveNewLabel(editLabelData.id, editLabelData.name, newLabelName);
-    onClose();
-  };
-
-  return (
-    <GenericModal
-      ref={ref}
-      onClose={onClose}
-      className="min-w-min w-[30vw] flex flex-col"
-    >
-      <span className="mb-3 text-lg">New Layer Name</span>
-      <input
-        className="p-1 border rounded border-base-content border-solid"
-        type="text"
-        defaultValue={editLabelData.name}
-        autoFocus
-        onChange={(e) => setNewLabelName(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            handleSave();
-          }
-        }}
-      />
-      <div className="mt-4 flex justify-end gap-4">
-        <Button variant="ghost" onPress={onClose}>
-          Cancel
-        </Button>
-        <Button variant="primary" onPress={handleSave}>
-          Save
-        </Button>
-      </div>
-    </GenericModal>
-  );
-};
-
+// Layer list. Mirrors the Combos/Behaviours sidebars: a plain title, a
+// full-width Add button, and selectable cards (shared `selectableCard` surface +
+// drill-in chevron). Renaming and deleting the selected layer live in the
+// keyboard area (see LayerToolbar), so the sidebar is purely selection + reorder
+// — drag a card to move that layer.
 export const LayerPicker = ({
   layers,
   selectedLayerIndex,
   canAdd,
-  canRemove,
   onLayerClicked,
   onLayerMoved,
   onAddClicked,
-  onRemoveClicked,
-  onLayerNameChanged,
   ...props
 }: LayerPickerProps) => {
-  const [editLabelData, setEditLabelData] = useState<EditLabelData | null>(
-    null
-  );
-
   const layer_items = useMemo(() => {
     return layers.map((l, i) => ({
       name: l.name || i.toLocaleString(),
@@ -152,49 +81,18 @@ export const LayerPicker = ({
     },
   });
 
-  const handleSaveNewLabel = useCallback(
-    (id: number, oldName: string, newName: string | null) => {
-      if (newName !== null) {
-        onLayerNameChanged?.(id, oldName, newName);
-      }
-    },
-    [onLayerNameChanged]
-  );
-
   return (
-    <div className="flex flex-col min-w-40">
-      <div className="grid grid-cols-[1fr_auto_auto] items-center">
-        <Label className="after:content-[':'] text-sm">Layers</Label>
-        {onRemoveClicked && (
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Minus />}
-            aria-label="Remove layer"
-            isDisabled={!canRemove}
-            onPress={onRemoveClicked}
-          />
-        )}
-        {onAddClicked && (
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Plus />}
-            aria-label="Add layer"
-            className="ml-1"
-            isDisabled={!canAdd}
-            onPress={onAddClicked}
-          />
-        )}
-      </div>
-      {editLabelData !== null && (
-        <EditLabelModal
-          open={editLabelData !== null}
-          onClose={() => setEditLabelData(null)}
-          editLabelData={editLabelData}
-          handleSaveNewLabel={handleSaveNewLabel}
-        />
-      )}
+    <div className="flex min-w-44 flex-col gap-4">
+      <h2 className="text-sm font-bold uppercase opacity-70">Layers</h2>
+      <Button
+        className="w-full justify-center"
+        variant="secondary"
+        icon={<Plus />}
+        isDisabled={!canAdd || !onAddClicked}
+        onPress={() => onAddClicked?.()}
+      >
+        Add layer
+      </Button>
       <ListBox
         aria-label="Keymap Layer"
         selectionMode="single"
@@ -205,7 +103,7 @@ export const LayerPicker = ({
             ? [layer_items[selectedLayerIndex].id]
             : []
         }
-        className="mt-2 flex flex-col gap-2"
+        className="flex flex-col gap-2"
         onSelectionChange={selectionChanged}
         dragAndDropHooks={dragAndDropHooks}
         {...props}
@@ -216,21 +114,26 @@ export const LayerPicker = ({
             className={({ isSelected }) =>
               cx(
                 selectableCard.base,
-                "group grid grid-cols-[1fr_auto] items-center gap-2",
+                "flex items-center gap-2",
                 controlFocusRing,
-                isSelected ? selectableCard.selected : selectableCard.resting,
+                isSelected ? selectableCard.selected : selectableCard.resting
               )
             }
           >
-            <span className="truncate text-sm font-medium">
-              {layer_item.name}
-            </span>
-            <Pencil
-              className="invisible h-4 w-4 shrink-0 group-hover:visible"
-              onClick={() =>
-                setEditLabelData({ id: layer_item.id, name: layer_item.name })
-              }
-            />
+            {({ isSelected }) => (
+              <>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {layer_item.name}
+                </span>
+                <ChevronRight
+                  aria-hidden
+                  className={cx(
+                    "size-4 shrink-0 transition-colors",
+                    isSelected ? "text-primary" : "opacity-40"
+                  )}
+                />
+              </>
+            )}
           </ListBoxItem>
         )}
       </ListBox>
