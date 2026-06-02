@@ -11,6 +11,7 @@ import {
 import { useModalRef } from "../misc/useModalRef";
 import { GenericModal } from "../GenericModal";
 import { Button } from "../misc/Button";
+import { controlFocusRing, cx, selectableCard } from "../misc/controlStyles";
 
 interface Layer {
   id: number;
@@ -204,7 +205,7 @@ export const LayerPicker = ({
             ? [layer_items[selectedLayerIndex].id]
             : []
         }
-        className="ml-2 items-center justify-center cursor-pointer"
+        className="mt-2 flex flex-col gap-2"
         onSelectionChange={selectionChanged}
         dragAndDropHooks={dragAndDropHooks}
         {...props}
@@ -212,11 +213,20 @@ export const LayerPicker = ({
         {(layer_item) => (
           <ListBoxItem
             textValue={layer_item.name}
-            className="p-1 b-1 my-1 group grid grid-cols-[1fr_auto] items-center aria-selected:bg-primary aria-selected:text-primary-content border rounded border-transparent border-solid hover:bg-base-300"
+            className={({ isSelected }) =>
+              cx(
+                selectableCard.base,
+                "group grid grid-cols-[1fr_auto] items-center gap-2",
+                controlFocusRing,
+                isSelected ? selectableCard.selected : selectableCard.resting,
+              )
+            }
           >
-            <span>{layer_item.name}</span>
+            <span className="truncate text-sm font-medium">
+              {layer_item.name}
+            </span>
             <Pencil
-              className="h-4 w-4 mx-1 invisible group-hover:visible"
+              className="invisible h-4 w-4 shrink-0 group-hover:visible"
               onClick={() =>
                 setEditLabelData({ id: layer_item.id, name: layer_item.name })
               }

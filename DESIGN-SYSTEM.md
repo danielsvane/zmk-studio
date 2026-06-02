@@ -45,6 +45,12 @@ Decided deliberately over making the box itself 48px.
 - `controlSurface` — the filled-input look: `bg-base-100` fill + `base-line`
   hairline border + color transition. Used by the Select/Combobox triggers and
   the TextField input.
+- `selectableCard` (`base` + `resting` / `selected`) — a selectable sidebar row:
+  a bounded, filled tile that reads as clickable at rest, with a primary
+  border + tint when selected. Compose `base` with `resting`/`selected` (a
+  computed boolean for plain lists, or react-aria's `isSelected` render prop).
+  Backs `SidebarCard` (Combos/Behaviours) and the layer picker — keep the three
+  sidebars looking alike by reusing it, not re-rolling the classes.
 - `controlFocusRing` — the accessible focus ring (react-aria
   `data-focus-visible`); shared so everything rings identically.
 - `controlDisabled` — shared disabled treatment.

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 
-import { cx } from "./controlStyles";
+import { cx, selectableCard } from "./controlStyles";
 
 export interface SidebarCardProps {
   /** Highlights the row as the one whose detail is open in the editor. */
@@ -25,12 +25,10 @@ export function SidebarCard({ selected, onSelect, children }: SidebarCardProps) 
         aria-pressed={selected}
         onClick={onSelect}
         className={cx(
-          "flex w-full cursor-pointer items-center gap-2 rounded border p-3 text-left",
-          "transition-[background-color,border-color,filter]",
+          selectableCard.base,
+          "flex w-full items-center gap-2",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary",
-          selected
-            ? "border-primary bg-primary/15"
-            : "border-base-line bg-base-100 hover:border-base-content/25 hover:brightness-125",
+          selected ? selectableCard.selected : selectableCard.resting,
         )}
       >
         <div className="min-w-0 flex-1">{children}</div>
