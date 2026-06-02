@@ -9,11 +9,13 @@ import { cx, controlDisabled, type ButtonSize } from "./controlStyles";
 /**
  * Boolean checkbox styled to match the rest of the controls.
  *
- * The hit target is the whole label row: a flex row at least one `control`
- * (48px) tall, so clicking anywhere on the box *or* its text toggles it and the
- * touch area clears the WCAG 2.5.5 minimum — while the box itself stays a normal
- * ~20px square. The box reuses the shared `base-line` edge and fills with
- * `primary` when checked, like the toggle-group segments.
+ * The hit target is the whole label row: clicking anywhere on the box *or* its
+ * text toggles it. The row is `min-h-9` (36px) rather than the full 48px control
+ * height, so stacked checkboxes keep the same visual rhythm as the rest of the
+ * form instead of floating far apart, while still clearing the WCAG 2.5.8 (AA)
+ * 24px minimum. The box itself stays a normal ~20px square, reuses the shared
+ * `base-line` edge, and fills with `primary` when checked, like the toggle-group
+ * segments.
  *
  * Built on react-aria's Checkbox: it owns the hidden input and exposes its state
  * as `data-*` on the root, which the box reads via `group-data-[…]` variants.
@@ -24,7 +26,7 @@ const labelTextSize: Record<ButtonSize, string> = {
 };
 
 const rootStyles = cx(
-  "group inline-flex min-h-control items-center gap-2 select-none cursor-pointer",
+  "group inline-flex min-h-9 items-center gap-2 select-none cursor-pointer",
   "font-medium text-base-content",
   controlDisabled
 );
