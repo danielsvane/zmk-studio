@@ -51,12 +51,12 @@ import { BehaviourList } from "../behaviours/BehaviourList";
 import { BehaviourEditor } from "../behaviours/BehaviourEditor";
 
 // The left sidebar (master list) on every editor page — Layers, Combos,
-// Behaviours. A fixed `w-64` so all three pages line up exactly; their `auto`
+// Behaviours. A fixed `w-72` so all three pages line up exactly; their `auto`
 // grid column otherwise sizes to content, which would make the combo list (with
 // its key previews) wider than the text-only lists. The keymap page appends
 // `row-span-2` to span its keyboard + binding-drawer rows.
 const SIDEBAR_REGION =
-  "flex w-64 flex-col gap-2 bg-base-200 p-4 overflow-y-auto min-h-0";
+  "flex w-72 flex-col gap-2 bg-base-200 p-4 overflow-y-auto min-h-0";
 
 // useConnectedDeviceData state is `T | undefined` until the device responds.
 // These mutation handlers only fire once data is loaded, so this wraps an immer
