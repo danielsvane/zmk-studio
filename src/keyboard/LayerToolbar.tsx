@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
+import { GenericModal } from "../GenericModal";
+import { useModalRef } from "../misc/useModalRef";
 import { Button } from "../misc/Button";
 import { TextField } from "../misc/TextField";
 
@@ -19,10 +21,9 @@ export interface LayerToolbarProps {
 
 // Controls for the *selected* layer, anchored to the top-left corner of the
 // keymap canvas — rename and delete live here rather than in the sidebar (which
-// is just selection + reorder). The name edits in place: commit on blur/Enter,
-// revert on empty/Escape, resync when the layer changes underneath — the same
-// pattern as the behaviour name editor. Delete is undoable, so there's no
-// confirm step.
+// is just selection + reorder). Two plain icon buttons: a pencil that opens the
+// rename dialog and a trash that opens a delete confirm. Delete is undoable, but
+// it's a destructive jump so we still confirm.
 export function LayerToolbar({
   name,
   placeholder,
@@ -30,55 +31,150 @@ export function LayerToolbar({
   onDelete,
   canDelete,
 }: LayerToolbarProps) {
-  const [text, setText] = useState(name);
+  const [renaming, setRenaming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    setText(name);
-  }, [name]);
-
-  const commit = () => {
-    const trimmed = text.trim();
-    if (trimmed.length === 0) {
-      setText(name); // reject empty — revert to the current name
-      return;
-    }
-    if (trimmed !== name) {
-      onRename(trimmed);
-    } else {
-      setText(trimmed);
-    }
-  };
+  const displayName = name.trim() || placeholder;
 
   return (
-    <div className="absolute left-0 top-0 flex items-center gap-2 p-2">
-      <TextField
-        aria-label="Layer name"
+    <div className="absolute left-0 top-0 flex items-center gap-1 p-2">
+      <Button
+        variant="ghost"
         size="sm"
-        className="w-44"
-        placeholder={placeholder}
-        value={text}
-        onChange={setText}
-        inputProps={{
-          maxLength: 47,
-          onBlur: commit,
-          onKeyDown: (e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-            if (e.key === "Escape") {
-              setText(name);
-              e.currentTarget.blur();
-            }
-          },
-        }}
+        icon={<Pencil aria-hidden />}
+        aria-label="Rename layer"
+        onPress={() => setRenaming(true)}
       />
       <Button
         variant="ghost"
         size="sm"
         icon={<Trash2 aria-hidden />}
+        aria-label="Delete layer"
         isDisabled={!canDelete}
-        onPress={onDelete}
-      >
-        Delete
-      </Button>
+        onPress={() => setDeleting(true)}
+      />
+      <RenameLayerModal
+        open={renaming}
+        name={name}
+        placeholder={placeholder}
+        onClose={() => setRenaming(false)}
+        onRename={onRename}
+      />
+      <DeleteLayerModal
+        open={deleting}
+        name={displayName}
+        onClose={() => setDeleting(false)}
+        onDelete={onDelete}
+      />
     </div>
+  );
+}
+
+interface RenameLayerModalProps {
+  open: boolean;
+  name: string;
+  placeholder: string;
+  onClose: () => void;
+  onRename: (name: string) => void;
+}
+
+// Rename dialog. Prefills the current name; commits the trimmed value (rejecting
+// empty) on Save or Enter. Built on the shared TextField so it matches the rest
+// of the app's forms.
+function RenameLayerModal({
+  open,
+  name,
+  placeholder,
+  onClose,
+  onRename,
+}: RenameLayerModalProps) {
+  const ref = useModalRef(open, true);
+  const [text, setText] = useState(name);
+
+  // Reset to the layer's current name each time the dialog opens.
+  useEffect(() => {
+    if (open) setText(name);
+  }, [open, name]);
+
+  const save = () => {
+    const trimmed = text.trim();
+    if (trimmed.length > 0 && trimmed !== name) onRename(trimmed);
+    onClose();
+  };
+
+  return (
+    <GenericModal ref={ref} className="min-w-[20rem]" onClose={onClose}>
+      <h2 className="mb-3 text-lg font-medium">Rename layer</h2>
+      <TextField
+        label="Name"
+        placeholder={placeholder}
+        value={text}
+        onChange={setText}
+        inputProps={{
+          maxLength: 47,
+          autoFocus: true,
+          onKeyDown: (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              save();
+            }
+          },
+        }}
+      />
+      <div className="mt-5 flex justify-end gap-3">
+        <Button variant="secondary" onPress={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          isDisabled={text.trim().length === 0}
+          onPress={save}
+        >
+          Save
+        </Button>
+      </div>
+    </GenericModal>
+  );
+}
+
+interface DeleteLayerModalProps {
+  open: boolean;
+  name: string;
+  onClose: () => void;
+  onDelete: () => void;
+}
+
+// Delete confirm. The action is undoable, which we say so the prompt doesn't
+// read as scarier than it is.
+function DeleteLayerModal({
+  open,
+  name,
+  onClose,
+  onDelete,
+}: DeleteLayerModalProps) {
+  const ref = useModalRef(open, true);
+
+  return (
+    <GenericModal ref={ref} className="min-w-[20rem]" onClose={onClose}>
+      <h2 className="mb-3 text-lg font-medium">Delete layer</h2>
+      <p className="text-sm opacity-80">
+        Delete <span className="font-medium">{name}</span>? You can undo this.
+      </p>
+      <div className="mt-5 flex justify-end gap-3">
+        <Button variant="secondary" onPress={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          icon={<Trash2 aria-hidden />}
+          onPress={() => {
+            onDelete();
+            onClose();
+          }}
+        >
+          Delete
+        </Button>
+      </div>
+    </GenericModal>
   );
 }
