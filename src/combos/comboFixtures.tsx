@@ -58,6 +58,20 @@ export const FIXTURE_BEHAVIORS: GetBehaviorDetailsResponse[] = [
       },
     ],
   },
+  {
+    id: 2,
+    displayName: "Layer-Tap",
+    metadata: [
+      {
+        // A layer to hold paired with a key to tap — one non-key param (layer
+        // select) plus one key param (driven by the shared key grid).
+        param1: [{ name: "Layer", layerId: {} }],
+        param2: [
+          { name: "Key", hidUsage: { keyboardMax: 0xff, consumerMax: 0x29c } },
+        ],
+      },
+    ],
+  },
 ];
 
 export const FIXTURE_BEHAVIOR_MAP: Record<number, GetBehaviorDetailsResponse> =

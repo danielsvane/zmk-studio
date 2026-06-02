@@ -49,6 +49,7 @@ function PickerAt({
 
 const KEY_PRESS: BehaviorBinding = { behaviorId: 0, param1: 0, param2: 0 };
 const MOD_TAP: BehaviorBinding = { behaviorId: 1, param1: 0, param2: 0 };
+const LAYER_TAP: BehaviorBinding = { behaviorId: 2, param1: 1, param2: 0 };
 
 /** A single key/HID param: behaviour select + search + modifiers stack in the
  * controls column, the key grid sits beside them once there's room. */
@@ -82,6 +83,31 @@ export const ModTapStacked: Story = {
     <PickerAt
       width={340}
       initial={MOD_TAP}
+      onBindingChanged={args.onBindingChanged}
+    />
+  ),
+};
+
+/** A mixed behaviour: a non-key Layer select stacked above the shared key grid's
+ * search + modifiers. The modifiers get the same room they do for a key press,
+ * rather than being squished into a single narrow column. */
+export const LayerTapSideBySide: Story = {
+  render: (args) => (
+    <PickerAt
+      width={1500}
+      initial={LAYER_TAP}
+      onBindingChanged={args.onBindingChanged}
+    />
+  ),
+};
+
+/** The same layer-tap in a narrow container stays stacked — Layer select and the
+ * key search/modifiers on top, grid below. */
+export const LayerTapStacked: Story = {
+  render: (args) => (
+    <PickerAt
+      width={340}
+      initial={LAYER_TAP}
       onBindingChanged={args.onBindingChanged}
     />
   ),
