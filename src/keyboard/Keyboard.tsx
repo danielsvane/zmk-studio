@@ -1223,6 +1223,11 @@ export default function Keyboard({ page }: { page: Page }) {
           <KeymapComp
             keymap={keymap}
             layout={layouts[selectedPhysicalLayoutIndex]}
+            behaviors={behaviors}
+            layers={keymap.layers.map(({ id, name }, li) => ({
+              id,
+              name: name || li.toLocaleString(),
+            }))}
             selectedLayerIndex={selectedLayerIndex}
             selectedKeyPosition={selectedKeyPosition}
             onKeyPositionClicked={setSelectedKeyPosition}
