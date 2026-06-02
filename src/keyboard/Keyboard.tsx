@@ -56,7 +56,7 @@ import { BehaviourEditor } from "../behaviours/BehaviourEditor";
 // its key previews) wider than the text-only lists. The keymap page appends
 // `row-span-2` to span its keyboard + binding-drawer rows.
 const SIDEBAR_REGION =
-  "flex w-72 flex-col gap-2 bg-base-200 p-4 overflow-y-auto min-h-0";
+  "flex w-72 flex-col gap-2 bg-base-200 p-4 overflow-y-auto min-h-0 border-r border-base-line";
 
 // useConnectedDeviceData state is `T | undefined` until the device responds.
 // These mutation handlers only fire once data is loaded, so this wraps an immer
@@ -1241,7 +1241,7 @@ export default function Keyboard({ page }: { page: Page }) {
           the extra height goes to the keyboard above. Narrower widths where the
           picker stacks are taller and simply scroll, as before. */}
       {layouts && keymap && behaviors && (
-        <div className="p-6 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0">
+        <div className="p-6 col-start-2 row-start-2 bg-base-200 overflow-y-auto min-h-0 border-t border-base-line">
           {selectedBinding ? (
             <BehaviorBindingPicker
               binding={selectedBinding}

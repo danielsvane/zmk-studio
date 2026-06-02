@@ -95,7 +95,7 @@ export const AppHeader = ({
   const unsaved = !!keymapUnsaved || !!combosUnsaved || !!behaviorsUnsaved;
 
   return (
-    <header className="top-0 left-0 right-0 flex items-center justify-between gap-2 h-10 max-w-full">
+    <header className="top-0 left-0 right-0 flex items-center justify-between gap-2 h-16 max-w-full bg-base-200 border-b border-base-line">
       <div className="flex items-center gap-3 px-3 min-w-0">
         <div className="flex items-center gap-1">
           <img src="/zmk.svg" alt="ZMK Logo" className="h-8 rounded" />
