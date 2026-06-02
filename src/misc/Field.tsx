@@ -23,7 +23,7 @@ import { cx, type ButtonSize } from "./controlStyles";
  */
 
 const fieldLabelStyles: Record<ButtonSize, string> = {
-  md: "text-sm font-medium text-base-content",
+  md: "text-base font-medium text-base-content",
   sm: "text-xs font-medium text-base-content",
 };
 

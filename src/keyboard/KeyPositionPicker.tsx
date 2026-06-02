@@ -58,7 +58,7 @@ export function KeyPositionPicker({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex justify-center overflow-auto rounded bg-base-300 p-2">
+      <div className="flex justify-start overflow-auto rounded bg-base-300 p-2">
         <PhysicalLayout
           positions={positions}
           oneU={oneU}
@@ -71,6 +71,8 @@ export function KeyPositionPicker({
           {value.length} selected
           {max !== undefined ? ` / ${max} max` : ""}
         </span>
+        {/* Hidden for now (not removed — we may bring these back): the explicit
+            list of selected key indexes and the Clear link were too noisy.
         {value.length > 0 && (
           <>
             <span className="text-base-content/40">·</span>
@@ -84,6 +86,7 @@ export function KeyPositionPicker({
             </button>
           </>
         )}
+        */}
       </div>
     </div>
   );
