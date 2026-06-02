@@ -47,17 +47,16 @@ export const ComboList = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
-        <Button
-          variant="secondary"
-          icon={<Plus />}
-          isDisabled={!canAdd || !onAddCombo}
-          onPress={() => onAddCombo?.()}
-        >
-          Add
-        </Button>
-      </div>
+      <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
+      <Button
+        className="w-full justify-center"
+        variant="secondary"
+        icon={<Plus />}
+        isDisabled={!canAdd || !onAddCombo}
+        onPress={() => onAddCombo?.()}
+      >
+        Add combo
+      </Button>
       {combos.combos.length === 0 ? (
         <p className="text-sm opacity-70">No combos defined.</p>
       ) : (

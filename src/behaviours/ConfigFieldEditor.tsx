@@ -82,7 +82,7 @@ function renderSchemaHint(field: ConfigField): string | undefined {
 export function ConfigFieldView({ field }: ConfigFieldViewProps) {
   const hint = renderSchemaHint(field);
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <FieldLabel>{field.displayName || field.key}</FieldLabel>
       <div className="flex items-baseline gap-2">
         <span className="text-base-content">{renderValue(field)}</span>
@@ -133,7 +133,7 @@ function IntField({ field, onCommit }: ConfigFieldEditProps) {
       label={field.displayName || field.key}
       description={renderSchemaHint(field)}
       type="number"
-      className="max-w-xs"
+      className="max-w-[10rem]"
       value={text}
       onChange={setText}
       inputProps={{
@@ -158,7 +158,8 @@ function EnumField({ field, onCommit }: ConfigFieldEditProps) {
   return (
     <Select
       label={field.displayName || field.key}
-      className="max-w-xs"
+      className="max-w-sm"
+      triggerClassName="w-full"
       items={items}
       selectedKey={value}
       onSelectionChange={(key) => onCommit({ enumValue: Number(key) })}
@@ -237,7 +238,7 @@ function PositionsField({ field, onCommit, layoutKeys }: ConfigFieldEditProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <GroupLabel id={labelId}>{field.displayName || field.key}</GroupLabel>
       <div role="group" aria-labelledby={labelId}>
         <KeyPositionPicker

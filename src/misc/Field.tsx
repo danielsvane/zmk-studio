@@ -79,7 +79,7 @@ export function LabeledGroup({
 }: LabeledGroupProps) {
   const labelId = useId();
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <GroupLabel id={labelId} size={size}>
         {label}
       </GroupLabel>
@@ -116,7 +116,7 @@ export function FieldErrorMessage({
  * the react-aria provider (TextField/Select/ComboBox); {@link Field} orders the
  * label, control, and description/error within it.
  */
-export const fieldColumn = "flex flex-col gap-1";
+export const fieldColumn = "flex flex-col gap-1.5";
 
 export interface FieldProps {
   /** Label rendered above the control. Omit for an `aria-label`-only field. */

@@ -7,6 +7,7 @@ import type {
 import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 
 import { Button } from "../misc/Button";
+import { Select } from "../misc/Select";
 import { BehaviourNameEditor } from "./BehaviourNameEditor";
 import { ConfigFieldEdit } from "./ConfigFieldEditor";
 
@@ -42,12 +43,9 @@ export const BehaviourEditor = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-bold uppercase opacity-70">
-            Edit behaviour
-          </h2>
-          <span className="text-xs opacity-60">{behaviour.kind}</span>
-        </div>
+        <h2 className="text-sm font-bold uppercase opacity-70">
+          Edit behaviour
+        </h2>
         {onDelete && (
           <Button
             variant="ghost"
@@ -66,6 +64,18 @@ export const BehaviourEditor = ({
         name={behaviour.displayName ?? ""}
         placeholder={`Behaviour #${behaviour.id}`}
         onCommit={onRename}
+      />
+
+      {/* Type is fixed for the life of a behaviour, so it reads as a field but
+          renders as a disabled Select — it matches the other controls' look
+          while being non-editable. */}
+      <Select
+        label="Type"
+        className="max-w-sm"
+        description="Type can't be changed — create a new behaviour and delete the old one if another type is needed."
+        items={[{ id: behaviour.kind, name: behaviour.kind }]}
+        selectedKey={behaviour.kind}
+        isDisabled
       />
 
       {behaviour.config.map((field) => (

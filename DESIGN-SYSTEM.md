@@ -37,7 +37,7 @@ Decided deliberately over making the box itself 48px.
   Put a single `gap-4` on the column; don't add margins to individual fields.
   This is the spacing `PickerShell`'s controls column uses, so forms that embed
   a picker (the layers drawer, the combo editor) stay uniform top to bottom.
-- **`gap-1` inside a field** (label → control → description/error). Exposed as
+- **`gap-1.5` inside a field** (label → control → description/error). Exposed as
   `fieldColumn` in `Field.tsx`; every field provider uses it.
 
 ## Tokens (`controlStyles.ts`)
