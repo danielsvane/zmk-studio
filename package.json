@@ -11,6 +11,7 @@
     "generate-data": "node scripts/generate-release-data.js",
     "dev": "npm run generate-data && vite",
     "build": "npm run generate-data && tsc && vite build",
+    "test": "vitest run",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "tauri": "tauri",
@@ -63,7 +64,8 @@
     "storybook": "^8.0.10",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.4.5",
-    "vite": "^5.4.8"
+    "vite": "^5.4.8",
+    "vitest": "^4.1.8"
   },
   "optionalDependencies": {
     "@esbuild/darwin-arm64": "0.23.0",

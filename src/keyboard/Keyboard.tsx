@@ -8,7 +8,6 @@ import React, {
   useState,
 } from "react";
 
-import { Request } from "@zmkfirmware/zmk-studio-ts-client";
 import { call_rpc } from "../rpc/logging";
 import {
   PhysicalLayout,
@@ -41,6 +40,7 @@ import { Keymap as KeymapComp } from "./Keymap";
 import { ComboList } from "./ComboList";
 import { ComboEditor } from "../combos/ComboEditor";
 import { useConnectedDeviceData } from "../rpc/useConnectedDeviceData";
+import { fetchBehaviorMap } from "../rpc/fetchBehaviorMap";
 import { ConnectionContext } from "../rpc/ConnectionContext";
 import { UndoRedoContext } from "../undoRedo";
 import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
@@ -82,44 +82,23 @@ function useBehaviors(): [BehaviorMap, () => Promise<void>] {
 
   const [behaviors, setBehaviors] = useState<BehaviorMap>({});
 
-  const fetchBehaviorMap = useCallback(async (): Promise<BehaviorMap> => {
+  const doFetchBehaviorMap = useCallback(async (): Promise<BehaviorMap> => {
     const conn = connection.conn;
     if (!conn || lockState != LockState.ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED) {
       return {};
     }
 
-    const get_behaviors: Request = {
-      behaviors: { listAllBehaviors: true },
-      requestId: 0,
-    };
-
-    const behavior_list = await call_rpc(conn, get_behaviors);
-    const behavior_map: BehaviorMap = {};
-    for (const behaviorId of behavior_list.behaviors?.listAllBehaviors
-      ?.behaviors || []) {
-      const details_req = {
-        behaviors: { getBehaviorDetails: { behaviorId } },
-        requestId: 0,
-      };
-      const behavior_details = await call_rpc(conn, details_req);
-      const dets: GetBehaviorDetailsResponse | undefined =
-        behavior_details?.behaviors?.getBehaviorDetails;
-
-      if (dets) {
-        behavior_map[dets.id] = dets;
-      }
-    }
-    return behavior_map;
+    return await fetchBehaviorMap(conn);
   }, [connection, lockState]);
 
   const refresh = useCallback(async () => {
-    setBehaviors(await fetchBehaviorMap());
-  }, [fetchBehaviorMap]);
+    setBehaviors(await doFetchBehaviorMap());
+  }, [doFetchBehaviorMap]);
 
   useEffect(() => {
     let ignore = false;
     setBehaviors({});
-    fetchBehaviorMap().then((map) => {
+    doFetchBehaviorMap().then((map) => {
       if (!ignore) {
         setBehaviors(map);
       }
@@ -128,7 +107,7 @@ function useBehaviors(): [BehaviorMap, () => Promise<void>] {
     return () => {
       ignore = true;
     };
-  }, [fetchBehaviorMap]);
+  }, [doFetchBehaviorMap]);
 
   return [behaviors, refresh];
 }

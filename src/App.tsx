@@ -9,6 +9,7 @@ import { call_rpc } from "./rpc/logging";
 import type { Notification } from "@zmkfirmware/zmk-studio-ts-client/studio";
 import { ConnectionState, ConnectionContext } from "./rpc/ConnectionContext";
 import {
+  ChangeEvent,
   Dispatch,
   useCallback,
   useEffect,
@@ -43,6 +44,16 @@ import { UnlockModal } from "./UnlockModal";
 import { valueAfter } from "./misc/async";
 import { AboutModal } from "./AboutModal";
 import { LicenseNoticeModal } from "./misc/LicenseNoticeModal";
+import { fetchBehaviorMap } from "./rpc/fetchBehaviorMap";
+import { buildBackup } from "./backup/exportBackup";
+import { downloadBackup } from "./backup/downloadBackup";
+import { parseBackup, type BackupV1 } from "./backup/backupFormat";
+import { importBackup } from "./backup/importBackup";
+import type { ImportReport } from "./backup/importReport";
+import {
+  BackupImportConfirmModal,
+  BackupImportReportModal,
+} from "./backup/BackupImportModals";
 
 declare global {
   interface Window {
@@ -376,6 +387,102 @@ function App() {
     doReset();
   }, [conn, reset]);
 
+  // Reads the full editable state (keymap, combos, custom behaviours, the
+  // behaviour registry, device info) straight from the device and downloads it
+  // as a versioned JSON backup. Re-reading here — instead of lifting Keyboard's
+  // state up — keeps the feature self-contained; export is rare enough that a
+  // few extra RPC reads don't matter.
+  const exportBackup = useCallback(() => {
+    async function doExport() {
+      if (!conn.conn) {
+        return;
+      }
+      const c = conn.conn;
+
+      const keymap = (await call_rpc(c, { keymap: { getKeymap: true } }))
+        .keymap?.getKeymap;
+      const combos = (await call_rpc(c, { combos: { getCombos: true } }))
+        .combos?.getCombos;
+      const customBehaviors = (
+        await call_rpc(c, { behaviors: { getCustomBehaviors: true } })
+      ).behaviors?.getCustomBehaviors;
+      const deviceInfo = (await call_rpc(c, { core: { getDeviceInfo: true } }))
+        .core?.getDeviceInfo;
+
+      if (!keymap || !combos || !customBehaviors || !deviceInfo) {
+        console.error("Backup export failed to read device state", {
+          keymap,
+          combos,
+          customBehaviors,
+          deviceInfo,
+        });
+        window.alert("Failed to read the device state for the backup");
+        return;
+      }
+
+      const behaviorMap = await fetchBehaviorMap(c);
+
+      downloadBackup(
+        buildBackup({ keymap, combos, customBehaviors, behaviorMap, deviceInfo })
+      );
+    }
+
+    doExport();
+  }, [conn]);
+
+  // Import flow: hidden file input → parse → confirm modal → importBackup →
+  // refresh all device reads (same trick as discard/reset: a fresh conn object
+  // re-runs every useConnectedDeviceData) → report modal.
+  const importFileRef = useRef<HTMLInputElement | null>(null);
+  const [pendingImport, setPendingImport] = useState<BackupV1 | null>(null);
+  const [importReport, setImportReport] = useState<ImportReport | null>(null);
+  const [importing, setImporting] = useState(false);
+
+  const requestImport = useCallback(() => {
+    importFileRef.current?.click();
+  }, []);
+
+  const onImportFilePicked = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset so picking the same file twice re-fires the change event.
+      e.target.value = "";
+      if (!file) {
+        return;
+      }
+
+      const result = parseBackup(await file.text());
+      if ("error" in result) {
+        window.alert(`Can't import "${file.name}": ${result.error}`);
+        return;
+      }
+      setPendingImport(result.ok);
+    },
+    []
+  );
+
+  const confirmImport = useCallback(() => {
+    const backup = pendingImport;
+    setPendingImport(null);
+    if (!backup || !conn.conn || importing) {
+      return;
+    }
+
+    async function doImport() {
+      setImporting(true);
+      try {
+        const report = await importBackup(conn.conn!, backup!);
+        reset();
+        setConn({ conn: conn.conn });
+        setImportReport(report);
+      } finally {
+        setImporting(false);
+      }
+    }
+
+    doImport();
+  }, [pendingImport, conn, importing, reset]);
+
   const disconnect = useCallback(() => {
     async function doDisconnect() {
       if (!conn.conn) {
@@ -536,6 +643,23 @@ function App() {
             status={probeStatus}
           />
           <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
+          <input
+            ref={importFileRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={onImportFilePicked}
+          />
+          <BackupImportConfirmModal
+            backup={pendingImport}
+            deviceName={connectedDeviceName}
+            onCancel={() => setPendingImport(null)}
+            onConfirm={confirmImport}
+          />
+          <BackupImportReportModal
+            report={importReport}
+            onClose={() => setImportReport(null)}
+          />
           <LicenseNoticeModal
             open={showLicenseNotice}
             onClose={() => setShowLicenseNotice(false)}
@@ -553,6 +677,8 @@ function App() {
               onDiscard={discard}
               onDisconnect={disconnect}
               onResetSettings={resetSettings}
+              onExportBackup={exportBackup}
+              onImportBackup={requestImport}
             />
             <Keyboard page={page} />
           </div>

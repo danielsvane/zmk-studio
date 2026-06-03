@@ -21,6 +21,8 @@ export interface AppHeaderProps {
   onUndo?: () => Promise<void>;
   onRedo?: () => Promise<void>;
   onResetSettings?: () => void | Promise<void>;
+  onExportBackup?: () => void | Promise<void>;
+  onImportBackup?: () => void | Promise<void>;
   onDisconnect?: () => void | Promise<void>;
   canUndo?: boolean;
   canRedo?: boolean;
@@ -44,6 +46,8 @@ export const AppHeader = ({
   onDiscard,
   onDisconnect,
   onResetSettings,
+  onExportBackup,
+  onImportBackup,
 }: AppHeaderProps) => {
   const [showSettingsReset, setShowSettingsReset] = useState(false);
 
@@ -203,6 +207,18 @@ export const AppHeader = ({
                   onAction={() => setShowSettingsReset(true)}
                 >
                   Restore Stock Settings
+                </MenuItem>
+                <MenuItem
+                  className="px-2 py-1 hover:bg-base-200"
+                  onAction={onExportBackup}
+                >
+                  Export Backup…
+                </MenuItem>
+                <MenuItem
+                  className="px-2 py-1 hover:bg-base-200"
+                  onAction={onImportBackup}
+                >
+                  Import Backup…
                 </MenuItem>
               </Menu>
             </Popover>
