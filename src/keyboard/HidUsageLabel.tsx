@@ -27,6 +27,14 @@ export interface HidUsageLabelProps {
    * ambiguous text glyphs benefit from spelling out.
    */
   verbose?: boolean;
+  /**
+   * Render the fixed `short` glyph/abbreviation as plain text (e.g. `[`, `Esc`)
+   * with no width-adaptive container query. Used by fixed-size grids like the
+   * key picker, whose uniform small cells never have room for the longer tiers —
+   * the responsive machinery there only ever swaps in an unwanted long name.
+   * Icons still win below. Mutually exclusive with {@link verbose}.
+   */
+  compact?: boolean;
 }
 
 type IconComponent = ComponentType<{
@@ -64,7 +72,11 @@ function remove_prefix(s?: string) {
   return s?.replace(/^Keyboard /, "");
 }
 
-export const HidUsageLabel = ({ hid_usage, verbose }: HidUsageLabelProps) => {
+export const HidUsageLabel = ({
+  hid_usage,
+  verbose,
+  compact,
+}: HidUsageLabelProps) => {
   const [page_raw, id] = hid_usage_page_and_id_from_usage(hid_usage);
   const page = page_raw & 0xff;
 
@@ -102,6 +114,12 @@ export const HidUsageLabel = ({ hid_usage, verbose }: HidUsageLabelProps) => {
         />
       );
     }
+  }
+
+  // Compact: emit the fixed short glyph with no container query, for fixed-size
+  // grids that never have room for the wider tiers. (Icons already returned.)
+  if (compact) {
+    return <span>{remove_prefix(labels.short)}</span>;
   }
 
   return (

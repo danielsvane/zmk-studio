@@ -47,7 +47,7 @@ export const KeyGrid = ({ rows, activeUsage, onPick }: KeyGridProps) => {
                     : "bg-base-100 text-base-content rac-hover:brightness-110 hover:brightness-110"
                 )}
               >
-                {cell.label ?? <HidUsageLabel hid_usage={cell.usage} />}
+                {cell.label ?? <HidUsageLabel hid_usage={cell.usage} compact />}
               </button>
             );
           })}
