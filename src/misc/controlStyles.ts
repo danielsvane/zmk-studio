@@ -38,20 +38,17 @@ export const controlSurface = cx(
 );
 
 // Selectable master-list row, shared by the Combos/Behaviours `SidebarCard` and
-// the layer picker so all three sidebars read alike. A bounded, *filled* tile
-// (`base-100` fill + `base-line` hairline — the same surface language as inputs)
-// so a row looks clickable at rest, not only on hover; the selected row takes a
-// primary border + tint instead of a solid fill. Compose `base` with either
-// `resting` or `selected` — pick via a computed boolean (plain lists) or
-// react-aria's `isSelected` render prop (ListBox items).
+// the layer picker so all three sidebars read alike. A borderless *nav row*, not
+// a tile: deliberately NOT the `controlSurface` look (`base-100` fill + hairline
+// border), which reads as a Select/input — these are menu items, so they're
+// transparent at rest, take a subtle fill on hover, and a primary tint + primary
+// text when selected (the active-row signal, no border, no drill-in chevron).
+// Compose `base` with either `resting` or `selected` — pick via a computed
+// boolean (plain lists) or react-aria's `isSelected` render prop (ListBox items).
 export const selectableCard = {
-  base: cx(
-    "cursor-pointer rounded border p-3 text-left",
-    "transition-[background-color,border-color,filter]"
-  ),
-  resting:
-    "border-base-line bg-base-100 hover:border-base-content/25 hover:brightness-125",
-  selected: "border-primary bg-primary/15",
+  base: cx("cursor-pointer rounded p-3 text-left", "transition-colors"),
+  resting: "hover:bg-base-content/10",
+  selected: "bg-primary/15 text-primary",
 };
 
 const base = cx(

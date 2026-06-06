@@ -1,4 +1,4 @@
-import { ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import {
   DropIndicator,
@@ -84,15 +84,6 @@ export const LayerPicker = ({
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-sm font-bold uppercase opacity-70">Layers</h2>
-      <Button
-        className="w-full justify-center"
-        variant="secondary"
-        icon={<Plus />}
-        isDisabled={!canAdd || !onAddClicked}
-        onPress={() => onAddClicked?.()}
-      >
-        Add layer
-      </Button>
       <ListBox
         aria-label="Keymap Layer"
         selectionMode="single"
@@ -114,29 +105,27 @@ export const LayerPicker = ({
             className={({ isSelected }) =>
               cx(
                 selectableCard.base,
-                "flex items-center gap-2",
+                "block",
                 controlFocusRing,
                 isSelected ? selectableCard.selected : selectableCard.resting
               )
             }
           >
-            {({ isSelected }) => (
-              <>
-                <span className="min-w-0 flex-1 truncate text-base font-medium">
-                  {layer_item.name}
-                </span>
-                <ChevronRight
-                  aria-hidden
-                  className={cx(
-                    "size-4 shrink-0 transition-colors",
-                    isSelected ? "text-primary" : "opacity-40"
-                  )}
-                />
-              </>
-            )}
+            <span className="block truncate text-base font-medium">
+              {layer_item.name}
+            </span>
           </ListBoxItem>
         )}
       </ListBox>
+      <Button
+        className="w-full justify-center"
+        variant="secondary"
+        icon={<Plus />}
+        isDisabled={!canAdd || !onAddClicked}
+        onPress={() => onAddClicked?.()}
+      >
+        Add layer
+      </Button>
     </div>
   );
 };

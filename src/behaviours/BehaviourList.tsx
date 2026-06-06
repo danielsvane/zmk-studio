@@ -42,15 +42,6 @@ export const BehaviourList = ({
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-sm font-bold uppercase opacity-70">Behaviours</h2>
-      <Button
-        className="w-full justify-center"
-        variant="secondary"
-        icon={<Plus />}
-        isDisabled={!canAdd || !onAdd}
-        onPress={() => setAdding(true)}
-      >
-        Add behaviour
-      </Button>
       {behaviours.length === 0 ? (
         <p className="text-sm opacity-70">No custom behaviours yet.</p>
       ) : (
@@ -76,6 +67,15 @@ export const BehaviourList = ({
           })}
         </ul>
       )}
+      <Button
+        className="w-full justify-center"
+        variant="secondary"
+        icon={<Plus />}
+        isDisabled={!canAdd || !onAdd}
+        onPress={() => setAdding(true)}
+      >
+        Add behaviour
+      </Button>
       <AddBehaviourModal
         open={adding}
         kinds={addableKinds}
