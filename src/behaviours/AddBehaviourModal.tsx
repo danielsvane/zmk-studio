@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Plus, X } from "lucide-react";
 
 import { GenericModal } from "../GenericModal";
 import { useModalRef } from "../misc/useModalRef";
@@ -44,11 +45,16 @@ export const AddBehaviourModal = ({
       title="Add behaviour"
       actions={
         <>
-          <Button variant="secondary" onPress={onClose}>
+          <Button
+            variant="ghost"
+            icon={<X aria-hidden />}
+            onPress={onClose}
+          >
             Cancel
           </Button>
           <Button
             variant="primary"
+            icon={<Plus aria-hidden />}
             isDisabled={!kind}
             onPress={() => {
               onAdd(kind);

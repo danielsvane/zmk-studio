@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { Key } from "react-aria-components";
-import { Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 
 import type { GetBehaviorDetailsResponse } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 import type { Combo } from "@zmkfirmware/zmk-studio-ts-client/combos";
@@ -222,6 +222,7 @@ export const ComboEditor = ({
       <Button
         className="self-start"
         variant="primary"
+        icon={<Check aria-hidden />}
         isDisabled={!canApply}
         onPress={() => {
           if (!binding) {

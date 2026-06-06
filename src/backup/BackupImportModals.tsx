@@ -1,3 +1,5 @@
+import { Check, X } from "lucide-react";
+
 import { GenericModal } from "../GenericModal";
 import { Button } from "../misc/Button";
 import { useModalRef } from "../misc/useModalRef";
@@ -31,10 +33,18 @@ export const BackupImportConfirmModal = ({
       title="Import Backup"
       actions={
         <>
-          <Button variant="secondary" onPress={onCancel}>
+          <Button
+            variant="ghost"
+            icon={<X aria-hidden />}
+            onPress={onCancel}
+          >
             Cancel
           </Button>
-          <Button variant="primary" onPress={onConfirm}>
+          <Button
+            variant="primary"
+            icon={<Check aria-hidden />}
+            onPress={onConfirm}
+          >
             Replace and Save
           </Button>
         </>
@@ -86,7 +96,7 @@ export const BackupImportReportModal = ({
       className="max-w-[50vw]"
       title={report?.fatal ? "Import Failed" : "Import Complete"}
       actions={
-        <Button variant="primary" onPress={onClose}>
+        <Button variant="primary" icon={<X aria-hidden />} onPress={onClose}>
           Close
         </Button>
       }

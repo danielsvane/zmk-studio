@@ -1,3 +1,5 @@
+import { X } from "lucide-react";
+
 import { useModalRef } from "./useModalRef";
 
 import NOTICE from "../../NOTICE?raw";
@@ -22,7 +24,7 @@ export const LicenseNoticeModal = ({
       onClose={onClose}
       title="License notice"
       actions={
-        <Button variant="secondary" onPress={onClose}>
+        <Button variant="ghost" icon={<X aria-hidden />} onPress={onClose}>
           Close
         </Button>
       }

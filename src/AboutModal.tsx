@@ -1,4 +1,5 @@
 import React from "react";
+import { X } from "lucide-react";
 import { useModalRef } from "./misc/useModalRef";
 import { Button } from "./misc/Button";
 
@@ -186,7 +187,7 @@ export const AboutModal = ({ open, onClose }: AboutModalProps) => {
       onClose={onClose}
       title="About ZMK Studio"
       actions={
-        <Button variant="secondary" onPress={onClose}>
+        <Button variant="ghost" icon={<X aria-hidden />} onPress={onClose}>
           Close
         </Button>
       }

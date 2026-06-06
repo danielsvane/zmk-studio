@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Check, Pencil, Trash2, X } from "lucide-react";
 
 import { GenericModal } from "../GenericModal";
 import { useModalRef } from "../misc/useModalRef";
@@ -110,11 +110,16 @@ function RenameLayerModal({
       title="Rename layer"
       actions={
         <>
-          <Button variant="secondary" onPress={onClose}>
+          <Button
+            variant="ghost"
+            icon={<X aria-hidden />}
+            onPress={onClose}
+          >
             Cancel
           </Button>
           <Button
             variant="primary"
+            icon={<Check aria-hidden />}
             isDisabled={text.trim().length === 0}
             onPress={save}
           >
@@ -168,7 +173,11 @@ function DeleteLayerModal({
       title="Delete layer"
       actions={
         <>
-          <Button variant="secondary" onPress={onClose}>
+          <Button
+            variant="ghost"
+            icon={<X aria-hidden />}
+            onPress={onClose}
+          >
             Cancel
           </Button>
           <Button

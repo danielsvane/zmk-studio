@@ -21,6 +21,7 @@ import {
   Layers,
   Combine,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Tooltip } from "./misc/Tooltip";
@@ -145,13 +146,15 @@ export const AppHeader = ({
           <p>Continue?</p>
           <div className="flex justify-end my-2 gap-3">
             <Button
-              variant="secondary"
+              variant="ghost"
+              icon={<X aria-hidden />}
               onPress={() => setShowSettingsReset(false)}
             >
               Cancel
             </Button>
             <Button
               variant="primary"
+              icon={<RotateCcw aria-hidden />}
               onPress={() => {
                 setShowSettingsReset(false);
                 onResetSettings?.();

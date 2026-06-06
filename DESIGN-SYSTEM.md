@@ -161,6 +161,28 @@ standard `text-lg font-medium` heading), `children` (body), and `actions`
 Don't hand-roll the heading or the button row; pass them as slots so every
 dialog lines up. Open/close is driven by `useModalRef` (`misc/useModalRef.ts`).
 
+**Action buttons carry a leading `icon`.** Every action `<Button>` in a modal
+footer or form — Add/Save/Cancel/Apply/Close and friends — pairs its label with
+a `lucide-react` icon (`icon={<X aria-hidden />}`, `aria-hidden` since the label
+already names it). One verb → one icon, app-wide, so the same action reads the
+same everywhere:
+
+- **Cancel / Close** → `X`
+- **Save / Apply** (confirm an edit) → `Check`
+- **Add** (confirm/create) → `Plus` (matches the list `Add …` buttons)
+- **Delete** → `Trash2`
+- **Restore / reset** → `RotateCcw`
+
+Pick the icon by what the button *does*, not its wording — a destructive
+confirm ("Replace and Save", "Delete layer") still takes `Trash2`/`Check` by
+action, not a new glyph. Reuse a verb above before inventing one.
+
+**Footer pairing:** the dismiss (Cancel/Close) is `variant="ghost"`, the confirm
+is `variant="primary"` (or `variant="danger"` when it destroys). Ghost rather
+than `secondary` for the dismiss because `secondary`'s `bg-base-200` fill is the
+same color as the modal panel — it read as a borderless label with no hover
+affordance; ghost is transparent too but carries the standard lighten-veil hover.
+
 `Field` must render **inside** the react-aria provider (`RACTextField`,
 `RACSelect`, …) — that's where the aria wiring context exists. The provider
 carries `fieldColumn`; `Field` just orders the pieces within it.
