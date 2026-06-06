@@ -7,8 +7,8 @@ import { keyPhysicalAttrsToPositions } from "./layoutKeyPositions";
  * Click-to-toggle picker for a raw key-position list — used both by a hold-tap's
  * hold_trigger_key_positions and by a combo's key positions. Renders the
  * keyboard's physical layout and highlights every selected position; clicking a
- * key adds/removes it. The position number is shown on each key so the list
- * stays legible.
+ * key adds/removes it. Keys are blank — the position index is too small to read
+ * at this size and adds noise; selection is communicated purely by highlight.
  *
  * These are RAW physical key positions — they are not remapped across physical
  * layouts, so any layout is only a visual aid for picking the same underlying
@@ -36,7 +36,7 @@ export function KeyPositionPicker({
   onChange,
 }: KeyPositionPickerProps) {
   const positions = useMemo(
-    () => keyPhysicalAttrsToPositions(layoutKeys, (i) => ({ header: String(i) })),
+    () => keyPhysicalAttrsToPositions(layoutKeys),
     [layoutKeys],
   );
 
