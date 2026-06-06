@@ -101,7 +101,7 @@ export const ComboList = ({
       )}
       <Button
         className="w-full justify-center"
-        variant="secondary"
+        variant="ghost"
         icon={<Plus />}
         isDisabled={!canAdd || !onAddCombo}
         onPress={() => onAddCombo?.()}

@@ -40,21 +40,65 @@ Decided deliberately over making the box itself 48px.
 - **`gap-1.5` inside a field** (label → control → description/error). Exposed as
   `fieldColumn` in `Field.tsx`; every field provider uses it.
 
+## Interaction states — hover & active
+
+Two app-wide rules so every menu, list, and nav reads the same way.
+
+**Hover = lighten, never darken** — one rule everywhere; only the *mechanism*
+follows the surface (you can't `brightness`-lighten a transparent button, and you
+can't stack a translucent veil on top of a filled one):
+
+- **Transparent surfaces** — ghost `Button`s (the header tabs + bare icon
+  buttons), the sidebar rows, the Select/Combobox option rows, and `DropdownMenu`
+  items — take the **`bg-base-content/10`** lighten veil: a translucent overlay of
+  the text color that reads the same on any surface (popover `base-100`, sidebar
+  `base-200`, header). One shared token, so they all hover alike.
+- **Filled surfaces** — `Button` primary/secondary/danger, the Select/Combobox
+  trigger, `ToggleGroup` segments — lighten via **`brightness-110`**, a filter on
+  top of the existing fill so a solid color never goes translucent.
+
+Don't reach for a darkening `bg-base-300`/`bg-base-200` hover. (Press is the
+exception that *does* darken — `brightness-95` — but that's the tactile "pushed"
+feedback, distinct from hover.)
+
+**Active/selected = two tiers, scaled to importance.**
+
+- **Quiet (nav)** — `bg-primary/15 text-primary` (a medium primary tint). For
+  persistent "where am I" state that *isn't* the content the user is looking at:
+  the current header section tab (`Button`/`ToggleButton variant="ghost"`,
+  `rac-selected`) and the current row in the Layers/Combos/Behaviours sidebars
+  (`selectableCard.selected`). These two now match.
+- **Loud (in-content selection)** — solid `bg-primary text-primary-content`. For
+  selection that *is* the subject and must be unmistakable: the option you're
+  picking in a `Select`/`Combobox`, a `ToggleGroup` segment, a selected key.
+
+Rule of thumb: if the highlighted thing is the content, go loud; if it's just
+telling the user which screen/section they're on, go quiet.
+
 ## Tokens (`controlStyles.ts`)
 
 - `controlSurface` — the filled-input look: `bg-base-100` fill + `base-line`
   hairline border + color transition. Used by the Select/Combobox triggers and
   the TextField input.
 - `selectableCard` (`base` + `resting` / `selected`) — a selectable sidebar row,
-  styled as a **borderless nav row, not a tile**: transparent at rest with a
-  subtle hover fill, and a primary tint + primary text when selected (the
-  active-row signal). Deliberately *not* the `controlSurface` look (filled tile +
-  hairline border + chevron) — that read as a Select/input rather than a menu
-  item. Compose `base` with `resting`/`selected` (a computed boolean for plain
-  lists, or react-aria's `isSelected` render prop). Backs `SidebarCard`
+  styled as a **borderless nav row, not a tile**: transparent at rest with the
+  standard lighten hover, and the *quiet* active-nav tint when selected (see
+  **Interaction states** below). Deliberately *not* the `controlSurface` look
+  (filled tile + hairline border + chevron) — that read as a Select/input rather
+  than a menu item. Compose `base` with `resting`/`selected` (a computed boolean
+  for plain lists, or react-aria's `isSelected` render prop). Backs `SidebarCard`
   (Combos/Behaviours) and the layer picker — keep the three sidebars looking
   alike by reusing it, not re-rolling the classes. The alternatives weighed
   before landing on this live in `Ideation/SidebarItemIdeas` in Storybook.
+- `popoverSurface` — the floating panel shared by every dropdown: the
+  Select/Combobox option lists and `DropdownMenu`. `base-100` fill, `base-300`
+  edge, lift shadow, floored at the trigger width. Callers add their own inner
+  padding (`py-1`/`p-1`). Change the popover look here and it moves everywhere.
+- `menuItem` — a menu/action row, the menu-item sibling of `buttonStyles`: one
+  `h-control` (48px) hit target, left-aligned, with room for a leading icon and
+  the standard lighten hover/focus. Backs `DropdownMenuItem`. Styles a react-aria
+  `MenuItem` directly rather than nesting a `<Button>` (which would double up
+  focus/press).
 - `controlFocusRing` — the accessible focus ring (react-aria
   `data-focus-visible`); shared so everything rings identically.
 - `controlDisabled` — shared disabled treatment.
@@ -107,6 +151,7 @@ wired for you):
 | Collapsible section (advanced/secondary fields) | `Disclosure` (`Disclosure.tsx`) |
 | Two-region picker (controls + canvas) | `PickerShell` (`PickerShell.tsx`) |
 | Selectable master-list row (sidebar → detail) | `SidebarCard` (`SidebarCard.tsx`) |
+| Action menu off a trigger | `DropdownMenu` + `DropdownMenuItem` (`DropdownMenu.tsx`) |
 | Dialog / modal | `GenericModal` (`GenericModal.tsx`) |
 
 `GenericModal` is a native `<dialog>` on the `base-200` panel surface (so it

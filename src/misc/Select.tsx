@@ -25,6 +25,7 @@ import {
   controlPadX,
   controlFocusRing,
   controlDisabled,
+  popoverSurface,
   type ButtonSize,
 } from "./controlStyles";
 import { Field, fieldColumn } from "./Field";
@@ -70,17 +71,12 @@ const comboSurface = cx(
   "has-[input:disabled]:opacity-50 has-[input:disabled]:cursor-not-allowed"
 );
 
-const popoverBase = cx(
-  "min-w-[var(--trigger-width)]",
-  "rounded border border-base-300 bg-base-100 text-base-content shadow-lg"
-);
-
 // Select: vertical padding only — the horizontal inset lives on the list so a
 // full-bleed section divider can reach the popover edge without overflowing.
-const selectPopoverStyles = cx(popoverBase, "py-1");
+const selectPopoverStyles = cx(popoverSurface, "py-1");
 // Combobox: uniform padding. Its list is virtualized and relies on `overflow`
 // to bound the scroll port, so it keeps the original layout untouched.
-const comboboxPopoverStyles = cx(popoverBase, "p-1");
+const comboboxPopoverStyles = cx(popoverSurface, "p-1");
 
 // The list scrolls within a bounded height; combined with virtualization this
 // keeps a long option list cheap to open and filter.
@@ -99,7 +95,10 @@ const comboboxListBoxStyles = cx(listBoxBase, "overflow-auto");
 const itemStyles = cx(
   "group flex items-center gap-2 px-2 py-1.5 outline-none",
   "cursor-pointer select-none rounded-sm",
-  "rac-hover:bg-base-300 rac-focus:bg-base-300",
+  // The app's standard "lighten" hover (surface-agnostic `bg-base-content/10`,
+  // shared with the sidebar rows + `menuItem`). Selected stays loud solid
+  // `bg-primary` — picking an option *is* the subject, so it gets the strong tier.
+  "rac-hover:bg-base-content/10 rac-focus:bg-base-content/10",
   "rac-selected:bg-primary rac-selected:text-primary-content",
   "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed"
 );

@@ -1,5 +1,5 @@
-import { Menu, MenuItem, MenuTrigger, Popover } from "react-aria-components";
 import { Button, ToggleButton } from "./misc/Button";
+import { DropdownMenu, DropdownMenuItem } from "./misc/DropdownMenu";
 import type { Page } from "./keyboard/Keyboard";
 import { useConnectedDeviceData } from "./rpc/useConnectedDeviceData";
 import { useSub } from "./usePubSub";
@@ -8,7 +8,17 @@ import { useModalRef } from "./misc/useModalRef";
 import { LockStateContext } from "./rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { ConnectionContext } from "./rpc/ConnectionContext";
-import { ChevronDown, Undo2, Redo2, Save, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  Undo2,
+  Redo2,
+  Save,
+  Trash2,
+  Unplug,
+  RotateCcw,
+  Download,
+  Upload,
+} from "lucide-react";
 import { Tooltip } from "./misc/Tooltip";
 import { GenericModal } from "./GenericModal";
 
@@ -190,39 +200,29 @@ export const AppHeader = ({
           />
         </Tooltip>
         {connectedDeviceLabel && (
-          <MenuTrigger>
-            <Button variant="ghost" icon={<ChevronDown />} iconPosition="end">
-              {connectedDeviceLabel}
-            </Button>
-            <Popover>
-              <Menu className="shadow-md rounded bg-base-100 text-base-content cursor-pointer overflow-hidden">
-                <MenuItem
-                  className="px-2 py-1 hover:bg-base-200"
-                  onAction={onDisconnect}
-                >
-                  Disconnect
-                </MenuItem>
-                <MenuItem
-                  className="px-2 py-1 hover:bg-base-200"
-                  onAction={() => setShowSettingsReset(true)}
-                >
-                  Restore Stock Settings
-                </MenuItem>
-                <MenuItem
-                  className="px-2 py-1 hover:bg-base-200"
-                  onAction={onExportBackup}
-                >
-                  Export Backup…
-                </MenuItem>
-                <MenuItem
-                  className="px-2 py-1 hover:bg-base-200"
-                  onAction={onImportBackup}
-                >
-                  Import Backup…
-                </MenuItem>
-              </Menu>
-            </Popover>
-          </MenuTrigger>
+          <DropdownMenu
+            trigger={
+              <Button variant="ghost" icon={<ChevronDown />} iconPosition="end">
+                {connectedDeviceLabel}
+              </Button>
+            }
+          >
+            <DropdownMenuItem icon={<Unplug />} onAction={onDisconnect}>
+              Disconnect
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              icon={<RotateCcw />}
+              onAction={() => setShowSettingsReset(true)}
+            >
+              Restore Stock Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem icon={<Download />} onAction={onExportBackup}>
+              Export Backup…
+            </DropdownMenuItem>
+            <DropdownMenuItem icon={<Upload />} onAction={onImportBackup}>
+              Import Backup…
+            </DropdownMenuItem>
+          </DropdownMenu>
         )}
       </div>
     </header>

@@ -69,7 +69,7 @@ export const BehaviourList = ({
       )}
       <Button
         className="w-full justify-center"
-        variant="secondary"
+        variant="ghost"
         icon={<Plus />}
         isDisabled={!canAdd || !onAdd}
         onPress={() => setAdding(true)}

@@ -184,6 +184,34 @@ export const ToggleGroup: Story = {
   },
 };
 
+/**
+ * The header section tabs (Layers / Combos / Behaviours) — ghost `ToggleButton`s
+ * used as nav. The selected tab shows the *quiet* active-nav tint
+ * (`bg-primary/15 text-primary`), matching the selected sidebar row rather than
+ * the loud solid `bg-primary` used for in-content selection. See the
+ * Interaction-states note in DESIGN-SYSTEM.md.
+ */
+export const NavTabs: Story = {
+  render: () => {
+    const tabs = ["Layers", "Combos", "Behaviours"];
+    const [active, setActive] = useState("Combos");
+    return (
+      <nav className="flex items-center gap-1 rounded bg-base-200 p-2">
+        {tabs.map((t) => (
+          <ToggleButton
+            key={t}
+            variant="ghost"
+            isSelected={active === t}
+            onChange={() => setActive(t)}
+          >
+            {t}
+          </ToggleButton>
+        ))}
+      </nav>
+    );
+  },
+};
+
 /** A non-toggle group, e.g. clustered actions sharing one surface. */
 export const ActionGroup: Story = {
   render: () => (
