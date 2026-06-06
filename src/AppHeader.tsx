@@ -18,7 +18,11 @@ import {
   RotateCcw,
   Download,
   Upload,
+  Layers,
+  Combine,
+  SlidersHorizontal,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Tooltip } from "./misc/Tooltip";
 import { GenericModal } from "./GenericModal";
 
@@ -38,10 +42,10 @@ export interface AppHeaderProps {
   canRedo?: boolean;
 }
 
-const NAV_ITEMS: { id: Page; label: string }[] = [
-  { id: "layers", label: "Layers" },
-  { id: "combos", label: "Combos" },
-  { id: "behaviours", label: "Behaviours" },
+const NAV_ITEMS: { id: Page; label: string; icon: ReactNode }[] = [
+  { id: "layers", label: "Layers", icon: <Layers /> },
+  { id: "combos", label: "Combos", icon: <Combine /> },
+  { id: "behaviours", label: "Behaviours", icon: <SlidersHorizontal /> },
 ];
 
 export const AppHeader = ({
@@ -113,14 +117,15 @@ export const AppHeader = ({
       <div className="flex items-center gap-3 px-3 min-w-0">
         <div className="flex items-center gap-1">
           <img src="/zmk.svg" alt="ZMK Logo" className="h-8 rounded" />
-          <p>Studio</p>
+          <p className="font-medium">Studio</p>
         </div>
         {connectedDeviceLabel && (
           <nav aria-label="Sections" className="flex items-center gap-1">
-            {NAV_ITEMS.map(({ id, label }) => (
+            {NAV_ITEMS.map(({ id, label, icon }) => (
               <ToggleButton
                 key={id}
                 variant="ghost"
+                icon={icon}
                 isSelected={page === id}
                 onPress={() => onPageChange?.(id)}
               >
