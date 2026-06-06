@@ -54,11 +54,11 @@ export const BehaviourList = ({
                 selected={selected}
                 onSelect={() => onSelect?.(beh.id)}
               >
-                <div className="flex items-center gap-2">
-                  <span className="min-w-0 truncate text-sm font-medium">
+                <div className="flex flex-col gap-0.5">
+                  <span className="truncate text-base font-medium">
                     {beh.displayName || `Behaviour #${beh.id}`}
                   </span>
-                  <span className="ml-auto shrink-0 text-xs opacity-60">
+                  <span className="truncate text-base opacity-70">
                     {beh.kind}
                   </span>
                 </div>

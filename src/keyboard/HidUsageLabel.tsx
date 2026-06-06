@@ -19,6 +19,14 @@ import { SYMBOL_GLYPHS, isShiftOnly } from "../behaviors/keyGridTabs";
 
 export interface HidUsageLabelProps {
   hid_usage: number;
+  /**
+   * Render the most descriptive *written* name as plain text (e.g. "Comma"
+   * instead of the cramped `,` glyph) instead of the width-adaptive glyph. Used
+   * by scannable lists like the combo sidebar where a one-character punctuation
+   * glyph is hard to read. Icons (Enter, arrows, modifiers) are kept — only the
+   * ambiguous text glyphs benefit from spelling out.
+   */
+  verbose?: boolean;
 }
 
 type IconComponent = ComponentType<{
@@ -56,7 +64,7 @@ function remove_prefix(s?: string) {
   return s?.replace(/^Keyboard /, "");
 }
 
-export const HidUsageLabel = ({ hid_usage }: HidUsageLabelProps) => {
+export const HidUsageLabel = ({ hid_usage, verbose }: HidUsageLabelProps) => {
   const [page_raw, id] = hid_usage_page_and_id_from_usage(hid_usage);
   const page = page_raw & 0xff;
 
@@ -72,6 +80,14 @@ export const HidUsageLabel = ({ hid_usage }: HidUsageLabelProps) => {
   }
 
   const labels = hid_usage_get_labels(page, id);
+
+  // Verbose: spell out the key with its longest written name as plain text, so
+  // ambiguous single-char glyphs (`,` `.` `;` …) read clearly in scannable
+  // lists. Icons still win below — they're already unambiguous.
+  if (verbose && !labels.icon) {
+    const word = remove_prefix(labels.long || labels.med || labels.short);
+    return <span>{word}</span>;
+  }
 
   // If a known icon is defined, render it instead of the text label
   if (labels.icon) {

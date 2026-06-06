@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 
 import type { Combos } from "@zmkfirmware/zmk-studio-ts-client/combos";
@@ -45,6 +45,32 @@ export const ComboList = ({
     [layoutKeys],
   );
 
+  // The preview is laid out at `oneU` px per key-unit with no auto-zoom, so to
+  // fill the card width we size `oneU` from the measured row width: a board that
+  // is `columns` units wide should span the full card, and its height follows
+  // proportionally. Measured off the first row's preview slot (all rows share
+  // the same card width); falls back to the old fixed size until measured.
+  const columns = useMemo(
+    () =>
+      previewPositions
+        ? previewPositions.reduce((m, p) => Math.max(m, p.x + p.width), 0)
+        : 0,
+    [previewPositions],
+  );
+  const slotRef = useRef<HTMLDivElement>(null);
+  const [oneU, setOneU] = useState(11);
+  useLayoutEffect(() => {
+    const el = slotRef.current;
+    if (!el || !columns) return;
+    const update = () => {
+      if (el.clientWidth > 0) setOneU(el.clientWidth / columns);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [columns]);
+
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
@@ -52,7 +78,7 @@ export const ComboList = ({
         <p className="text-sm opacity-70">No combos defined.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {combos.combos.map((entry) => {
+          {combos.combos.map((entry, i) => {
             const combo = entry.combo;
             const binding = combo?.binding;
             const behaviorName = binding
@@ -67,24 +93,24 @@ export const ComboList = ({
                 selected={selected}
                 onSelect={() => onComboSelected?.(entry.index)}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium opacity-50">
-                    #{entry.index}
-                  </span>
-                  <span className="min-w-0 truncate text-sm font-medium">
+                <div className="flex flex-col gap-0.5">
+                  <span className="truncate text-base font-medium">
                     {behaviorName}
                   </span>
                   {binding ? (
-                    <span className="ml-auto inline-flex shrink-0 text-xs opacity-70 [&_svg]:size-3.5">
-                      <HidUsageLabel hid_usage={binding.param1} />
+                    <span className="inline-flex text-base opacity-70 [&_svg]:size-4">
+                      <HidUsageLabel hid_usage={binding.param1} verbose />
                     </span>
                   ) : null}
                 </div>
                 {previewPositions ? (
-                  <div className="mt-1.5 flex justify-center">
+                  <div
+                    ref={i === 0 ? slotRef : undefined}
+                    className="mt-1.5 flex justify-start"
+                  >
                     <PhysicalLayout
                       positions={previewPositions}
-                      oneU={11}
+                      oneU={oneU}
                       keyVariant="preview"
                       selectedPositions={positions}
                     />

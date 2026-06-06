@@ -121,5 +121,16 @@ export const FIXTURE_COMBOS: Combos = {
         slowRelease: true,
       },
     },
+    {
+      index: 3,
+      combo: {
+        keyPositions: [21, 22],
+        layers: 0,
+        binding: { behaviorId: 0, param1: 0x00070036, param2: 0 }, // Comma
+        timeoutMs: 50,
+        requirePriorIdleMs: -1,
+        slowRelease: false,
+      },
+    },
   ],
 };
