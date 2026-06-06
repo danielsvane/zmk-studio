@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Tooltip } from "./misc/Tooltip";
+import { ThemeSwitcher } from "./misc/ThemeSwitcher";
 import { GenericModal } from "./GenericModal";
 
 export interface AppHeaderProps {
@@ -166,6 +167,7 @@ export const AppHeader = ({
         </div>
       </GenericModal>
       <div className="flex items-center justify-end gap-1 px-2">
+        <ThemeSwitcher />
         {onUndo && (
           <Tooltip label="Undo">
             <Button

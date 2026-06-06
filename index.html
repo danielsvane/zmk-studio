@@ -5,6 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/zmk.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ZMK Studio</title>
+    <!-- Apply the saved theme before first paint so there's no flash of the
+         wrong palette. Sets the root `color-scheme` that every `light-dark()`
+         token resolves against. Mirrors src/misc/theme.ts — keep the key/logic
+         in sync. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("zmk-studio-theme");
+          document.documentElement.style.colorScheme =
+            t === "light" || t === "dark" ? t : "light dark";
+        } catch (e) {
+          /* localStorage blocked — leave the CSS default (light dark) */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

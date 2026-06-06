@@ -18,7 +18,7 @@ function remove_prefix(s?: string) {
 
 const cellStyles = cx(
   "inline-flex h-control min-w-control items-center justify-center rounded px-1 text-base font-medium",
-  "cursor-pointer select-none border border-white/10 transition-[background-color,filter]",
+  "cursor-pointer select-none border border-base-line transition-[background-color,filter]",
   "[&_svg]:size-4",
   controlFocusRing
 );

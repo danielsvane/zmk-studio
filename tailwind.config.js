@@ -24,10 +24,17 @@ export default {
         // `<alpha-value>` slot so opacity modifiers work (`bg-primary/15` powers
         // the selected SidebarCard tint). Bare `bg-primary`/`border-primary`/
         // `text-primary` still default to full opacity.
+        // Light value is a chosen electric violet (#a000ff ≈ oklch(57% 0.297 304));
+        // `rgb(… / <alpha-value>)` (like `action`) keeps the opacity slot that
+        // `bg-primary/15` relies on. White `primary-content` clears WCAG AA on it
+        // (~5.3:1). Dark stays as-is.
         primary:
-          "light-dark(oklch(49.12% 0.3096 285.75 / <alpha-value>), oklch(65.69% 0.196 285.75 / <alpha-value>))",
+          "light-dark(rgb(160 0 255 / <alpha-value>), oklch(65.69% 0.196 285.75 / <alpha-value>))",
+        // Light value is pure white (like `action-content`): the old tinted
+        // near-white lavender washed out against the `primary` fill. Dark keeps
+        // the near-black tint (dark text reads on the lighter dark-mode primary).
         "primary-content":
-          "light-dark(oklch(0.89824 0.06192 285.75), oklch(0.13138 0.0392 285.75))",
+          "light-dark(#ffffff, oklch(0.13138 0.0392 285.75))",
         // Call-to-action fill for primary buttons (Apply, modal OK/Save, the
         // Download button): the blue end of the ZMK logo (#0b69c6) + white.
         // Kept distinct from `primary` so a page's main action reads differently
@@ -53,7 +60,10 @@ export default {
         // Subtle hairline for input/segment borders and dividers. Theme-aware so
         // it stays visible in both schemes (a flat white/15 vanishes on a white
         // surface in light mode). Single source of truth for every control edge.
-        "base-line": "light-dark(rgb(0 0 0 / 0.12), rgb(255 255 255 / 0.15))",
+        // Light alpha is 0.20 (not 0.12): near-white surfaces perceptually
+        // compress the edge, so matching dark's *raw* alpha looked weaker — 0.20
+        // brings light's border-vs-fill contrast (~1.59:1) level with dark's.
+        "base-line": "light-dark(rgb(0 0 0 / 0.2), rgb(255 255 255 / 0.15))",
       },
     },
 

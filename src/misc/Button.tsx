@@ -114,7 +114,7 @@ export function ButtonGroup({ className, children }: ButtonGroupProps) {
       <div
         role="group"
         className={cx(
-          "inline-flex divide-x divide-white/10 [&>*:first-child]:rounded-l [&>*:last-child]:rounded-r",
+          "inline-flex divide-x divide-base-line [&>*:first-child]:rounded-l [&>*:last-child]:rounded-r",
           className
         )}
       >
