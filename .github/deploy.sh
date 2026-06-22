@@ -4,6 +4,10 @@ sudo su - daniel <<'EOF'
 
 export PATH="/home/daniel/.nvm/versions/node/v20.19.0/bin:$PATH"
 
+cd /home/daniel/zmk-studio-ts-client
+git pull
+npm install
+
 cd /home/daniel/zmk-studio
 git pull
 npm install
