@@ -1,0 +1,14 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - customkeyboards
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, 'danielsvane/zmk-studio']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute deployment script
+        run: ./.github/deploy.sh
