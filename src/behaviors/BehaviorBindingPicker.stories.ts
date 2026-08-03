@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, screen, userEvent, waitFor, within } from "@storybook/test";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 import { BehaviorBindingPicker } from "./BehaviorBindingPicker";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export

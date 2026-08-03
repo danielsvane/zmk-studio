@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
 import { PhysicalLayout } from "./PhysicalLayout";
 import { HidUsageLabel } from "./HidUsageLabel";
 import { hid_usage_from_page_and_id } from "../hid-usages";

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChevronRight } from "lucide-react";
 
 import { cx } from "./controlStyles";

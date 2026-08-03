@@ -1,7 +1,7 @@
 import "../src/index.css";
 import { useLayoutEffect } from "react";
-import type { Preview } from "@storybook/react";
-import { create } from "@storybook/theming";
+import type { Preview } from "@storybook/react-vite";
+import { create } from "storybook/theming";
 
 // base-200 (dark) — the keymap/combo editor panel these controls live in.
 // Storybook's theming API needs a literal color, so we hardcode the dark value.
