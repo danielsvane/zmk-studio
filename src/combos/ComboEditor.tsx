@@ -178,7 +178,7 @@ export const ComboEditor = ({
 
       <Disclosure title="Advanced">
         <TextField
-          className="max-w-sm"
+          inputClassName="max-w-sm"
           label="Timeout (ms)"
           type="number"
           inputProps={{ min: 1 }}
@@ -187,7 +187,7 @@ export const ComboEditor = ({
         />
 
         <TextField
-          className="max-w-sm"
+          inputClassName="max-w-sm"
           label="Require prior idle (ms)"
           description="-1 = disabled"
           type="number"

@@ -272,9 +272,11 @@ export interface SelectProps<T extends object>
   itemKey?: (item: T) => Key;
   /** Accessible/typeahead text for an item. Default: `item.label` ?? `item.name`. */
   itemText?: (item: T) => string;
-  /** Wrapper (the field column) className. */
+  /** Wrapper (the field column) className. It sizes the label and description
+   * too, so a width cap here wraps them with the trigger — cap the trigger
+   * instead unless you mean to constrain the whole column. */
   className?: string;
-  /** Trigger button className (e.g. `w-full`, `min-w-40`). */
+  /** Trigger button className — where width belongs (`w-full max-w-sm`, `min-w-40`). */
   triggerClassName?: string;
 }
 

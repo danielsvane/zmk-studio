@@ -133,7 +133,7 @@ function IntField({ field, onCommit }: ConfigFieldEditProps) {
       label={field.displayName || field.key}
       description={renderSchemaHint(field)}
       type="number"
-      className="max-w-[10rem]"
+      inputClassName="max-w-[10rem]"
       value={text}
       onChange={setText}
       inputProps={{
@@ -158,8 +158,7 @@ function EnumField({ field, onCommit }: ConfigFieldEditProps) {
   return (
     <Select
       label={field.displayName || field.key}
-      className="max-w-sm"
-      triggerClassName="w-full"
+      triggerClassName="w-full max-w-sm"
       items={items}
       selectedKey={value}
       onSelectionChange={(key) => onCommit({ enumValue: Number(key) })}

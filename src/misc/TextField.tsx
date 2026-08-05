@@ -48,9 +48,12 @@ export interface TextFieldProps
   type?: InputHTMLAttributes<HTMLInputElement>["type"];
   /** Native input attrs passed through (min/max/step/inputMode/…). */
   inputProps?: InputHTMLAttributes<HTMLInputElement>;
-  /** Wrapper (the field column) className. */
+  /** Wrapper (the field column) className. NOT the place for a width cap —
+   * it sizes the label and description too, so they wrap with the input. */
   className?: string;
-  /** Input element className (e.g. `w-full`, `font-mono`). */
+  /** Input element className — where width caps belong (`max-w-sm`, `w-40`),
+   * plus anything else input-only (`font-mono`). The input is `w-full`, so a
+   * `max-w-*` here narrows the control and leaves the label full width. */
   inputClassName?: string;
 }
 
