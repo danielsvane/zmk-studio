@@ -324,7 +324,7 @@ function App() {
         behaviorResp.behaviors?.saveChanges.err
       ) {
         console.error(
-          "Failed to save custom behaviour changes",
+          "Failed to save custom behavior changes",
           behaviorResp.behaviors?.saveChanges
         );
       }
@@ -357,7 +357,7 @@ function App() {
         behaviors: { discardChanges: true },
       });
       if (!behaviorResp.behaviors?.discardChanges) {
-        console.error("Failed to discard custom behaviour changes", behaviorResp);
+        console.error("Failed to discard custom behavior changes", behaviorResp);
       }
 
       reset();

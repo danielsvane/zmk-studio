@@ -223,7 +223,7 @@ function VariantColumn({ variant }: { variant: Variant }) {
           })}
         </ul>
 
-        <SectionHeading>Behaviours</SectionHeading>
+        <SectionHeading>Behaviors</SectionHeading>
         <ul className={variant.list}>
           {BEHAVIOURS.map((beh, i) => (
             <Row key={beh.id} variant={variant} selected={i === SELECTED_BEHAVIOUR}>

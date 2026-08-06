@@ -161,7 +161,7 @@ export function parseBackup(text: string): ParseBackupResult {
   }
 
   if (!Array.isArray(doc.customBehaviors)) {
-    return { error: "Missing custom behaviours" };
+    return { error: "Missing custom behaviors" };
   }
   for (const cb of doc.customBehaviors as unknown[]) {
     const b = cb as Record<string, unknown>;
@@ -171,7 +171,7 @@ export function parseBackup(text: string): ParseBackupResult {
       typeof b?.kind !== "string" ||
       !Array.isArray(b?.config)
     ) {
-      return { error: "Malformed custom behaviour entry" };
+      return { error: "Malformed custom behavior entry" };
     }
   }
 

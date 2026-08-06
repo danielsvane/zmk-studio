@@ -27,7 +27,7 @@ export interface BehaviourListProps {
 
 // Behaviour list. Rows are clickable cards mirroring the combo list / layer
 // picker on the left of the editor: each shows the behaviour's name and a muted
-// kind chip so the list stays scannable. "Add behaviour" opens a modal to pick
+// kind chip so the list stays scannable. "Add behavior" opens a modal to pick
 // the kind, then claims a new behaviour from the spare pool and selects it.
 export const BehaviourList = ({
   behaviours,
@@ -41,9 +41,9 @@ export const BehaviourList = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-sm font-bold uppercase opacity-70">Behaviours</h2>
+      <h2 className="text-sm font-bold uppercase opacity-70">Behaviors</h2>
       {behaviours.length === 0 ? (
-        <p className="text-sm opacity-70">No custom behaviours yet.</p>
+        <p className="text-sm opacity-70">No custom behaviors yet.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {behaviours.map((beh) => {
@@ -56,7 +56,7 @@ export const BehaviourList = ({
               >
                 <div className="flex flex-col gap-0.5">
                   <span className="truncate text-base font-medium">
-                    {beh.displayName || `Behaviour #${beh.id}`}
+                    {beh.displayName || `Behavior #${beh.id}`}
                   </span>
                   <span className="truncate text-base opacity-70">
                     {beh.kind}
@@ -74,7 +74,7 @@ export const BehaviourList = ({
         isDisabled={!canAdd || !onAdd}
         onPress={() => setAdding(true)}
       >
-        Add behaviour
+        Add behavior
       </Button>
       <AddBehaviourModal
         open={adding}

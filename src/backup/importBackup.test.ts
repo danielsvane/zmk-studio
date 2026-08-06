@@ -543,7 +543,7 @@ describe("importBackup", () => {
     expect(device.combos.has(2)).toBe(false);
   });
 
-  test("unknown behaviour name is skipped and reported, the rest still applies", async () => {
+  test("unknown behavior name is skipped and reported, the rest still applies", async () => {
     const backup = makeSourceBackup();
     // Remove Layer-Tap from the target registry entirely.
     const device = makeTargetDevice({
@@ -555,7 +555,7 @@ describe("importBackup", () => {
     expect(report.skipped).toEqual([
       expect.objectContaining({
         kind: "binding",
-        reason: 'behaviour "Layer-Tap" not found',
+        reason: 'behavior "Layer-Tap" not found',
       }),
     ]);
     expect(report.applied.bindings).toBe(7);
@@ -580,7 +580,7 @@ describe("importBackup", () => {
     expect([...device.combos.keys()]).toEqual([0]);
   });
 
-  test("custom behaviour NO_SPACE: slot and its bindings are skipped", async () => {
+  test("custom behavior NO_SPACE: slot and its bindings are skipped", async () => {
     const backup = makeSourceBackup();
     const device = makeTargetDevice({ customPoolMax: 0 });
 
@@ -596,7 +596,7 @@ describe("importBackup", () => {
     expect(report.skipped).toContainEqual(
       expect.objectContaining({
         kind: "binding",
-        reason: 'behaviour "HRM (L)" not found',
+        reason: 'behavior "HRM (L)" not found',
       })
     );
     expect(report.applied.customBehaviors).toBe(0);

@@ -79,14 +79,14 @@ export const NoParamBehavior: Story = {
   play: async ({ args, canvasElement, step }) => {
     const canvas = within(canvasElement);
 
-    await step("switch to the no-param behaviour", async () => {
+    await step("switch to the no-param behavior", async () => {
       await userEvent.click(canvas.getByRole("button", { name: /Key Press/ }));
       // react-aria renders the listbox in a portal on document.body, so query
       // the option document-wide rather than within the story canvas.
       await userEvent.click(await screen.findByRole("option", { name: "Caps Word" }));
     });
 
-    await step("onBindingChanged fires once with the new behaviour", async () => {
+    await step("onBindingChanged fires once with the new behavior", async () => {
       await waitFor(() =>
         expect(args.onBindingChanged).toHaveBeenCalledWith({
           behaviorId: 1,

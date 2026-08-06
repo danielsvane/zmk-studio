@@ -53,7 +53,7 @@ export async function importBackup(
     await call_rpc(conn, { behaviors: { getCustomBehaviors: true } })
   ).behaviors?.getCustomBehaviors;
   if (!currentCustoms) {
-    report.fatal = "Could not read the device's custom behaviours";
+    report.fatal = "Could not read the device's custom behaviors";
     return report;
   }
 
@@ -107,7 +107,7 @@ export async function importBackup(
   for (const details of Object.values(liveMap)) {
     if (nameToLiveId.has(details.displayName)) {
       console.warn(
-        "Duplicate behaviour display name; name-resolution will pick the first:",
+        "Duplicate behavior display name; name-resolution will pick the first:",
         details.displayName
       );
     } else {
@@ -140,7 +140,7 @@ export async function importBackup(
           report,
           "configField",
           `"${cb.displayName}" / ${field.key}`,
-          `referenced behaviour "${field.value.behaviorRef?.behaviorName}" not found`
+          `referenced behavior "${field.value.behaviorRef?.behaviorName}" not found`
         );
         continue;
       }
@@ -253,7 +253,7 @@ export async function importBackup(
   ): BehaviorBinding | null => {
     const behaviorId = resolveBehaviorId(b.behaviorId, b.behaviorName);
     if (behaviorId === null) {
-      skip(report, kind, location, `behaviour "${b.behaviorName}" not found`);
+      skip(report, kind, location, `behavior "${b.behaviorName}" not found`);
       return null;
     }
     let { param1, param2 } = b;
@@ -429,7 +429,7 @@ export async function importBackup(
     skip(
       report,
       "save",
-      "behaviours",
+      "behaviors",
       `save failed (err ${behaviorsSave.behaviors?.saveChanges?.err})`
     );
   }

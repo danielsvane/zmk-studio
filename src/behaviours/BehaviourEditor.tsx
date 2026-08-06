@@ -44,7 +44,7 @@ export const BehaviourEditor = ({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold uppercase opacity-70">
-          Edit behaviour
+          Edit behavior
         </h2>
         {onDelete && (
           <Button
@@ -62,7 +62,7 @@ export const BehaviourEditor = ({
         label="Name"
         className="max-w-sm"
         name={behaviour.displayName ?? ""}
-        placeholder={`Behaviour #${behaviour.id}`}
+        placeholder={`Behavior #${behaviour.id}`}
         onCommit={onRename}
       />
 
@@ -72,7 +72,7 @@ export const BehaviourEditor = ({
       <Select
         label="Type"
         className="max-w-sm"
-        description="Type can't be changed — create a new behaviour and delete the old one if another type is needed."
+        description="Type can't be changed — create a new behavior and delete the old one if another type is needed."
         items={[{ id: behaviour.kind, name: behaviour.kind }]}
         selectedKey={behaviour.kind}
         isDisabled

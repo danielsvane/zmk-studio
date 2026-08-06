@@ -47,7 +47,7 @@ export interface AppHeaderProps {
 const NAV_ITEMS: { id: Page; label: string; icon: ReactNode }[] = [
   { id: "layers", label: "Layers", icon: <Layers /> },
   { id: "combos", label: "Combos", icon: <Combine /> },
-  { id: "behaviours", label: "Behaviours", icon: <SlidersHorizontal /> },
+  { id: "behaviours", label: "Behaviors", icon: <SlidersHorizontal /> },
 ];
 
 export const AppHeader = ({

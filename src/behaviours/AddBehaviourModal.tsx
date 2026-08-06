@@ -15,7 +15,7 @@ export interface AddBehaviourModalProps {
   onAdd: (kind: string) => void;
 }
 
-// "Add behaviour" dialog: the user picks which kind to claim from the spare
+// "Add behavior" dialog: the user picks which kind to claim from the spare
 // pool, then confirms. The kind is chosen here rather than via a control in the
 // sidebar so the list stays a clean list. Uses an inline ToggleGroup (not a
 // dropdown) since a Select's portal would render behind the native <dialog>'s
@@ -41,7 +41,7 @@ export const AddBehaviourModal = ({
       ref={ref}
       className="min-w-[20rem]"
       onClose={onClose}
-      title="Add behaviour"
+      title="Add behavior"
       actions={
         <>
           <Button variant="ghost" onPress={onClose}>

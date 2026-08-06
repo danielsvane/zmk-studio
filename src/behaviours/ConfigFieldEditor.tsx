@@ -57,7 +57,7 @@ function renderValue(field: ConfigField): string {
 
   // behaviour reference (hold/tap sub-binding).
   if (value?.behaviorRef !== undefined) {
-    return `behaviour #${value.behaviorRef.behaviorId}`;
+    return `behavior #${value.behaviorRef.behaviorId}`;
   }
 
   if (value?.hidUsage !== undefined) {

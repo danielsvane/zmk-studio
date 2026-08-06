@@ -13,7 +13,7 @@ import { TextField } from "../misc/TextField";
  */
 export interface BehaviourNameEditorProps {
   name: string;
-  /** Stable fallback label (e.g. "Behaviour #3") shown when the name is empty. */
+  /** Stable fallback label (e.g. "Behavior #3") shown when the name is empty. */
   placeholder: string;
   /** Field label rendered above the input; omit for an aria-label-only field. */
   label?: ReactNode;
@@ -54,7 +54,7 @@ export function BehaviourNameEditor({
   return (
     <TextField
       label={label}
-      aria-label={label ? undefined : "Behaviour name"}
+      aria-label={label ? undefined : "Behavior name"}
       className={className}
       placeholder={placeholder}
       value={text}

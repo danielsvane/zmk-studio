@@ -449,7 +449,7 @@ export default function Keyboard({ page }: { page: Page }) {
             })
           );
         } else {
-          console.error("Failed to set custom behaviour field", result);
+          console.error("Failed to set custom behavior field", result);
         }
       };
 
@@ -493,7 +493,7 @@ export default function Keyboard({ page }: { page: Page }) {
           // Keep the binding-picker label in sync without a reconnect.
           await refreshBehaviors();
         } else {
-          console.error("Failed to rename custom behaviour", result);
+          console.error("Failed to rename custom behavior", result);
         }
       };
 
@@ -515,7 +515,7 @@ export default function Keyboard({ page }: { page: Page }) {
   // immediately appears in get_custom_behaviors AND in list_all_behaviors, so we
   // refresh the binding-picker map to make it selectable as a keymap/combo
   // binding without reconnecting. Which spare pool to claim from is chosen by
-  // the user in the "Add behaviour" modal (see ADDABLE_KINDS); the firmware
+  // the user in the "Add behavior" modal (see ADDABLE_KINDS); the firmware
   // rejects an unknown kind with NO_SPACE. Adding a kind to the firmware pool +
   // ADDABLE_KINDS is all it takes to offer it — the config form renders
   // generically (M10).
@@ -526,7 +526,7 @@ export default function Keyboard({ page }: { page: Page }) {
     }
 
     const name = window.prompt(
-      `Name for the new ${kind} behaviour:`,
+      `Name for the new ${kind} behavior:`,
       kind === "hold-tap" ? "hrml" : ""
     );
     if (name === null) {
@@ -558,12 +558,12 @@ export default function Keyboard({ page }: { page: Page }) {
     }
 
     const err = resp.behaviors?.addCustomBehavior?.err;
-    console.error("Add custom behaviour error", err);
+    console.error("Add custom behavior error", err);
     // TODO: replace window.alert with a proper toast (matches App.tsx).
     if (err === AddCustomBehaviorErrorCode.ADD_CUSTOM_BEHAVIOR_ERR_NO_SPACE) {
-      window.alert(`Can't add another behaviour: the ${kind} pool is full.`);
+      window.alert(`Can't add another behavior: the ${kind} pool is full.`);
     } else {
-      window.alert("Failed to add the behaviour.");
+      window.alert("Failed to add the behavior.");
     }
     },
     [conn, refreshBehaviors, setCustomBehaviors]
@@ -581,7 +581,7 @@ export default function Keyboard({ page }: { page: Page }) {
         (b) => b.id === behaviorId
       );
       if (!oldBehaviour) {
-        console.error("Can't delete a behaviour that isn't loaded", behaviorId);
+        console.error("Can't delete a behavior that isn't loaded", behaviorId);
         return;
       }
 
@@ -610,11 +610,11 @@ export default function Keyboard({ page }: { page: Page }) {
           await refreshBehaviors();
         } else {
           console.error(
-            "Remove behaviour error",
+            "Remove behavior error",
             resp.behaviors?.removeCustomBehavior?.err
           );
           throw new Error(
-            "Failed to remove behaviour: " +
+            "Failed to remove behavior: " +
               resp.behaviors?.removeCustomBehavior?.err
           );
         }
@@ -657,7 +657,7 @@ export default function Keyboard({ page }: { page: Page }) {
           await refreshBehaviors();
         } else {
           console.error(
-            "Restore behaviour error",
+            "Restore behavior error",
             resp.behaviors?.addCustomBehavior?.err
           );
         }
@@ -1122,11 +1122,11 @@ export default function Keyboard({ page }: { page: Page }) {
                 <div>
                   <p>
                     {behaviours.length === 0
-                      ? "No custom behaviours yet. Add one to get started."
-                      : "Select a behaviour to edit, or add a new one."}
+                      ? "No custom behaviors yet. Add one to get started."
+                      : "Select a behavior to edit, or add a new one."}
                   </p>
                   <p className="mt-2 text-sm text-base-content/50">
-                    Any factory behaviours that ship with this keyboard reload
+                    Any factory behaviors that ship with this keyboard reload
                     after the board restarts — e.g. after restoring stock
                     settings, reset the board (or unplug and reconnect) to see
                     them again.

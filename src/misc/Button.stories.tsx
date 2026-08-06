@@ -193,7 +193,7 @@ export const ToggleGroup: Story = {
  */
 export const NavTabs: Story = {
   render: () => {
-    const tabs = ["Layers", "Combos", "Behaviours"];
+    const tabs = ["Layers", "Combos", "Behaviors"];
     const [active, setActive] = useState("Combos");
     return (
       <nav className="flex items-center gap-1 rounded bg-base-200 p-2">
