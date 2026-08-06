@@ -6,7 +6,7 @@ import {
   type Key,
 } from "react-aria-components";
 
-import { cx, controlFocusRing, type ButtonSize } from "./controlStyles";
+import { cx, type ButtonSize } from "./controlStyles";
 import { GroupLabel } from "./Field";
 
 /**
@@ -26,6 +26,19 @@ const groupSurface = cx(
   "flex overflow-hidden rounded border border-base-line divide-x divide-base-line"
 );
 
+// Segments ring on the INSIDE (negative offset) rather than taking the shared
+// outset `controlFocusRing`. The group clips to its rounded corners with
+// `overflow-hidden`, which eats an outset ring on the group's own edges but not
+// on the edge facing the next segment — the surviving sliver reads as the
+// selected fill bleeding across the divider. On a selected segment the ring
+// switches to `primary-content` (the same token as its label), since a
+// `primary` ring drawn inside a `primary` fill is invisible.
+const itemFocusRing = cx(
+  "rac-focus-visible:outline rac-focus-visible:outline-2",
+  "rac-focus-visible:-outline-offset-2 rac-focus-visible:outline-primary",
+  "rac-selected:rac-focus-visible:outline-primary-content"
+);
+
 const itemBase = cx(
   "flex items-center justify-center gap-0.5 font-medium whitespace-nowrap",
   "cursor-pointer select-none text-base-content bg-base-100",
@@ -33,7 +46,7 @@ const itemBase = cx(
   "rac-hover:brightness-110",
   "rac-selected:bg-primary rac-selected:text-primary-content",
   "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed",
-  controlFocusRing
+  itemFocusRing
 );
 
 // Every segment is at least one `control` (48px) hit target so it lines up with
