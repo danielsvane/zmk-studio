@@ -61,7 +61,7 @@ export const AddBehaviourModal = ({
       }
     >
       <ToggleGroup
-        label="Kind"
+        label="Type"
         selectionMode="single"
         disallowEmptySelection
         selectedKeys={new Set([kind])}
