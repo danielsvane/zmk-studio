@@ -208,6 +208,10 @@ export default function Keyboard({ page }: { page: Page }) {
     number | undefined
   >(undefined);
 
+  // A combo being filled in that has no pool slot yet; see addCombo. Mutually
+  // exclusive with selectedComboIndex — whichever is set is what the editor shows.
+  const [draftCombo, setDraftCombo] = useState<Combo | null>(null);
+
   const [selectedBehaviourId, setSelectedBehaviourId] = useState<
     number | undefined
   >(undefined);
@@ -365,7 +369,7 @@ export default function Keyboard({ page }: { page: Page }) {
     );
   }, [combos, selectedComboIndex]);
 
-  const doApplyCombo = useCallback(
+  const doUpdateCombo = useCallback(
     (index: number, combo: Combo) => {
       if (!combos) {
         return;
@@ -669,98 +673,123 @@ export default function Keyboard({ page }: { page: Page }) {
     [conn, customBehaviors, refreshBehaviors, setCustomBehaviors, undoRedo]
   );
 
-  // Add a brand-new combo (M4). Seeds sensible defaults (keys 0,1 -> the first
-  // available behavior) so the new combo is valid the moment it's created; the
-  // user then refines it in the editor. The firmware assigns the pool slot and
-  // returns its index, which we select for editing. Undo deletes it.
+  // Create a combo (M4) from what the user filled into the draft editor. The
+  // firmware assigns the pool slot and returns its index, which we select for
+  // editing. Undo deletes it.
+  const doCreateCombo = useCallback(
+    (newCombo: Combo) => {
+      // Returns the assigned pool index, or -1 if the add failed (already
+      // surfaced to the user). We never throw out of the undoRedo callback: a
+      // throw there leaves the undo/redo system permanently locked.
+      async function doAdd(): Promise<number> {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          combos: { addCombo: { combo: newCombo } },
+        });
+
+        const ok = resp.combos?.addCombo?.ok;
+        if (ok) {
+          setCombos(
+            editData<Combos>((draft) => {
+              draft.combos.push({ index: ok.index, combo: ok.combo ?? newCombo });
+              draft.combos.sort((a, b) => a.index - b.index);
+            })
+          );
+          setSelectedComboIndex(ok.index);
+          setDraftCombo(null);
+          return ok.index;
+        }
+
+        const err = resp.combos?.addCombo?.err;
+        console.error("Add combo error", err);
+        // TODO: replace window.alert with a proper toast (matches App.tsx).
+        if (err === AddComboErrorCode.ADD_COMBO_ERR_NO_SPACE) {
+          window.alert(
+            "Can't add another combo: the combo pool is full. Delete an existing combo to make room."
+          );
+        } else {
+          window.alert("Failed to add the combo.");
+        }
+        return -1;
+      }
+
+      async function doRemove(index: number) {
+        if (!conn.conn) {
+          throw new Error("Not connected");
+        }
+
+        const resp = await call_rpc(conn.conn, {
+          combos: { removeCombo: { index } },
+        });
+
+        if (resp.combos?.removeCombo?.ok) {
+          setCombos(
+            editData<Combos>((draft) => {
+              const i = draft.combos.findIndex((e) => e.index === index);
+              if (i >= 0) {
+                draft.combos.splice(i, 1);
+              }
+            })
+          );
+          setSelectedComboIndex(undefined);
+        } else {
+          console.error("Remove combo error", resp.combos?.removeCombo?.err);
+          throw new Error(
+            "Failed to remove combo: " + resp.combos?.removeCombo?.err
+          );
+        }
+      }
+
+      undoRedo?.(async () => {
+        const index = await doAdd();
+        if (index < 0) {
+          // Nothing was created (e.g. pool full) — undo is a no-op.
+          return async () => {};
+        }
+        return () => doRemove(index);
+      });
+    },
+    [conn, undoRedo, setCombos]
+  );
+
+  // "Add combo" opens an empty draft rather than creating anything: the firmware
+  // has no representation for a half-filled combo (it requires at least one key
+  // position and a valid binding), and seeding defaults instead would silently
+  // arm a live combo on keys the user never chose. Nothing reaches the device
+  // until Create.
   const addCombo = useCallback(() => {
-    // Returns the assigned pool index, or -1 if the add failed (already
-    // surfaced to the user). We never throw out of the undoRedo callback: a
-    // throw there leaves the undo/redo system permanently locked.
-    async function doAdd(): Promise<number> {
-      if (!conn.conn) {
-        throw new Error("Not connected");
-      }
-
-      const behaviorList = Object.values(behaviors);
-      if (behaviorList.length === 0) {
-        throw new Error("No behaviors available to seed a new combo");
-      }
-
-      const newCombo: Combo = {
-        keyPositions: [0, 1],
-        layers: 0,
-        binding: { behaviorId: behaviorList[0].id, param1: 0, param2: 0 },
-        timeoutMs: 50,
-        requirePriorIdleMs: -1,
-        slowRelease: false,
-      };
-
-      const resp = await call_rpc(conn.conn, {
-        combos: { addCombo: { combo: newCombo } },
-      });
-
-      const ok = resp.combos?.addCombo?.ok;
-      if (ok) {
-        setCombos(
-          editData<Combos>((draft) => {
-            draft.combos.push({ index: ok.index, combo: ok.combo ?? newCombo });
-            draft.combos.sort((a, b) => a.index - b.index);
-          })
-        );
-        setSelectedComboIndex(ok.index);
-        return ok.index;
-      }
-
-      const err = resp.combos?.addCombo?.err;
-      console.error("Add combo error", err);
-      // TODO: replace window.alert with a proper toast (matches App.tsx).
-      if (err === AddComboErrorCode.ADD_COMBO_ERR_NO_SPACE) {
-        window.alert(
-          "Can't add another combo: the combo pool is full. Delete an existing combo to make room."
-        );
-      } else {
-        window.alert("Failed to add the combo.");
-      }
-      return -1;
-    }
-
-    async function doRemove(index: number) {
-      if (!conn.conn) {
-        throw new Error("Not connected");
-      }
-
-      const resp = await call_rpc(conn.conn, {
-        combos: { removeCombo: { index } },
-      });
-
-      if (resp.combos?.removeCombo?.ok) {
-        setCombos(
-          editData<Combos>((draft) => {
-            const i = draft.combos.findIndex((e) => e.index === index);
-            if (i >= 0) {
-              draft.combos.splice(i, 1);
-            }
-          })
-        );
-        setSelectedComboIndex(undefined);
-      } else {
-        console.error("Remove combo error", resp.combos?.removeCombo?.err);
-        throw new Error(
-          "Failed to remove combo: " + resp.combos?.removeCombo?.err
-        );
-      }
-    }
-
-    undoRedo?.(async () => {
-      const index = await doAdd();
-      if (index < 0) {
-        // Nothing was created (e.g. pool full) — undo is a no-op.
-        return async () => {};
-      }
-      return () => doRemove(index);
+    setSelectedComboIndex(undefined);
+    setDraftCombo({
+      keyPositions: [],
+      layers: 0,
+      binding: undefined,
+      timeoutMs: 50,
+      requirePriorIdleMs: -1,
+      slowRelease: false,
     });
-  }, [conn, undoRedo, behaviors, setCombos]);
+  }, []);
+
+  // Apply from the editor: create the draft, or update the selected combo.
+  const doApplyCombo = useCallback(
+    (combo: Combo) => {
+      if (draftCombo) {
+        doCreateCombo(combo);
+      } else if (selectedComboIndex !== undefined) {
+        doUpdateCombo(selectedComboIndex, combo);
+      }
+    },
+    [draftCombo, selectedComboIndex, doCreateCombo, doUpdateCombo]
+  );
+
+  // Selecting an existing combo discards any in-progress draft (it holds nothing
+  // the device knows about, so there is nothing to save).
+  const selectCombo = useCallback((index: number) => {
+    setDraftCombo(null);
+    setSelectedComboIndex(index);
+  }, []);
 
   // Delete an existing combo (M4). The pool index is stable, so undo re-creates
   // it at the same slot via setCombo (which doubles as "create at index").
@@ -1124,8 +1153,9 @@ export default function Keyboard({ page }: { page: Page }) {
               behaviors={behaviors}
               layoutKeys={comboLayoutKeys}
               selectedIndex={selectedComboIndex}
-              onComboSelected={setSelectedComboIndex}
+              onComboSelected={selectCombo}
               onAddCombo={addCombo}
+              draftSelected={draftCombo !== null}
               canAdd={Object.keys(behaviors).length > 0}
             />
           )}
@@ -1136,10 +1166,13 @@ export default function Keyboard({ page }: { page: Page }) {
               bottom padding gets dropped at the scroll end) to keep a gap below
               the Apply button. */}
           <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col pb-6">
-            {keymap && combos && selectedCombo?.combo ? (
+            {keymap && combos && (draftCombo || selectedCombo?.combo) ? (
               <ComboEditor
-                index={selectedCombo.index}
-                combo={selectedCombo.combo}
+                // Remount when switching between the draft and a real combo so
+                // the editor's local field state reloads from the new source.
+                key={draftCombo ? "draft" : selectedCombo!.index}
+                index={draftCombo ? undefined : selectedCombo!.index}
+                combo={draftCombo ?? selectedCombo!.combo!}
                 behaviors={Object.values(behaviors)}
                 layers={keymap.layers.map(({ id, name }, li) => ({
                   id,

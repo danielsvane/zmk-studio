@@ -12,7 +12,9 @@ import { PickerShell } from "../misc/PickerShell";
 import { Select, type SelectSection } from "../misc/Select";
 
 export interface BehaviorBindingPickerProps {
-  binding: BehaviorBinding;
+  /** Undefined = nothing bound yet (a combo being created); the behavior Select
+   * shows its placeholder and no parameter controls until one is picked. */
+  binding: BehaviorBinding | undefined;
   behaviors: GetBehaviorDetailsResponse[];
   layers: { id: number; name: string }[];
   onBindingChanged: (binding: BehaviorBinding) => void;
@@ -48,9 +50,9 @@ export const BehaviorBindingPicker = ({
   behaviors,
   onBindingChanged,
 }: BehaviorBindingPickerProps) => {
-  const [behaviorId, setBehaviorId] = useState(binding.behaviorId);
-  const [param1, setParam1] = useState<number | undefined>(binding.param1);
-  const [param2, setParam2] = useState<number | undefined>(binding.param2);
+  const [behaviorId, setBehaviorId] = useState(binding?.behaviorId);
+  const [param1, setParam1] = useState<number | undefined>(binding?.param1);
+  const [param2, setParam2] = useState<number | undefined>(binding?.param2);
 
   const behavior = useMemo(
     () => behaviors.find((b) => b.id == behaviorId),
@@ -110,9 +112,13 @@ export const BehaviorBindingPicker = ({
   onBindingChangedRef.current = onBindingChanged;
 
   useEffect(() => {
+    if (behaviorId === undefined) {
+      return; // Nothing picked yet — there is no binding to report upward.
+    }
+
     const binding = bindingRef.current;
     if (
-      binding.behaviorId === behaviorId &&
+      binding?.behaviorId === behaviorId &&
       binding.param1 === param1 &&
       binding.param2 === param2
     ) {
@@ -145,9 +151,9 @@ export const BehaviorBindingPicker = ({
   }, [behaviorId, param1, param2]);
 
   useEffect(() => {
-    setBehaviorId(binding.behaviorId);
-    setParam1(binding.param1);
-    setParam2(binding.param2);
+    setBehaviorId(binding?.behaviorId);
+    setParam1(binding?.param1);
+    setParam2(binding?.param2);
   }, [binding]);
 
   const { controls, canvas } = useBehaviorParameters({
@@ -166,9 +172,11 @@ export const BehaviorBindingPicker = ({
         <>
           <Select
             label="Behavior"
+            placeholder="Select a behavior…"
             items={sortedBehaviors}
             sections={behaviorSections}
-            selectedKey={behaviorId}
+            // `null`, not undefined: undefined would make the Select uncontrolled.
+            selectedKey={behaviorId ?? null}
             itemKey={(b) => b.id}
             itemText={(b) => b.displayName}
             onSelectionChange={(key) => {

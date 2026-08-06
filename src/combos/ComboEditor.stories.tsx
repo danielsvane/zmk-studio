@@ -49,3 +49,21 @@ export const NoLayoutTextFallback: Story = {
     combo: FIXTURE_COMBOS.combos[1].combo!,
   },
 };
+
+// A combo that doesn't exist on the device yet (no `index`): everything starts
+// empty, and Create stays disabled until at least one key and a behavior are
+// chosen. Nothing is sent to the device before then.
+export const NewCombo: Story = {
+  args: {
+    combo: {
+      keyPositions: [],
+      layers: 0,
+      binding: undefined,
+      timeoutMs: 50,
+      requirePriorIdleMs: -1,
+      slowRelease: false,
+    },
+    layoutKeys: FIXTURE_LAYOUT,
+    onDelete: undefined,
+  },
+};

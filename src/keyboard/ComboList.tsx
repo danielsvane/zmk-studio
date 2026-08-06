@@ -22,6 +22,9 @@ export interface ComboListProps {
   selectedIndex?: number;
   onComboSelected?: (index: number) => void;
   onAddCombo?: () => void;
+  /** A new combo is being filled in but doesn't exist on the device yet; shown
+   * as a trailing placeholder row so the list still reflects what's being edited. */
+  draftSelected?: boolean;
   canAdd?: boolean;
 }
 
@@ -36,6 +39,7 @@ export const ComboList = ({
   selectedIndex,
   onComboSelected,
   onAddCombo,
+  draftSelected,
   canAdd,
 }: ComboListProps) => {
   // The preview keyboard is the same for every row (only the highlight differs),
@@ -74,7 +78,7 @@ export const ComboList = ({
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-sm font-bold uppercase opacity-70">Combos</h2>
-      {combos.combos.length === 0 ? (
+      {combos.combos.length === 0 && !draftSelected ? (
         <p className="text-sm opacity-70">No combos defined.</p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -123,6 +127,17 @@ export const ComboList = ({
               </SidebarCard>
             );
           })}
+          {draftSelected && (
+            <SidebarCard selected>
+              {/* Same two-line shape as a real row: name on top, detail below. */}
+              <div className="flex flex-col gap-0.5">
+                <span className="truncate text-base font-medium">
+                  New combo
+                </span>
+                <span className="text-base opacity-70">Not saved yet</span>
+              </div>
+            </SidebarCard>
+          )}
         </ul>
       )}
       <Button

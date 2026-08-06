@@ -17,7 +17,9 @@ import { TextField } from "../misc/TextField";
 import { ToggleGroup, ToggleGroupItem } from "../misc/ToggleGroup";
 
 export interface ComboEditorProps {
-  index: number;
+  /** Pool slot of the combo being edited, or undefined for one that doesn't
+   * exist on the device yet (see the draft note on the component). */
+  index?: number;
   combo: Combo;
   behaviors: GetBehaviorDetailsResponse[];
   layers: { id: number; name: string }[];
@@ -25,7 +27,7 @@ export interface ComboEditorProps {
    * key position. When absent, key positions are entered as text instead. */
   layoutKeys?: KeyPhysicalAttrs[];
   maxKeysPerCombo: number;
-  onApply: (index: number, combo: Combo) => void;
+  onApply: (combo: Combo) => void;
   onDelete?: (index: number) => void;
 }
 
@@ -72,6 +74,12 @@ function KeyPositionsTextInput({
 // the behavior. The layers bitmask is edited as one checkbox per layer (bit i ==
 // layer index i, matching the firmware's `layer_mask & BIT(layer)` test);
 // selecting none == mask 0 == active on all layers.
+//
+// With no `index` this is a draft: a combo the user is filling in that has no
+// pool slot yet. Deferring creation is what lets a new combo start empty — the
+// firmware rejects a combo with no key positions (`zmk_combos_set` requires
+// key_position_len >= 1) and needs a valid binding, so there is nothing it could
+// store until both are filled in. Apply is what creates it.
 export const ComboEditor = ({
   index,
   combo,
@@ -125,9 +133,9 @@ export const ComboEditor = ({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase opacity-70">
-          Edit combo #{index}
+          {index === undefined ? "New combo" : `Edit combo #${index}`}
         </h2>
-        {onDelete && (
+        {onDelete && index !== undefined && (
           <Button
             variant="ghost"
             size="sm"
@@ -155,7 +163,7 @@ export const ComboEditor = ({
           </div>
         ) : (
           <KeyPositionsTextInput
-            key={index}
+            key={index ?? "new"}
             initialValue={combo.keyPositions || []}
             onChange={setKeyPositions}
           />
@@ -167,14 +175,12 @@ export const ComboEditor = ({
         )}
       </div>
 
-      {binding && (
-        <BehaviorBindingPicker
-          binding={binding}
-          behaviors={behaviors}
-          layers={layers}
-          onBindingChanged={setBinding}
-        />
-      )}
+      <BehaviorBindingPicker
+        binding={binding}
+        behaviors={behaviors}
+        layers={layers}
+        onBindingChanged={setBinding}
+      />
 
       <Disclosure title="Advanced">
         <TextField
@@ -228,7 +234,7 @@ export const ComboEditor = ({
           if (!binding) {
             return;
           }
-          onApply(index, {
+          onApply({
             keyPositions,
             layers: layersMask,
             binding,
@@ -238,7 +244,7 @@ export const ComboEditor = ({
           });
         }}
       >
-        Apply
+        {index === undefined ? "Create" : "Apply"}
       </Button>
     </div>
   );
