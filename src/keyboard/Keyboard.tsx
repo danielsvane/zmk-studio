@@ -49,6 +49,7 @@ import { LockStateContext } from "../rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { BehaviourList } from "../behaviours/BehaviourList";
 import { BehaviourEditor } from "../behaviours/BehaviourEditor";
+import { defaultBehaviourName } from "../behaviours/behaviourNames";
 
 // The left sidebar (master list) on every editor page — Layers, Combos,
 // Behaviours. A fixed `w-72` so all three pages line up exactly; their `auto`
@@ -519,23 +520,26 @@ export default function Keyboard({ page }: { page: Page }) {
   // rejects an unknown kind with NO_SPACE. Adding a kind to the firmware pool +
   // ADDABLE_KINDS is all it takes to offer it — the config form renders
   // generically (M10).
+  //
+  // The kind is the only thing asked up front: the config *schema* comes back
+  // with the claimed slot, so there is no form to render until one exists (the
+  // opposite of a new combo, which the client can hold as a draft). The name
+  // isn't asked for either — the new behaviour gets a generated one
+  // (defaultBehaviourName) that the user edits in the form like any other field.
   const addCustomBehavior = useCallback(
     async (kind: string) => {
     if (!conn.conn) {
       return;
     }
 
-    const name = window.prompt(
-      `Name for the new ${kind} behavior:`,
-      kind === "hold-tap" ? "hrml" : ""
+    const displayName = defaultBehaviourName(
+      kind,
+      new Set((customBehaviors?.behaviors ?? []).map((b) => b.displayName))
     );
-    if (name === null) {
-      return; // cancelled
-    }
 
     const resp = await call_rpc(conn.conn, {
       behaviors: {
-        addCustomBehavior: { kind, displayName: name, config: [] },
+        addCustomBehavior: { kind, displayName, config: [] },
       },
     });
 
@@ -566,7 +570,7 @@ export default function Keyboard({ page }: { page: Page }) {
       window.alert("Failed to add the behavior.");
     }
     },
-    [conn, refreshBehaviors, setCustomBehaviors]
+    [conn, customBehaviors, refreshBehaviors, setCustomBehaviors]
   );
 
   // Delete a custom behaviour (M8: RAM-only until saved). Frees the pool slot;
