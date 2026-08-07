@@ -54,7 +54,6 @@ function scalePosition(
   const top = y * oneU;
   let transformOrigin = undefined;
   let transform = undefined;
-  const transformStyle = "preserve-3d";
 
   if (r) {
     const transformX = ((rx || x) - x) * oneU;
@@ -68,7 +67,6 @@ function scalePosition(
     left,
     transformOrigin,
     transform,
-    transformStyle,
   };
 }
 
@@ -84,25 +82,33 @@ export const PhysicalLayout = ({
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
+  // TODO: Add a bit of padding for rotation when supported
+  const width =
+    positions.map((k) => k.x + k.width).reduce((a, b) => Math.max(a, b), 0) *
+    oneU;
+  const height =
+    positions.map((k) => k.y + k.height).reduce((a, b) => Math.max(a, b), 0) *
+    oneU;
+
   // Without a click handler the layout is a static visualization (e.g. a combo
   // list preview): keys don't react to hover, aren't focusable, and don't lift.
   // Interactive layouts get the hover affordance: the key zooms (in Key) and
   // lifts forward so it sits above its neighbors rather than behind them.
   const interactive = !!onPositionClicked;
 
+  // The fit is measured against our unzoomed size (`width`/`height`), not the
+  // rendered element: CSS `zoom` scales the element's box for real, so reading
+  // it back would feed the next measurement its own output.
   useLayoutEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
-    const parent = element.parentElement;
+    const parent = ref.current?.parentElement;
     if (!parent) return;
 
     const calculateScale = () => {
       if (zoom === "auto") {
         const padding = Math.min(window.innerWidth, window.innerHeight) * 0.05; // Padding when in auto mode
         const newScale = Math.min(
-          parent.clientWidth / (element.clientWidth + 2 * padding),
-          parent.clientHeight / (element.clientHeight + 2 * padding),
+          parent.clientWidth / (width + 2 * padding),
+          parent.clientHeight / (height + 2 * padding),
         );
         setScale(newScale);
       } else {
@@ -116,55 +122,79 @@ export const PhysicalLayout = ({
       calculateScale();
     });
 
-    resizeObserver.observe(element);
     resizeObserver.observe(parent);
 
     return () => {
       resizeObserver.disconnect();
     };
-  }, [zoom]);
-
-  // TODO: Add a bit of padding for rotation when supported
-  const rightMost = positions
-    .map((k) => k.x + k.width)
-    .reduce((a, b) => Math.max(a, b), 0);
-  const bottomMost = positions
-    .map((k) => k.y + k.height)
-    .reduce((a, b) => Math.max(a, b), 0);
+  }, [zoom, width, height]);
 
   const positionItems = positions.map((p, idx) => (
-    <div className="absolute" style={scalePosition(p, oneU)}>
-      <div
-        key={p.id}
-        onClick={interactive ? () => onPositionClicked?.(idx) : undefined}
-        className={
-          "[transform:translateZ(0)] [backface-visibility:hidden] transition-transform duration-200" +
-          (interactive ? " hover:[transform:translateZ(100px)]" : "")
-        }
-      >
-        <Key
-          oneU={oneU}
-          interactive={interactive}
-          variant={keyVariant}
-          selected={idx === selectedPosition || !!selectedPositions?.includes(idx)}
-          {...p}
-        />
-      </div>
+    <div
+      key={p.id}
+      onClick={interactive ? () => onPositionClicked?.(idx) : undefined}
+      className={
+        "absolute" +
+        // The hovered key zooms (in Key), so it has to rise above its
+        // neighbors. `z-index` is animatable as an integer, so two keys
+        // transitioning in opposite directions swap over at the midpoint of the
+        // zoom rather than the moment the pointer moves — what lifting the key
+        // through a 3D `translateZ` used to buy. Doing it flat keeps the keys
+        // out of a 3D rendering context, which Gecko renders in its own local
+        // raster space and composites as plane-split polygons: blurred legends,
+        // unantialiased edges on the rotated keys, and neighbors visibly
+        // re-rasterizing as soon as one key left the shared plane.
+        // `z-0` matters: `z-index: auto` is a keyword, and would make the
+        // transition discrete.
+        (interactive
+          ? " z-0 transition-[z-index] duration-200 hover:z-10"
+          : "")
+      }
+      style={scalePosition(p, oneU)}
+    >
+      <Key
+        oneU={oneU}
+        interactive={interactive}
+        variant={keyVariant}
+        selected={idx === selectedPosition || !!selectedPositions?.includes(idx)}
+        {...p}
+      />
     </div>
   ));
 
   return (
+    // The zoomed layer sits in a box of its unzoomed size: `zoom` takes up real
+    // layout space where `transform: scale()` did not, and an auto-fit
+    // measuring a parent that its own output had resized would feed on itself.
+    // This keeps the footprint every caller has always laid out around.
+    //
+    // `zoom` grows the layer from its top-left, so the box is pulled back by
+    // half the growth to keep it centered on that footprint — where
+    // `transform: scale()` left it, its origin being the centre.
     <div
       className="relative"
       style={{
-        height: bottomMost * oneU + "px",
-        width: rightMost * oneU + "px",
-        transform: `scale(${scale})`,
-        transformStyle: "preserve-3d",
+        height: height + "px",
+        width: width + "px",
+        transform: `translate(${(width * (1 - scale)) / 2}px, ${
+          (height * (1 - scale)) / 2
+        }px)`,
       }}
       ref={ref}
     >
-      {positionItems}
+      <div
+        className="relative"
+        style={{
+          height: height + "px",
+          width: width + "px",
+          // `zoom`, not `transform: scale()`: it scales at layout time, so the
+          // legends are laid out and rasterized at their final size instead of
+          // being magnified from a 1x rendering.
+          zoom: scale,
+        }}
+      >
+        {positionItems}
+      </div>
     </div>
   );
 };
