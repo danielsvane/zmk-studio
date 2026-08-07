@@ -103,6 +103,8 @@ telling the user which screen/section they're on, go quiet.
   `data-focus-visible`); shared so everything rings identically.
 - `controlDisabled` — shared disabled treatment.
 - `controlSizeStyles` / `controlPadX` — per-size height+text / horizontal padding.
+  `controlPadX` is the **input-like** inset (Select trigger, TextField: `px-3`/`px-2`);
+  buttons run one step wider (`px-4`/`px-3`, private to `buttonStyles`).
 - `buttonStyles({variant, size, …})` — the button-like surface, reused by Button
   and anything that should look like a button.
 

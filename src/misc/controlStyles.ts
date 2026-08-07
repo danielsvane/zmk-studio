@@ -78,7 +78,7 @@ export const menuItem = cx(
 );
 
 const base = cx(
-  "inline-flex items-center justify-center gap-1.5 font-medium select-none cursor-pointer transition-[background-color,filter,color]",
+  "inline-flex items-center justify-center gap-2 font-medium select-none cursor-pointer transition-[background-color,filter,color]",
   controlFocusRing,
   controlDisabled
 );
@@ -130,8 +130,11 @@ export const controlSizeStyles: Record<ButtonSize, string> = {
   md: "h-control text-base [&_svg]:size-4",
   sm: "h-control text-xs [&_svg]:size-3.5",
 };
-/** Horizontal padding for a control showing a text label. */
+/** Horizontal padding for an *input-like* control (Select trigger, TextField). */
 export const controlPadX: Record<ButtonSize, string> = { md: "px-3", sm: "px-2" };
+// Buttons sit one step wider than the input-like controls: a label is content
+// that should be hugged with air, where an input's padding is only a text inset.
+const buttonPadX: Record<ButtonSize, string> = { md: "px-4", sm: "px-3" };
 // Icon-only buttons stay square at the shared hit-target size.
 const iconWidth: Record<ButtonSize, string> = { md: "w-control", sm: "w-control" };
 
@@ -161,6 +164,6 @@ export function buttonStyles({
     !inGroup && "rounded",
     variants[variant],
     controlSizeStyles[size],
-    variant === "link" ? null : iconOnly ? iconWidth[size] : controlPadX[size]
+    variant === "link" ? null : iconOnly ? iconWidth[size] : buttonPadX[size]
   );
 }
