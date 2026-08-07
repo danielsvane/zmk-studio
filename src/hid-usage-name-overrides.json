@@ -74,13 +74,14 @@
     "231": { "short": "GUI", "med": "R GUI", "long": "Right GUI", "icon": "command" }
   },
   "12": {
-    "111": { "short": "🔆" },
-    "112": { "short": "🔅" },
-    "181": { "short": "⇥" },
-    "182": { "short": "⇤" },
-    "205": { "short": "⏯️" },
-    "226": { "short": "🔇" },
-    "233": { "short": "🔊", "icon": "volume-2" },
-    "234": { "short": "🔉", "icon": "volume-1" }
+    "111": { "short": "Bright+", "med": "Brightness Up", "icon": "sun" },
+    "112": { "short": "Bright-", "med": "Brightness Down", "icon": "sun-dim" },
+    "181": { "short": "Next", "med": "Next Track", "icon": "skip-forward" },
+    "182": { "short": "Prev", "med": "Prev Track", "icon": "skip-back" },
+    "183": { "short": "Stop", "icon": "square" },
+    "205": { "short": "Play/Pause", "icon": "play" },
+    "226": { "short": "Mute", "icon": "volume-x" },
+    "233": { "short": "Vol+", "med": "Volume Up", "icon": "volume-2" },
+    "234": { "short": "Vol-", "med": "Volume Down", "icon": "volume-1" }
   }
 }

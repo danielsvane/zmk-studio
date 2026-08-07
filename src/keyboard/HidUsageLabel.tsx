@@ -8,8 +8,15 @@ import {
   CornerDownLeft,
   Delete,
   Option,
+  Play,
+  SkipBack,
+  SkipForward,
+  Square,
+  Sun,
+  SunDim,
   Volume1,
   Volume2,
+  VolumeX,
 } from "lucide-react";
 import {
   hid_usage_get_labels,
@@ -64,8 +71,18 @@ const ICONS: Record<string, IconSpec> = {
   // mirror it horizontally to get the ⌦ shape.
   "delete-forward": { Icon: Delete, className: "-scale-x-100" },
   option: { Icon: Option },
+  // Consumer page: transport, volume and brightness. Play/Pause takes the bare
+  // play triangle — lucide has no combined ⏯ glyph, and two half-size icons
+  // side by side is unreadable in a key-sized cell.
+  play: { Icon: Play },
+  "skip-back": { Icon: SkipBack },
+  "skip-forward": { Icon: SkipForward },
+  square: { Icon: Square },
+  sun: { Icon: Sun },
+  "sun-dim": { Icon: SunDim },
   "volume-1": { Icon: Volume1 },
   "volume-2": { Icon: Volume2 },
+  "volume-x": { Icon: VolumeX },
 };
 
 function remove_prefix(s?: string) {
