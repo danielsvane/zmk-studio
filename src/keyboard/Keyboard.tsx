@@ -292,6 +292,14 @@ export default function Keyboard({ page }: { page: Page }) {
   //   [undoRedo, selectedPhysicalLayoutIndex, setSelectedPhysicalLayoutIndex]
   // );
 
+  // Clicking the selected key again clears the selection and closes the binding
+  // drawer, the same toggle the combo key-position picker uses.
+  const toggleSelectedKeyPosition = useCallback((keyPosition: number) => {
+    setSelectedKeyPosition((prev) =>
+      prev === keyPosition ? undefined : keyPosition
+    );
+  }, []);
+
   const doUpdateBinding = useCallback(
     (binding: BehaviorBinding) => {
       if (!keymap || selectedKeyPosition === undefined) {
@@ -1246,7 +1254,7 @@ export default function Keyboard({ page }: { page: Page }) {
             }))}
             selectedLayerIndex={selectedLayerIndex}
             selectedKeyPosition={selectedKeyPosition}
-            onKeyPositionClicked={setSelectedKeyPosition}
+            onKeyPositionClicked={toggleSelectedKeyPosition}
           />
         </div>
       )}
