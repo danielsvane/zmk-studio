@@ -1,11 +1,15 @@
 /**
- * Plain-language help for the behaviour config fields whose names don't explain
- * themselves, shown in an `InfoTip` next to the field's label.
+ * Plain-language help for the settings whose names don't explain themselves,
+ * shown in an `InfoTip` next to the field's label.
  *
  * Condensed from the ZMK docs, keyed by behaviour kind and then by the `key` the
  * firmware reports for the field. A field with no entry (and any kind with no
  * table) simply gets no info icon, so this never has to keep up with the
  * firmware's field list. It only covers the settings people actually trip over.
+ *
+ * "combo" is in here as a kind too. Combos aren't custom behaviours and their
+ * editor is hand-written rather than schema-driven, but the copy is the same job
+ * and belongs with the rest of it; its keys are the `Combo` field names.
  *
  * House style for this copy: talk to the reader, say what they get rather than
  * what the firmware "resolves to", and keep it to short sentences. No em dashes.
@@ -14,6 +18,7 @@
 /** The ZMK docs page for a behaviour kind. */
 const DOCS_URL: Record<string, string> = {
   "hold-tap": "https://zmk.dev/docs/keymaps/behaviors/hold-tap",
+  combo: "https://zmk.dev/docs/keymaps/combos",
 };
 
 interface HelpEntry {
@@ -59,6 +64,21 @@ const FIELD_HELP: Record<string, Record<string, HelpEntry>> = {
     retro_tap: {
       anchor: "retro-tap",
       text: "Hold the key, press nothing else, and you still get the tap when you let go. The catch is that the hold won't activate until you press another key, so things like shift-click stop working.",
+    },
+  },
+  // The combos page has one heading for the lot, so all three land on it.
+  combo: {
+    timeoutMs: {
+      anchor: "configuration",
+      text: "How long you have, counting from the first key going down, to get the rest of the combo pressed. Miss the window and the keys just type normally. A short timeout keeps combos out of your way while you type, a longer one makes them easier to hit. ZMK defaults to 50 ms.",
+    },
+    requirePriorIdleMs: {
+      anchor: "configuration",
+      text: "If you pressed another key less than this long ago, the combo won't fire and its keys type normally. It's there to stop combos going off in the middle of fast typing. Modifiers don't count, so holding shift won't block one. Set it to -1 to turn it off.",
+    },
+    slowRelease: {
+      anchor: "configuration",
+      text: "Normally the combo lets go as soon as you release any one of its keys. Turn this on and it stays held until you've released all of them. Worth it when the combo triggers something you hold, like a modifier or a layer.",
     },
   },
 };

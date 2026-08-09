@@ -8,11 +8,13 @@ import type { BehaviorBinding } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import type { KeyPhysicalAttrs } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 
 import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
+import { fieldHelp } from "../behaviours/fieldHelp";
 import { KeyPositionPicker } from "../keyboard/KeyPositionPicker";
 import { Button } from "../misc/Button";
 import { Checkbox } from "../misc/Checkbox";
 import { Disclosure } from "../misc/Disclosure";
 import { GroupLabel } from "../misc/Field";
+import { InfoTip } from "../misc/InfoTip";
 import { TextField } from "../misc/TextField";
 import { ToggleGroup, ToggleGroupItem } from "../misc/ToggleGroup";
 
@@ -29,6 +31,17 @@ export interface ComboEditorProps {
   maxKeysPerCombo: number;
   onApply: (combo: Combo) => void;
   onDelete?: (index: number) => void;
+}
+
+// The label-row info tip for one of the advanced combo settings, when we have
+// help copy for it. `subject` names it for screen readers, so it's the label
+// without its unit ("Timeout", not "Timeout (ms)"). Mirrors `fieldInfo` in
+// ConfigFieldEditor, which does the same for the behaviour form's fields.
+function comboInfo(field: string, subject: string) {
+  const help = fieldHelp("combo", field);
+  return help ? (
+    <InfoTip subject={subject} description={help.text} href={help.href} />
+  ) : undefined;
 }
 
 // Parse a comma/space separated list of key positions into a number array,
@@ -186,6 +199,7 @@ export const ComboEditor = ({
         <TextField
           inputClassName="max-w-sm"
           label="Timeout (ms)"
+          info={comboInfo("timeoutMs", "Timeout")}
           type="number"
           inputProps={{ min: 1 }}
           value={String(timeoutMs)}
@@ -195,6 +209,7 @@ export const ComboEditor = ({
         <TextField
           inputClassName="max-w-sm"
           label="Require prior idle (ms)"
+          info={comboInfo("requirePriorIdleMs", "Require prior idle")}
           description="-1 = disabled"
           type="number"
           inputProps={{ min: -1 }}
@@ -220,9 +235,16 @@ export const ComboEditor = ({
           ))}
         </ToggleGroup>
 
-        <Checkbox isSelected={slowRelease} onChange={setSlowRelease}>
-          Slow release
-        </Checkbox>
+        {/* The info tip sits beside the checkbox, not inside it: the whole
+            checkbox row is a hit target, so a nested button would toggle the
+            value on the way to the tip. The row also stops the checkbox
+            stretching to the column's full width. */}
+        <div className="flex items-center gap-1">
+          <Checkbox isSelected={slowRelease} onChange={setSlowRelease}>
+            Slow release
+          </Checkbox>
+          {comboInfo("slowRelease", "Slow release")}
+        </div>
       </Disclosure>
 
       <Button
