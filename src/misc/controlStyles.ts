@@ -64,6 +64,19 @@ export const popoverSurface = cx(
   "bg-base-100 text-base-content shadow-lg"
 );
 
+// The small floating *explanation* surface: hover tooltips (`Tooltip`) and the
+// click-to-open info bubbles (`InfoTip`) share it so the two read as one thing.
+// Sized for a sentence rather than a word: capped at `max-w-xs` so a long label
+// wraps instead of running off, `whitespace-pre-line` so the copy can use
+// newlines, and the standard `base-line` hairline, because a floating surface
+// with no edge dissolves into the base-200/300 panels it covers. Deliberately
+// NOT `popoverSurface`: that floors its width at the trigger's, which is wrong
+// for a bubble hanging off a 24px icon.
+export const tooltipSurface = cx(
+  "max-w-xs whitespace-pre-line rounded border border-base-line",
+  "bg-base-200 px-3 py-2 text-sm text-base-content shadow-md"
+);
+
 // A menu/action row — the menu-item sibling of `buttonStyles`: one `h-control`
 // (48px) hit target, left-aligned, with room for a leading icon. Used by
 // `DropdownMenu`'s items. Hover/keyboard-focus use the app's standard "lighten"
