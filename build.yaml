@@ -1,0 +1,4 @@
+  # Wipes the settings partition (BLE bonds, Studio edits). Flash it, let it
+  # boot for a few seconds, then flash the real firmware back.
+  - board: xiao_ble/nrf52840/zmk
+    shield: settings_reset
