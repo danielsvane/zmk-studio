@@ -149,6 +149,7 @@ wired for you):
 | Filtering dropdown (long list) | `Combobox` (`Select.tsx`) |
 | Segmented single/multi select | `ToggleGroup` + `ToggleGroupItem` (`ToggleGroup.tsx`) |
 | Boolean | `Checkbox` (`Checkbox.tsx`) |
+| Explain a setting the label can't | `InfoTip` (`InfoTip.tsx`) |
 | Action | `Button` (`Button.tsx`) |
 | Collapsible section (advanced/secondary fields) | `Disclosure` (`Disclosure.tsx`) |
 | Two-region picker (controls + canvas) | `PickerShell` (`PickerShell.tsx`) |
@@ -188,6 +189,14 @@ affordance; ghost is transparent too but carries the standard lighten-veil hover
 `Field` must render **inside** the react-aria provider (`RACTextField`,
 `RACSelect`, …) — that's where the aria wiring context exists. The provider
 carries `fieldColumn`; `Field` just orders the pieces within it.
+
+**Explaining a setting.** When the label can't carry the explanation (the ZMK
+behaviour configs are full of these), pass an `<InfoTip>` to the field's `info`
+prop — `Field`/`TextField`/`Select` put it on the label row *beside* the
+`<label>`, never inside it: a button nested in a label also activates the control
+the label points at. Controls that aren't field providers (`Checkbox`, a
+`GroupLabel`ed group) place it themselves in a `flex items-center gap-1` row. The
+copy lives with the feature, not the component — see `behaviours/fieldHelp.ts`.
 
 ### Raw inputs not yet migrated
 

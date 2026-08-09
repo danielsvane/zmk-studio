@@ -38,6 +38,8 @@ export interface TextFieldProps
   extends Omit<RACTextFieldProps, "children" | "className"> {
   /** Field label rendered above the input. */
   label?: ReactNode;
+  /** Trailing element on the label row — an `InfoTip` (see {@link Field}). */
+  info?: ReactNode;
   /** Muted helper text below the input. */
   description?: ReactNode;
   /** Validation message; shown only when the field is invalid. */
@@ -59,6 +61,7 @@ export interface TextFieldProps
 
 export function TextField({
   label,
+  info,
   description,
   errorMessage,
   size = "md",
@@ -73,6 +76,7 @@ export function TextField({
     <RACTextField className={cx(fieldColumn, className)} {...props}>
       <Field
         label={label}
+        info={info}
         description={description}
         errorMessage={errorMessage}
         size={size}

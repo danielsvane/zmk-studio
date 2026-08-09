@@ -258,6 +258,8 @@ export interface SelectProps<T extends object>
   sections?: Array<SelectSection<T>>;
   /** Field label rendered above the trigger. */
   label?: ReactNode;
+  /** Trailing element on the label row — an `InfoTip` (see {@link Field}). */
+  info?: ReactNode;
   /** Muted helper text below the trigger. */
   description?: ReactNode;
   /** Validation message; shown only when the field is invalid. */
@@ -284,6 +286,7 @@ export function Select<T extends object>({
   items,
   sections,
   label,
+  info,
   description,
   errorMessage,
   size = "md",
@@ -303,6 +306,7 @@ export function Select<T extends object>({
     <RACSelect className={cx(fieldColumn, className)} {...props}>
       <Field
         label={label}
+        info={info}
         description={description}
         errorMessage={errorMessage}
         size={size}

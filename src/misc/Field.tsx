@@ -121,6 +121,12 @@ export const fieldColumn = "flex flex-col gap-1.5";
 export interface FieldProps {
   /** Label rendered above the control. Omit for an `aria-label`-only field. */
   label?: ReactNode;
+  /**
+   * Small trailing element on the label row — in practice an `InfoTip`
+   * explaining the setting. Sits *beside* the `<label>`, never inside it: a
+   * button nested in a label also activates the control the label points at.
+   */
+  info?: ReactNode;
   /** Muted helper text below the control. */
   description?: ReactNode;
   /** Validation message; shown only when the field is invalid. */
@@ -146,6 +152,7 @@ export interface FieldProps {
  */
 export function Field({
   label,
+  info,
   description,
   errorMessage,
   size = "md",
@@ -153,7 +160,12 @@ export function Field({
 }: FieldProps) {
   return (
     <>
-      {label && <FieldLabel size={size}>{label}</FieldLabel>}
+      {label && (
+        <div className="flex items-center gap-1">
+          <FieldLabel size={size}>{label}</FieldLabel>
+          {info}
+        </div>
+      )}
       {children}
       {description && <FieldDescription>{description}</FieldDescription>}
       <FieldErrorMessage>{errorMessage}</FieldErrorMessage>

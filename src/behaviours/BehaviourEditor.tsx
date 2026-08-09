@@ -10,6 +10,7 @@ import { Button } from "../misc/Button";
 import { Select } from "../misc/Select";
 import { BehaviourNameEditor } from "./BehaviourNameEditor";
 import { ConfigFieldEdit } from "./ConfigFieldEditor";
+import { fieldHelp } from "./fieldHelp";
 
 export interface BehaviourEditorProps {
   behaviour: CustomBehavior;
@@ -32,7 +33,8 @@ export interface BehaviourEditorProps {
 // there's no validation that spans them. Mirrors the combo editor's header
 // (title + ghost Delete) and field rhythm (gap-4) so the two pages feel the
 // same. The config fields render generically from their schema via
-// ConfigFieldEdit, so adding a behaviour kind never touches this component.
+// ConfigFieldEdit, so adding a behaviour kind never touches this component —
+// only the optional help copy (see `fieldHelp`) is written per kind.
 export const BehaviourEditor = ({
   behaviour,
   layoutKeys,
@@ -72,7 +74,7 @@ export const BehaviourEditor = ({
       <Select
         label="Type"
         className="max-w-sm"
-        description="Type can't be changed — create a new behavior and delete the old one if another type is needed."
+        description="Type can't be changed. Create a new behavior and delete this one if you need a different type."
         items={[{ id: behaviour.kind, name: behaviour.kind }]}
         selectedKey={behaviour.kind}
         isDisabled
@@ -83,6 +85,7 @@ export const BehaviourEditor = ({
           key={field.key}
           field={field}
           layoutKeys={layoutKeys}
+          help={fieldHelp(behaviour.kind, field.key)}
           onCommit={(value) =>
             onApplyField(field.key, value, field.value ?? {})
           }

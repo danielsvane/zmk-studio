@@ -8,7 +8,9 @@ import { FieldLabel, GroupLabel } from "../misc/Field";
 import { TextField } from "../misc/TextField";
 import { Select } from "../misc/Select";
 import { Checkbox } from "../misc/Checkbox";
+import { InfoTip } from "../misc/InfoTip";
 import { KeyPositionPicker } from "../keyboard/KeyPositionPicker";
+import type { FieldHelp } from "./fieldHelp";
 
 /**
  * Generic, behaviour-kind-agnostic renderer for one custom-behaviour
@@ -99,10 +101,24 @@ export interface ConfigFieldEditProps {
   /** Physical-layout keys (index = position number) for the key-position
    * picker. When absent, a key-position field falls back to a text editor. */
   layoutKeys?: KeyPhysicalAttrs[];
+  /** What this setting does (see `fieldHelp`); shown in an info tip beside the
+   * label. Resolved by the caller, which knows the behaviour kind. */
+  help?: FieldHelp;
+}
+
+/** The label-row info tip for a field, when we have help copy for it. */
+function fieldInfo(field: ConfigField, help?: FieldHelp) {
+  return help ? (
+    <InfoTip
+      subject={field.displayName || field.key}
+      description={help.text}
+      href={help.href}
+    />
+  ) : undefined;
 }
 
 /** Editable number input for an int-range field; commits on blur / Enter. */
-function IntField({ field, onCommit }: ConfigFieldEditProps) {
+function IntField({ field, onCommit, help }: ConfigFieldEditProps) {
   const current = field.value?.intValue ?? 0;
   const min = field.schema?.intRange?.min;
   const max = field.schema?.intRange?.max;
@@ -131,6 +147,7 @@ function IntField({ field, onCommit }: ConfigFieldEditProps) {
   return (
     <TextField
       label={field.displayName || field.key}
+      info={fieldInfo(field, help)}
       description={renderSchemaHint(field)}
       type="number"
       inputClassName="max-w-[10rem]"
@@ -150,7 +167,7 @@ function IntField({ field, onCommit }: ConfigFieldEditProps) {
 }
 
 /** Pick-one editor for an enum field; commits immediately on change. */
-function EnumField({ field, onCommit }: ConfigFieldEditProps) {
+function EnumField({ field, onCommit, help }: ConfigFieldEditProps) {
   const names = field.schema?.enumOptions?.names ?? [];
   const value = field.value?.enumValue ?? 0;
   const items = names.map((name, id) => ({ id, name }));
@@ -158,6 +175,7 @@ function EnumField({ field, onCommit }: ConfigFieldEditProps) {
   return (
     <Select
       label={field.displayName || field.key}
+      info={fieldInfo(field, help)}
       triggerClassName="w-full max-w-sm"
       items={items}
       selectedKey={value}
@@ -166,15 +184,24 @@ function EnumField({ field, onCommit }: ConfigFieldEditProps) {
   );
 }
 
-/** Boolean toggle; the field's display name is the checkbox label. */
-function BoolField({ field, onCommit }: ConfigFieldEditProps) {
+/**
+ * Boolean toggle; the field's display name is the checkbox label. The info tip
+ * sits in a row beside the checkbox rather than inside it — the whole checkbox
+ * row is a hit target, so a nested button would toggle the value on the way to
+ * the tooltip. (The row also stops the checkbox from stretching to the column's
+ * full width, keeping its hit target to the box and its label.)
+ */
+function BoolField({ field, onCommit, help }: ConfigFieldEditProps) {
   return (
-    <Checkbox
-      isSelected={field.value?.boolValue ?? false}
-      onChange={(selected) => onCommit({ boolValue: selected })}
-    >
-      {field.displayName || field.key}
-    </Checkbox>
+    <div className="flex items-center gap-1">
+      <Checkbox
+        isSelected={field.value?.boolValue ?? false}
+        onChange={(selected) => onCommit({ boolValue: selected })}
+      >
+        {field.displayName || field.key}
+      </Checkbox>
+      {fieldInfo(field, help)}
+    </div>
   );
 }
 
@@ -184,7 +211,7 @@ function BoolField({ field, onCommit }: ConfigFieldEditProps) {
  * to click on. Keeps its own raw-text buffer so typing "1, 2," doesn't get
  * reformatted mid-edit, and emits the parsed list on commit.
  */
-function PositionsTextField({ field, onCommit }: ConfigFieldEditProps) {
+function PositionsTextField({ field, onCommit, help }: ConfigFieldEditProps) {
   const current = field.value?.positions?.positions ?? [];
   const max = field.schema?.positions?.max;
   const [text, setText] = useState(current.join(", "));
@@ -209,6 +236,7 @@ function PositionsTextField({ field, onCommit }: ConfigFieldEditProps) {
   return (
     <TextField
       label={field.displayName || field.key}
+      info={fieldInfo(field, help)}
       description={renderSchemaHint(field)}
       placeholder="e.g. 0, 1, 2"
       value={text}
@@ -229,16 +257,24 @@ function PositionsTextField({ field, onCommit }: ConfigFieldEditProps) {
  * a layout, falling back to {@link PositionsTextField} otherwise. Rendered as a
  * full-width labelled group (the picker has its own selection counter).
  */
-function PositionsField({ field, onCommit, layoutKeys }: ConfigFieldEditProps) {
+function PositionsField({
+  field,
+  onCommit,
+  layoutKeys,
+  help,
+}: ConfigFieldEditProps) {
   const labelId = useId();
 
   if (!layoutKeys || layoutKeys.length === 0) {
-    return <PositionsTextField field={field} onCommit={onCommit} />;
+    return <PositionsTextField field={field} onCommit={onCommit} help={help} />;
   }
 
   return (
     <div className="flex flex-col gap-1.5">
-      <GroupLabel id={labelId}>{field.displayName || field.key}</GroupLabel>
+      <div className="flex items-center gap-1">
+        <GroupLabel id={labelId}>{field.displayName || field.key}</GroupLabel>
+        {fieldInfo(field, help)}
+      </div>
       <div role="group" aria-labelledby={labelId}>
         <KeyPositionPicker
           layoutKeys={layoutKeys}
@@ -256,22 +292,28 @@ export function ConfigFieldEdit({
   field,
   onCommit,
   layoutKeys,
+  help,
 }: ConfigFieldEditProps) {
   const { value, schema } = field;
 
   if (schema?.positions) {
     return (
-      <PositionsField field={field} onCommit={onCommit} layoutKeys={layoutKeys} />
+      <PositionsField
+        field={field}
+        onCommit={onCommit}
+        layoutKeys={layoutKeys}
+        help={help}
+      />
     );
   }
   if (schema?.enumOptions && value?.enumValue !== undefined) {
-    return <EnumField field={field} onCommit={onCommit} />;
+    return <EnumField field={field} onCommit={onCommit} help={help} />;
   }
   if (schema?.boolSchema && value?.boolValue !== undefined) {
-    return <BoolField field={field} onCommit={onCommit} />;
+    return <BoolField field={field} onCommit={onCommit} help={help} />;
   }
   if (value?.intValue !== undefined) {
-    return <IntField field={field} onCommit={onCommit} />;
+    return <IntField field={field} onCommit={onCommit} help={help} />;
   }
 
   // Not yet editable (behaviour-ref): show the read-only value.
