@@ -56,7 +56,10 @@ export function InfoTip({ description, subject, href }: InfoTipProps) {
       >
         <Info aria-hidden className="size-4" />
       </RACButton>
-      <Popover offset={5} className={tooltipSurface}>
+      {/* Above the icon, not below it: the icon sits on a field's label row, so
+          the default bottom placement drops the bubble straight over the input
+          it's describing. React-aria flips it back down if there's no room. */}
+      <Popover placement="top" offset={5} className={tooltipSurface}>
         <Dialog aria-label={subject} className="outline-none">
           {description}
           {href && (
