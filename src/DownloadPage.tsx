@@ -61,27 +61,44 @@ const DownloadLinks: Record<string, DownloadLink> = {
     name: "macOS",
     urlPattern: /.*\.dmg/,
   },
+  // Both architectures land in one release and the first matching asset wins, so
+  // these have to name the arch — otherwise an x86 visitor gets the aarch64 build.
   linux_appimage: {
     name: "Linux (AppImage)",
-    urlPattern: /.*\.AppImage/,
+    urlPattern: /.*amd64\.AppImage/,
   },
   linux_deb: {
     name: "Linux (deb)",
-    urlPattern: /.*\.deb/,
+    urlPattern: /.*amd64\.deb/,
+  },
+  linux_appimage_arm64: {
+    name: "Linux arm64 (AppImage)",
+    urlPattern: /.*aarch64\.AppImage/,
+  },
+  linux_deb_arm64: {
+    name: "Linux arm64 (deb)",
+    urlPattern: /.*arm64\.deb/,
   },
 };
 
 const PlatformLinks: Record<Platform, DownloadLink[]> = {
   windows: [DownloadLinks.windows_exe, DownloadLinks.windows_msi],
   mac: [DownloadLinks.macos],
-  linux: [DownloadLinks.linux_appimage, DownloadLinks.linux_deb],
+  linux: [
+    DownloadLinks.linux_appimage,
+    DownloadLinks.linux_deb,
+    DownloadLinks.linux_appimage_arm64,
+    DownloadLinks.linux_deb_arm64,
+  ],
   ios: [],
   android: [],
   unknown: [],
 };
 
 const ReleaseAssets = releaseData.assets.map((asset) => asset.browser_download_url);
-const ReleaseVersion = releaseData.tag_name;
+// The rolling desktop release is tagged `latest`, which says nothing useful; its
+// title carries the version and the commit it was built from.
+const ReleaseVersion = releaseData.name || releaseData.tag_name;
 
 function detectPlatform(): Platform {
   if (typeof window === "undefined") return "unknown";

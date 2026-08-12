@@ -138,12 +138,15 @@ jobs:
         name: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # The APPLE_* vars are deliberately absent. A missing secret still defines
+          # the variable as an empty string, and tauri treats set-but-empty as "sign
+          # this", so it ran `security import` on an empty certificate and died with
+          # SecKeychainItemImport. Unlike the Windows steps there is no `if` to hang
+          # this on — an env key can't be conditionally omitted — so with no Apple
+          # certificates to offer, the whole block goes. tauri.conf.json's
+          # signingIdentity "-" then ad-hoc signs the bundle. Restore
+          # APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
+          # APPLE_ID, APPLE_PASSWORD and APPLE_TEAM_ID together to sign and notarize.
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -162,6 +165,49 @@ jobs:
             zmk-studio/src-tauri/target/*/release/bundle/**/*.app
             zmk-studio/src-tauri/target/release/bundle/**/*.msi
             zmk-studio/src-tauri/target/release/bundle/**/*.exe
+  # A rolling `latest` release, so /download always offers the desktop build that
+  # matches the deployed site. Doing it in one job rather than from the matrix keeps
+  # the four platforms from racing each other to create the tag. It waits on every
+  # platform: a partial set would leave dead links on the download page, so a single
+  # platform failure keeps the previous release in place instead.
+  publish-latest:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/customkeyboards'
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: publish the rolling latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Only the installers DownloadPage matches on — .app is a directory tree
+          # that upload-artifact flattened and nothing consumes.
+          mapfile -d '' assets < <(find artifacts -type f \
+            \( -name '*.deb' -o -name '*.AppImage' -o -name '*.dmg' \
+               -o -name '*.msi' -o -name '*.exe' \) -print0)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "::error::no installers among the downloaded artifacts"
+            exit 1
+          fi
+          printf 'publishing %s\n' "${assets[@]}"
+
+          # Recreate rather than `upload --clobber`: after a version bump the old
+          # installers would survive under their old names, and the download page
+          # serves whichever asset matches its extension pattern first.
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create latest \
+            --target "$GITHUB_SHA" \
+            --title "$(node -p "require('./package.json').version") (${GITHUB_SHA::7})" \
+            --notes "Desktop build of the \`customkeyboards\` branch, replaced on every push. Windows installers are unsigned." \
+            "${assets[@]}"
+
   deploy-netlify:
     if: github.event_name == 'release'
     needs: publish-tauri
