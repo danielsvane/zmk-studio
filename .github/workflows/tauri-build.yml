@@ -28,20 +28,48 @@ jobs:
             args: ""
 
     runs-on: ${{ matrix.platform }}
+    env:
+      # This fork has no Azure Trusted Signing credentials, so the Windows signing
+      # steps stay off and the .msi/.exe ship unsigned. Adding the AZURE_* secrets
+      # turns the whole signing path back on with no workflow change. `secrets` is
+      # not available in a step `if`, hence the hop through a job-level env var.
+      AZURE_SIGNING: ${{ secrets.AZURE_CLIENT_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: zmk-studio
+
+      # package.json takes the ts-client as `file:../zmk-studio-ts-client`, so it has
+      # to sit next to the checkout — hence both repos land in subdirectories. npm
+      # only symlinks that path, so the ts-client is built explicitly further down.
+      - uses: actions/checkout@v4
+        with:
+          repository: danielsvane/zmk-studio-ts-client
+          ref: customkeyboards
+          submodules: recursive
+          path: zmk-studio-ts-client
 
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-24.04' || matrix.platform == 'ubuntu-24.04-arm' # This must match the platform value defined above.
         run: |
           sudo apt-get update
           sudo apt-get install -y libappindicator3-dev librsvg2-dev libudev-dev patchelf \
+            protobuf-compiler \
             libwebkit2gtk-4.1-0=2.44.0-2 \
             libwebkit2gtk-4.1-dev=2.44.0-2 \
             libjavascriptcoregtk-4.1-0=2.44.0-2 \
             libjavascriptcoregtk-4.1-dev=2.44.0-2 \
             gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
             gir1.2-webkit2-4.1=2.44.0-2
+
+      # protoc regenerates the ts-client's protobuf sources, which aren't committed.
+      - name: install protoc (macos only)
+        if: matrix.platform == 'macos-latest'
+        run: brew install protobuf
+
+      - name: install protoc (windows only)
+        if: matrix.platform == 'windows-latest'
+        run: choco install protoc -y
 
       - name: Get release
         id: get_release
@@ -51,12 +79,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: install dependencies (windows only)
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-latest' && env.AZURE_SIGNING != ''
+        working-directory: zmk-studio # signCommand resolves the dlib relative to src-tauri.
         run: |
           nuget.exe install Microsoft.Trusted.Signing.Client -Version 1.0.53 -x
 
       - name: Set up Windows Kit into PATH (windows only)
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-latest' && env.AZURE_SIGNING != ''
         run: |
           echo "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.26100.0\x64\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
@@ -65,6 +94,9 @@ jobs:
         with:
           node-version: lts/*
           cache: "npm" # Set this to npm, yarn or pnpm.
+          cache-dependency-path: |
+            zmk-studio/package-lock.json
+            zmk-studio-ts-client/package-lock.json
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
@@ -75,14 +107,29 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./src-tauri -> target"
+          workspaces: "./zmk-studio/src-tauri -> target"
+
+      # Its postinstall regenerates the protobuf sources and compiles lib/, which the
+      # frontend's tsc step imports. Without this the build fails on unresolved
+      # `@zmkfirmware/zmk-studio-ts-client/*` imports.
+      - name: build ts-client
+        working-directory: zmk-studio-ts-client
+        run: npm install
 
       - name: install frontend dependencies
         # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
+        working-directory: zmk-studio
         run: npm ci
 
+      - name: drop the Windows signCommand (no signing credentials)
+        if: matrix.platform == 'windows-latest' && env.AZURE_SIGNING == ''
+        working-directory: zmk-studio/src-tauri
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'),f='tauri.conf.json',c=JSON.parse(fs.readFileSync(f,'utf8'));delete c.bundle.windows.signCommand;fs.writeFileSync(f,JSON.stringify(c,null,2)+'\n')"
+
       - uses: azure/login@v2
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-latest' && env.AZURE_SIGNING != ''
         with:
           enable-AzPSSession: true
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
@@ -101,6 +148,7 @@ jobs:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         with:
+          projectPath: zmk-studio
           releaseId: ${{ steps.get_release.outputs.id }}
           args: ${{ matrix.args }}
 
@@ -108,12 +156,12 @@ jobs:
         with:
           name: zmk-studio-${{ matrix.name }}
           path: |
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.AppImage
-            src-tauri/target/*/release/bundle/**/*.dmg
-            src-tauri/target/*/release/bundle/**/*.app
-            src-tauri/target/release/bundle/**/*.msi
-            src-tauri/target/release/bundle/**/*.exe
+            zmk-studio/src-tauri/target/release/bundle/**/*.deb
+            zmk-studio/src-tauri/target/release/bundle/**/*.AppImage
+            zmk-studio/src-tauri/target/*/release/bundle/**/*.dmg
+            zmk-studio/src-tauri/target/*/release/bundle/**/*.app
+            zmk-studio/src-tauri/target/release/bundle/**/*.msi
+            zmk-studio/src-tauri/target/release/bundle/**/*.exe
   deploy-netlify:
     if: github.event_name == 'release'
     needs: publish-tauri
