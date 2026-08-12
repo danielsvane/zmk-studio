@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Button, ToggleButton, ButtonGroup } from "./Button";
+import { Tooltip } from "./Tooltip";
 
 const meta = {
   title: "Misc/Button",
@@ -20,7 +21,7 @@ const meta = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "ghost", "link"],
+      options: ["primary", "secondary", "tertiary", "ghost", "link"],
     },
     size: { control: "inline-radio", options: ["sm", "md"] },
     iconPosition: { control: "inline-radio", options: ["start", "end"] },
@@ -53,14 +54,54 @@ export const Playground: Story = {
   args: { variant: "primary" },
 };
 
+/** Every variant in `controlStyles.ts`; add one there and both stories pick it up. */
+const VARIANTS = [
+  "primary",
+  "secondary",
+  "tertiary",
+  "ghost",
+  "link",
+  "danger",
+] as const;
+
 export const Variants: Story = {
   render: () => (
     <Row>
-      <Button variant="primary">Primary</Button>
-      <Button variant="secondary">Secondary</Button>
-      <Button variant="ghost">Ghost</Button>
-      <Button variant="link">Link</Button>
+      {VARIANTS.map((variant) => (
+        <Button key={variant} variant={variant}>
+          {variant[0].toUpperCase() + variant.slice(1)}
+        </Button>
+      ))}
     </Row>
+  ),
+};
+
+/**
+ * Why `tertiary` exists: `secondary`'s fill *is* `base-200`, the modal/sidebar/
+ * header surface, so on one of those panels it reads as bare text. Tertiary's
+ * hairline gives it an edge without promoting it to the primary action. Each
+ * column below is one surface; compare down it, not across.
+ */
+export const OnPanelSurfaces: Story = {
+  render: () => (
+    <div className="flex gap-4">
+      {(
+        [
+          ["bg-base-100", "base-100 (popover)"],
+          ["bg-base-200", "base-200 (modal/sidebar)"],
+          ["bg-base-300", "base-300 (app bg)"],
+        ] as const
+      ).map(([surface, label]) => (
+        <div
+          key={surface}
+          className={`flex flex-col items-start gap-3 rounded p-4 ${surface}`}
+        >
+          <p className="text-xs font-bold uppercase opacity-60">{label}</p>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="tertiary">Tertiary</Button>
+        </div>
+      ))}
+    </div>
   ),
 };
 
@@ -77,19 +118,53 @@ export const Sizes: Story = {
   ),
 };
 
+/**
+ * Every variant, since `controlDisabled` sits in `buttonStyles`' shared `base`
+ * — `opacity-50` + `cursor-not-allowed`, no per-variant opt-in. Enabled row on
+ * top for comparison.
+ */
 export const Disabled: Story = {
   render: () => (
+    <div className="flex flex-col gap-3">
+      {[false, true].map((isDisabled) => (
+        <Row key={String(isDisabled)}>
+          {VARIANTS.map((variant) => (
+            <Button key={variant} variant={variant} isDisabled={isDisabled}>
+              {variant[0].toUpperCase() + variant.slice(1)}
+            </Button>
+          ))}
+          <Button
+            variant="ghost"
+            isDisabled={isDisabled}
+            icon={<Save />}
+            aria-label="Save"
+          />
+        </Row>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * `isUnavailable` vs `isDisabled`. Both look the same, but the first renders
+ * `aria-disabled` and stays focusable and hoverable, so a wrapping `Tooltip` can
+ * say *why* — a truly `disabled` button fires no pointer events and leaves the
+ * tab order, so its tooltip can never open. Use `isUnavailable` whenever the
+ * reason is worth reading (the `ConnectModal` BLE button).
+ */
+export const Unavailable: Story = {
+  render: () => (
     <Row>
-      <Button variant="primary" isDisabled>
-        Primary
-      </Button>
-      <Button variant="secondary" isDisabled>
-        Secondary
-      </Button>
-      <Button variant="ghost" isDisabled>
-        Ghost
-      </Button>
-      <Button variant="ghost" isDisabled icon={<Save />} aria-label="Save" />
+      <Tooltip label="Needs Chrome or Edge on Linux." delay={300}>
+        <Button variant="tertiary" isUnavailable>
+          Unavailable
+        </Button>
+      </Tooltip>
+      <Tooltip label="You will never read this." delay={300}>
+        <Button variant="tertiary" isDisabled>
+          Disabled
+        </Button>
+      </Tooltip>
     </Row>
   ),
 };

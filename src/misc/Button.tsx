@@ -43,6 +43,16 @@ export interface ButtonProps
     CommonOwnProps {
   children?: ReactNode;
   className?: string;
+  /**
+   * Unavailable, but still focusable and hoverable — it renders `aria-disabled`
+   * instead of `disabled` and swallows `onPress`. Use this instead of
+   * `isDisabled` whenever the *reason* is worth reading, and wrap it in a
+   * `Tooltip` that gives that reason: a truly `disabled` button fires no pointer
+   * events and leaves the tab order, so neither a mouse nor a keyboard can ever
+   * reach the explanation. Reach for plain `isDisabled` when the cause is
+   * obvious from context (nothing selected yet, no unsaved changes).
+   */
+  isUnavailable?: boolean;
 }
 
 export function Button({
@@ -52,6 +62,8 @@ export function Button({
   iconPosition = "start",
   className,
   children,
+  isUnavailable,
+  onPress,
   ...props
 }: ButtonProps) {
   const inGroup = useContext(ButtonGroupContext);
@@ -59,6 +71,8 @@ export function Button({
   return (
     <RACButton
       className={cx(buttonStyles({ variant, size, iconOnly, inGroup }), className)}
+      aria-disabled={isUnavailable || undefined}
+      onPress={isUnavailable ? undefined : onPress}
       {...props}
     >
       {renderContent(children, icon, iconPosition)}

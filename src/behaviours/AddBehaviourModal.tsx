@@ -17,9 +17,10 @@ export interface AddBehaviourModalProps {
 
 // "Add behavior" dialog: the user picks which kind to claim from the spare
 // pool, then confirms. The kind is chosen here rather than via a control in the
-// sidebar so the list stays a clean list. Uses an inline ToggleGroup (not a
-// dropdown) since a Select's portal would render behind the native <dialog>'s
-// top layer.
+// sidebar so the list stays a clean list. Uses an inline ToggleGroup rather than
+// a dropdown because there are only a couple of kinds — a Select would work now
+// too: `GenericModal` portals overlays into the <dialog> itself, so they're no
+// longer stuck behind its top layer.
 export const AddBehaviourModal = ({
   open,
   kinds,

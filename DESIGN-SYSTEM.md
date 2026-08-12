@@ -113,6 +113,25 @@ telling the user which screen/section they're on, go quiet.
 - `base-100` — input/control fill (a shade lighter than the panel it sits on).
 - `base-200` — panel / sidebar surface.
 - `base-300` — app background (`#15191e` in dark).
+
+**These three are an elevation scale, so read them as one.** Shadows barely
+register on a near-black surface, so in dark mode a *lighter fill* is what
+communicates "different layer" (Practical UI, p.122). Lighter = closer to the
+viewer, so the rung a surface sits on is not a free choice:
+
+| Tier | Token | Dark | What belongs here |
+| --- | --- | --- | --- |
+| Base | `base-300` | `#15191e` | the app background |
+| Raised | `base-200` | `#191e24` | panels, sidebars, header, modals |
+| Overlay | `base-100` | `#1d232a` | anything **floating**: `popoverSurface`, `tooltipSurface`, and control fills |
+
+A floating surface must sit one rung above whatever it covers. The bug this rule
+exists to prevent: `tooltipSurface` used to be `base-200` — the exact fill of the
+modal it floats over — so only the hairline separated the two and the bubble read
+as part of the panel. The step between rungs is deliberately subtle (~1.06:1 in
+dark), so the `base-line` border and the shadow still carry real weight; keep all
+three rather than leaning on the fill alone. Light mode's counterpart is white on
+grey, which needs no special handling.
 - `base-line` — **the hairline edge for every control border/divider.** Use this,
   never a hardcoded `border-white/15` (which is invisible on a light surface).
 - `primary` / `primary-content` — selected/active fill + its text. `primary`
@@ -133,6 +152,21 @@ telling the user which screen/section they're on, go quiet.
   that contrasts with the panel in both themes (~2.3:1) where the
   near-identical `base-100/200/300` fills can't. Used by the combo-list preview
   keys (`Key.tsx` `variant="preview"`).
+- `base-content-strong` — **heading** foreground, one step above `base-content`,
+  for a title that must out-rank the body beneath it (`GenericModal`'s `<h2>`).
+  The two themes step by different amounts on purpose, because their headroom
+  differs: on `base-200`, dark body text sits at 7.4:1 against a 16.8:1 ceiling
+  (2.25× to spend) while light body already sits at 13.1:1 against 18.8:1
+  (1.43×). Dark therefore goes near-white (13.8:1, a 1.85× step), light goes
+  gray-900 (15.8:1, 1.21×). Don't "fix" this to one flat value or a dark-only
+  override — either leaves one theme with no hierarchy. Dark stops short of pure
+  white deliberately: at 16.8:1 large text haloes on these near-black panels.
+
+**Headings pair color with weight.** A heading takes `base-content-strong` *and*
+`font-semibold` (see `GenericModal`) — never color alone. Color is the signal
+that disappears first: on a dim or sunlit screen, or for a low-vision reader,
+weight and size are what survive. This is also why the modal title still carries
+`text-lg`.
 
 ## Components — prefer these over raw `<input>`/`<select>`
 
@@ -185,6 +219,59 @@ is `variant="primary"` (or `variant="danger"` when it destroys). Ghost rather
 than `secondary` for the dismiss because `secondary`'s `bg-base-200` fill is the
 same color as the modal panel — it read as a borderless label with no hover
 affordance; ghost is transparent too but carries the standard lighten-veil hover.
+
+**Overlays inside a modal.** `showModal()` puts the `<dialog>` in the browser's
+**top layer**, which paints above the whole normal stacking context regardless of
+`z-index`. A react-aria overlay (Tooltip, Select/Combobox popover, DropdownMenu,
+InfoTip) portals to `document.body` by default — outside the dialog, therefore
+*under* it. `GenericModal` fixes this once for every modal, and both halves are
+needed:
+
+1. `UNSAFE_PortalProvider` (from `react-aria`) gives overlays a portal container
+   **inside** the `<dialog>`, putting them in the same top layer.
+2. `overflow-visible` on the `<dialog>` overrides the UA default `overflow:
+   auto`, which would otherwise clip the overlay to the dialog's box — a bubble
+   hanging off a control near the edge of a small dialog is mostly *outside* it.
+
+Consequence: a modal with more content than fits should own an inner
+`overflow-auto` region (the pattern the app's panels already use — see
+`index.css`) rather than rely on the dialog scrolling. Note `react-aria` is
+pinned to an **exact** version in `package.json` on purpose:
+`react-aria-components` depends on an exact version too, and a mismatch gives npm
+two copies of `react-aria` — two separate `PortalContext`s, and the provider
+silently stops reaching RAC's overlays.
+
+**Unavailable vs disabled.** When a control is unusable and the *reason* is worth
+reading, use `<Button isUnavailable>` wrapped in a `Tooltip`, not `isDisabled`. A
+truly `disabled` button fires no pointer events and leaves the tab order, so
+neither a hover nor a Tab can ever reach the explanation — the tooltip is dead
+markup. `isUnavailable` renders `aria-disabled` instead (same `controlDisabled`
+look, still focusable and hoverable) and swallows `onPress`. Keep plain
+`isDisabled` when the cause is obvious from context — nothing selected yet, no
+unsaved changes to save. The `ConnectModal` BLE button is the worked example:
+Web Bluetooth is Linux+Chromium-only, and listing it as unavailable-with-a-reason
+beats omitting it, which left no way to tell "unsupported here" from "my keyboard
+isn't wireless". Prefer `placement="bottom"` for a paragraph-long bubble over a
+small dialog, so it doesn't cover the thing it's explaining.
+
+**Picking a `Button` variant.** The one gotcha is that `secondary`'s fill *is*
+`base-200`, the panel color — so it only reads as a button when it sits on
+`base-300` (the app background). On a modal, sidebar, or header, use `tertiary`.
+
+| Variant | Look | Use for |
+| --- | --- | --- |
+| `primary` | solid `action` blue | the one call-to-action (Apply, Save, Add, Download) |
+| `secondary` | `base-200` fill, no edge | a supporting action **on the `base-300` app background** |
+| `tertiary` | transparent + `base-line` hairline | a supporting action **on a `base-200`/`base-100` panel**, where `secondary` would vanish (the `ConnectModal` transport picker) |
+| `ghost` | transparent | nav (header tabs), bare icon buttons, modal dismiss |
+| `link` | inline `primary` text | inline in prose |
+| `danger` | solid red | destructive confirms |
+
+Tertiary carries no fill of its own, so its edge does the work on *any* surface,
+`base-100` popovers included — that's why it's an outline rather than a
+`bg-base-100` tile, which would vanish in a popover and duplicate the
+`controlSurface` input look. Compare the variants against all three surfaces in
+`Misc/Button` → `OnPanelSurfaces` in Storybook.
 
 `Field` must render **inside** the react-aria provider (`RACTextField`,
 `RACSelect`, …) — that's where the aria wiring context exists. The provider

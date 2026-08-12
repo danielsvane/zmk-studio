@@ -9,6 +9,13 @@ export interface TooltipProps
   extends Omit<TooltipTriggerComponentProps, "children"> {
   children: React.ReactNode;
   label: string;
+  /**
+   * Which side of the trigger the bubble hangs off. Defaults to `top`, which
+   * suits a toolbar icon; pass `bottom` when the space above is content the
+   * reader still needs — a paragraph-long bubble over a small dialog otherwise
+   * covers the very thing it's explaining.
+   */
+  placement?: "top" | "bottom" | "left" | "right";
 }
 
 /**
@@ -22,12 +29,13 @@ export const Tooltip = ({
   label,
   delay = 1000,
   closeDelay = 500,
+  placement,
   ...props
 }: TooltipProps) => {
   return (
     <TooltipTrigger delay={delay} closeDelay={closeDelay} {...props}>
       {children}
-      <AriaTooltip offset={5} className={tooltipSurface}>
+      <AriaTooltip offset={5} placement={placement} className={tooltipSurface}>
         {label}
       </AriaTooltip>
     </TooltipTrigger>

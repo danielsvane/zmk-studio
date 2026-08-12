@@ -7,6 +7,7 @@
 export type ButtonVariant =
   | "primary"
   | "secondary"
+  | "tertiary"
   | "ghost"
   | "link"
   | "danger";
@@ -21,9 +22,18 @@ export function cx(...parts: Array<string | false | null | undefined>): string {
 // by every interactive control so Buttons, Selects, etc. ring identically.
 export const controlFocusRing =
   "rac-focus-visible:outline rac-focus-visible:outline-2 rac-focus-visible:outline-offset-1 rac-focus-visible:outline-primary";
-/** Disabled treatment shared by all interactive controls. */
-export const controlDisabled =
-  "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed";
+// Disabled treatment shared by all interactive controls. Covers *both*
+// mechanisms, because they look identical but behave differently:
+//   - `rac-disabled` — a real `disabled` attribute (react-aria's `isDisabled`).
+//   - `aria-disabled` — unavailable but still focusable and hoverable, which is
+//     what a control needs when there's a *reason* worth reading: a real
+//     `disabled` button fires no pointer events and drops out of the tab order,
+//     so neither a hover nor a Tab ever reaches the Tooltip explaining it. See
+//     `Button`'s `isUnavailable`.
+export const controlDisabled = cx(
+  "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed",
+  "aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+);
 
 // Filled-input surface shared by every form control that looks like an input
 // rather than an action: the Select/Combobox triggers and the TextField. A
@@ -72,9 +82,27 @@ export const popoverSurface = cx(
 // with no edge dissolves into the base-200/300 panels it covers. Deliberately
 // NOT `popoverSurface`: that floors its width at the trigger's, which is wrong
 // for a bubble hanging off a 24px icon.
+// `w-max` (width: max-content) matters more than it looks: these bubbles portal
+// *into* the `<dialog>` (see GenericModal), so an absolutely-positioned one's
+// containing block is the dialog, not the viewport. Left shrink-to-fit, its width
+// would be whatever space happens to remain to the right of its current `left` —
+// so the first paint, before react-aria has positioned it, comes out narrow and
+// over-wrapped; react-aria then measures *that* size, repositions, and the bubble
+// visibly snaps wider. `w-max` fixes the width at the content's natural width
+// (still capped by `max-w-xs`) so it's position-independent and stable on frame
+// one.
+// Sits on the *overlay* elevation tier (`base-100`), like `popoverSurface` — one
+// step above the `base-200` panels and modals it floats over. Shadows barely
+// read on a near-black surface, so in dark mode a lighter fill is what actually
+// says "different layer" (Practical UI, p.122: 3 dark backgrounds — base /
+// raised / overlay — with overlay reserved for things floating high above the
+// page). It was previously `base-200`, i.e. the exact fill of the modal it
+// covers, which left only the hairline separating them. The step between our
+// tiers is subtle by design (~1.06:1), so the border and shadow still do real
+// work — keep all three.
 export const tooltipSurface = cx(
-  "max-w-xs whitespace-pre-line rounded border border-base-line",
-  "bg-base-200 px-3 py-2 text-sm text-base-content shadow-md"
+  "w-max max-w-xs whitespace-pre-line rounded border border-base-line",
+  "bg-base-100 px-3 py-2 text-sm text-base-content shadow-lg"
 );
 
 // A menu/action row — the menu-item sibling of `buttonStyles`: one `h-control`
@@ -116,6 +144,19 @@ const variants: Record<ButtonVariant, string> = {
     "rac-selected:bg-action rac-selected:text-action-content",
   secondary:
     "bg-base-200 text-base-content rac-hover:brightness-110 rac-pressed:brightness-95 " +
+    "rac-selected:bg-primary rac-selected:text-primary-content",
+  // The surface-agnostic action button: transparent fill + the standard
+  // `base-line` hairline. Reach for it when `secondary` would disappear — its
+  // `bg-base-200` fill is exactly the `GenericModal`/sidebar/header surface, so a
+  // secondary button *on* one of those panels reads as bare text (the connection
+  // picker in `ConnectModal` is the case that prompted this). Tertiary carries no
+  // fill of its own, so the edge does the work on any surface, base-100 popover
+  // included; that's why it's an outline rather than a `bg-base-100` tile, which
+  // would both vanish in a popover and duplicate the `controlSurface` input look.
+  // Transparent, so hover takes the lighten veil like `ghost`.
+  tertiary:
+    "bg-transparent border border-base-line text-base-content " +
+    "rac-hover:bg-base-content/10 rac-pressed:brightness-95 " +
     "rac-selected:bg-primary rac-selected:text-primary-content",
   // Ghost is the app's nav button (the header section tabs) + the bare icon
   // buttons. Hover takes the lighten veil (it's transparent, so brightness has

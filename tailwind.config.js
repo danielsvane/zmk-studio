@@ -54,6 +54,19 @@ export default {
         // preview keys; see Key.tsx `variant="preview"`.
         "base-content":
           "light-dark(rgb(31 41 55 / <alpha-value>), rgb(166 173 187 / <alpha-value>))",
+        // Heading foreground — one step stronger than `base-content`, for a
+        // title that has to out-rank the body text beneath it (`GenericModal`'s
+        // <h2>). The step is deliberately lopsided because the headroom is:
+        // against the `base-200` panel, dark's body text sits at 7.4:1 with a
+        // 16.8:1 ceiling (2.25x to spend) while light's already sits at 13.1:1
+        // with an 18.8:1 ceiling (1.43x). So dark takes a near-white #E6E9EF
+        // (13.8:1, a 1.85x step) and light takes gray-900 (15.8:1, 1.21x) —
+        // both a visible promotion within their own theme, which a single flat
+        // value or a dark-only override can't be. Not pure white in dark: at
+        // 16.8:1 large text haloes against these near-black panels. Pair it with
+        // a weight bump, never color alone — see DESIGN-SYSTEM.md.
+        // No `<alpha-value>` slot; nothing tints a heading.
+        "base-content-strong": "light-dark(#111827, #E6E9EF)",
         "base-100": "light-dark(oklch(100% 0 0), #1d232a)",
         "base-200": "light-dark(#F2F2F2, #191e24)",
         "base-300": "light-dark(#E5E6E6, #15191e)",

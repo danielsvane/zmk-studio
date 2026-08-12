@@ -64,10 +64,30 @@ declare global {
 // Web USB serial is added per-render inside the component (it needs an
 // `establish` callback that probes ports — see below). These are the static
 // transports that don't.
+// Wireless in a browser means Web Bluetooth, which ZMK Studio can only use on
+// Linux — elsewhere the OS claims a paired keyboard as an HID device and won't
+// hand its GATT services to the browser.
+const WEB_BLE_SUPPORTED =
+  !!navigator.bluetooth && navigator.userAgent.indexOf("Linux") >= 0;
+
+// Shown on the disabled BLE button when neither path is available. Without it
+// the option is simply missing from the picker, which tells the user nothing —
+// they can't distinguish "unsupported here" from "my keyboard isn't wireless".
+const BLE_REQUIREMENTS =
+  "Needs Web Bluetooth: Linux only, in Chrome or Edge.\n\n" +
+  "The desktop app has no such limit, but builds of this version aren't " +
+  "published yet.";
+
 const STATIC_TRANSPORTS: TransportFactory[] = [
-  ...(navigator.bluetooth && navigator.userAgent.indexOf("Linux") >= 0
-    ? [{ label: "BLE", connect: gatt_connect }]
-    : []),
+  // Skipped entirely under Tauri, which brings its own native BLE below —
+  // otherwise a Tauri build whose webview exposes `navigator.bluetooth` would
+  // list two "BLE" entries (and, worse, could pair the real one with an
+  // "unavailable" duplicate).
+  ...(window.__TAURI_INTERNALS__
+    ? []
+    : WEB_BLE_SUPPORTED
+      ? [{ label: "BLE", connect: gatt_connect }]
+      : [{ label: "BLE", unavailableReason: BLE_REQUIREMENTS }]),
   ...(window.__TAURI_INTERNALS__
     ? [
         {

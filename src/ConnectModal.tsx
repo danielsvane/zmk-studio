@@ -9,10 +9,17 @@ import { useModalRef } from "./misc/useModalRef";
 import { ExternalLink } from "./misc/ExternalLink";
 import { GenericModal } from "./GenericModal";
 import { Button } from "./misc/Button";
+import { Tooltip } from "./misc/Tooltip";
+import { fieldColumn } from "./misc/Field";
 
 export type TransportFactory = {
   label: string;
   isWireless?: boolean;
+  // Why this transport can't be used here (browser/platform requirements it
+  // doesn't meet). Set it and the picker still lists the transport, as an
+  // unavailable button whose tooltip carries this text — an option that's simply
+  // absent leaves the user with nothing to act on. Plain text; newlines kept.
+  unavailableReason?: string;
   connect?: () => Promise<RpcTransport>;
   // Fully establishes the connection itself (including device selection and any
   // probing), rather than returning a single transport for the app to drive.
@@ -219,19 +226,28 @@ function SimpleDevicePicker({
 
   const connections = transports.map((t) => (
     <li key={t.label} className="list-none">
-      <Button
-        variant="secondary"
-        size="sm"
-        onPress={() => setSelectedTransport(t)}
-      >
-        {t.label}
-      </Button>
+      {t.unavailableReason ? (
+        // Shorter than the default 1s hover delay: this tooltip isn't a
+        // reminder of what an icon means, it's the only place the requirements
+        // are written down, and the button it hangs off does nothing else.
+        <Tooltip label={t.unavailableReason} delay={300} placement="bottom">
+          <Button variant="tertiary" isUnavailable>
+            {t.label}
+          </Button>
+        </Tooltip>
+      ) : (
+        <Button variant="tertiary" onPress={() => setSelectedTransport(t)}>
+          {t.label}
+        </Button>
+      )}
     </li>
   ));
   return (
-    <div>
-      <p className="text-sm">Select a connection type.</p>
-      <ul className="flex gap-2 pt-2">{connections}</ul>
+    // "Select a connection type." labels the button row, so the pair is spaced
+    // as a field (`fieldColumn`'s gap-1.5) rather than with padding on the row.
+    <div className={fieldColumn}>
+      <p>Select a connection type.</p>
+      <ul className="flex gap-2">{connections}</ul>
       {selectedTransport && availableDevices && (
         <ul>
           {availableDevices.map((d) => (
