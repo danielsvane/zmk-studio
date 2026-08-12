@@ -7,8 +7,12 @@ const __dirname = path.resolve(__filename, "../..");
 
 async function generateReleaseData() {
   try {
+    // This fork's own release, not upstream's: the desktop app carries the combos
+    // and custom behaviour work, so upstream's installers would not match the site
+    // they are offered from. tauri-build keeps the `latest` release in step with
+    // whatever customkeyboards is serving.
     const response = await fetch(
-      "https://api.github.com/repos/zmkfirmware/zmk-studio/releases/latest",
+      "https://api.github.com/repos/danielsvane/zmk-studio/releases/latest",
       {
         headers: process.env.GITHUB_TOKEN
           ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
