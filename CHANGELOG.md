@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/danielsvane/zmk-studio/compare/v0.4.0...v0.4.1) (2026-08-12)
+
+
+### Bug Fixes
+
+* **download:** address the rolling release by tag, not /releases/latest ([b79cb58](https://github.com/danielsvane/zmk-studio/commit/b79cb585ea9abd5ee8a5a4a25a7d184d977a5bd1))
+
 ## [0.4.0](https://github.com/danielsvane/zmk-studio/compare/v0.3.1...v0.4.0) (2026-08-12)
 
 
