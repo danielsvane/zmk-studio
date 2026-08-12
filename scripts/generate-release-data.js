@@ -11,8 +11,15 @@ async function generateReleaseData() {
     // and custom behaviour work, so upstream's installers would not match the site
     // they are offered from. tauri-build keeps the `latest` release in step with
     // whatever customkeyboards is serving.
+    //
+    // Addressed by tag rather than through /releases/latest, because two consumers
+    // want different things: this page wants the build matching the deployed site,
+    // while the updater endpoint wants the newest tagged version. /releases/latest
+    // resolves by created_at, so merging a release PR pointed it at the versioned
+    // release release-please had just created empty, and a release with no assets
+    // fails the build rather than the page.
     const response = await fetch(
-      "https://api.github.com/repos/danielsvane/zmk-studio/releases/latest",
+      "https://api.github.com/repos/danielsvane/zmk-studio/releases/tags/latest",
       {
         headers: process.env.GITHUB_TOKEN
           ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }

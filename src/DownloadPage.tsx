@@ -95,10 +95,22 @@ const PlatformLinks: Record<Platform, DownloadLink[]> = {
   unknown: [],
 };
 
-const ReleaseAssets = releaseData.assets.map((asset) => asset.browser_download_url);
+// Annotated rather than left to inference: release-data.json holds whatever the
+// API returned at build time, so a release caught with an empty asset list gave
+// `assets: never[]` and broke the build on the line below instead of degrading
+// the page.
+type Release = {
+  name: string | null;
+  tag_name: string;
+  assets: { browser_download_url: string }[];
+};
+
+const release: Release = releaseData;
+
+const ReleaseAssets = release.assets.map((asset) => asset.browser_download_url);
 // The rolling desktop release is tagged `latest`, which says nothing useful; its
 // title carries the version and the commit it was built from.
-const ReleaseVersion = releaseData.name || releaseData.tag_name;
+const ReleaseVersion = release.name || release.tag_name;
 
 function detectPlatform(): Platform {
   if (typeof window === "undefined") return "unknown";
