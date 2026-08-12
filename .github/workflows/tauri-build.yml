@@ -150,6 +150,15 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          # Not optional once createUpdaterArtifacts is on: with a pubkey in
+          # tauri.conf.json and no private key the bundler fails outright rather
+          # than shipping unsigned updates. This is the updater's own minisign
+          # key, unrelated to the platform code signing above — it proves an
+          # update came from this repo, not that the installer is trusted by the
+          # OS. The key was generated without a password, so the password var is
+          # set-but-empty to keep the CLI from prompting and hanging the run.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           projectPath: zmk-studio
           releaseId: ${{ steps.get_release.outputs.id }}
@@ -158,20 +167,29 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: zmk-studio-${{ matrix.name }}
+          # The .sig files and the mac .app.tar.gz are here for the updater
+          # manifest: it embeds each signature and points at the payload the
+          # updater downloads, which on macOS is the tarball rather than the .dmg.
           path: |
             zmk-studio/src-tauri/target/release/bundle/**/*.deb
             zmk-studio/src-tauri/target/release/bundle/**/*.AppImage
+            zmk-studio/src-tauri/target/release/bundle/**/*.AppImage.sig
             zmk-studio/src-tauri/target/*/release/bundle/**/*.dmg
             zmk-studio/src-tauri/target/*/release/bundle/**/*.app
+            zmk-studio/src-tauri/target/*/release/bundle/**/*.app.tar.gz
+            zmk-studio/src-tauri/target/*/release/bundle/**/*.app.tar.gz.sig
             zmk-studio/src-tauri/target/release/bundle/**/*.msi
             zmk-studio/src-tauri/target/release/bundle/**/*.exe
+            zmk-studio/src-tauri/target/release/bundle/**/*.exe.sig
   # Publishes one build to both release lines: the rolling `latest`, so /download
   # always offers the desktop build matching the deployed site, and — when this push
   # is the one release-please tagged — the versioned release too. Doing it in one job
   # rather than from the matrix keeps the four platforms from racing each other to
   # create the tag. It waits on every platform: a partial set would leave dead links
   # on the download page, so a single platform failure keeps the previous release in
-  # place instead.
+  # place instead. Only the versioned release gets an updater manifest, which is
+  # what keeps the in-app updater offering tagged releases rather than following
+  # every push.
   publish-latest:
     if: github.event_name == 'push' && github.ref == 'refs/heads/customkeyboards'
     needs: publish-tauri
@@ -223,7 +241,22 @@ jobs:
           tagged=$(gh api "repos/$GITHUB_REPOSITORY/commits/$tag" --jq .sha 2>/dev/null) || tagged=""
           if [ "$tagged" = "$GITHUB_SHA" ]; then
             echo "attaching the same installers to $tag"
-            gh release upload "$tag" --clobber "${assets[@]}"
+            # The mac updater downloads the .app tarball, not the .dmg, so the
+            # versioned release carries it too. The download page's patterns
+            # don't match it, so it stays invisible there.
+            mapfile -d '' payloads < <(find artifacts -type f -name '*.app.tar.gz' -print0)
+            gh release upload "$tag" --clobber "${assets[@]}" "${payloads[@]}"
+
+            # Last, because it names the asset URLs and so needs them to exist.
+            # tauri-action writes this manifest itself, but only when it is the
+            # thing creating the release; on a push it only builds.
+            gh release view "$tag" \
+              --json tagName,body,publishedAt,createdAt,assets > "$RUNNER_TEMP/release.json"
+            node scripts/build-updater-manifest.js \
+              --release "$RUNNER_TEMP/release.json" \
+              --artifacts artifacts \
+              --out "$RUNNER_TEMP/latest.json"
+            gh release upload "$tag" --clobber "$RUNNER_TEMP/latest.json"
           else
             echo "no release tag on this commit ($tag -> ${tagged:-absent}); rolling build only"
           fi
