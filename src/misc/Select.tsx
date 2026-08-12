@@ -100,7 +100,7 @@ const itemStyles = cx(
   // `bg-primary` — picking an option *is* the subject, so it gets the strong tier.
   "rac-hover:bg-base-content/10 rac-focus:bg-base-content/10",
   "rac-selected:bg-primary rac-selected:text-primary-content",
-  "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed"
+  controlDisabled
 );
 
 // Section header for a grouped options list. Muted, uppercase, and offset from

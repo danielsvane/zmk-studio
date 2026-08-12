@@ -6,7 +6,7 @@ import {
   type Key,
 } from "react-aria-components";
 
-import { cx, type ButtonSize } from "./controlStyles";
+import { cx, controlDisabled, type ButtonSize } from "./controlStyles";
 import { GroupLabel } from "./Field";
 
 /**
@@ -45,7 +45,7 @@ const itemBase = cx(
   "transition-[background-color,filter,color]",
   "rac-hover:brightness-110",
   "rac-selected:bg-primary rac-selected:text-primary-content",
-  "rac-disabled:opacity-50 rac-disabled:cursor-not-allowed",
+  controlDisabled,
   itemFocusRing
 );
 
