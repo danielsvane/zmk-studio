@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - main
+      - customkeyboards
 
 permissions: {}
 
@@ -17,15 +17,13 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
-          token: ${{ secrets.ZMK_STUDIO_RELEASE_TOKEN }}
-      - uses: actions/checkout@v4
-        if: ${{ steps.release.outputs.release_created }}
-        with:
-          ref: prod
-      - name: publish to prod branch
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          git fetch origin main
-          git pull --ff-only origin main
-          git remote set-url origin "https://x-access-token:${{ secrets.ZMK_STUDIO_RELEASE_TOKEN }}@github.com/${{ github.repository }}.git"
-          git push
+          # Required, not optional: the action defaults this to the repository's
+          # default branch, which is still upstream's `main` — 138 commits behind
+          # the branch we ship from. Without it the release PR would target a
+          # branch nothing is built or deployed off.
+          target-branch: customkeyboards
+          # GITHUB_TOKEN suffices because nothing downstream waits on the release
+          # event. A release created with it raises no `release: published`, so
+          # tauri-build attaches the installers from this same push instead — see
+          # publish-latest in tauri-build.yml.
+          token: ${{ secrets.GITHUB_TOKEN }}

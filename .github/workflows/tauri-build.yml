@@ -165,11 +165,13 @@ jobs:
             zmk-studio/src-tauri/target/*/release/bundle/**/*.app
             zmk-studio/src-tauri/target/release/bundle/**/*.msi
             zmk-studio/src-tauri/target/release/bundle/**/*.exe
-  # A rolling `latest` release, so /download always offers the desktop build that
-  # matches the deployed site. Doing it in one job rather than from the matrix keeps
-  # the four platforms from racing each other to create the tag. It waits on every
-  # platform: a partial set would leave dead links on the download page, so a single
-  # platform failure keeps the previous release in place instead.
+  # Publishes one build to both release lines: the rolling `latest`, so /download
+  # always offers the desktop build matching the deployed site, and — when this push
+  # is the one release-please tagged — the versioned release too. Doing it in one job
+  # rather than from the matrix keeps the four platforms from racing each other to
+  # create the tag. It waits on every platform: a partial set would leave dead links
+  # on the download page, so a single platform failure keeps the previous release in
+  # place instead.
   publish-latest:
     if: github.event_name == 'push' && github.ref == 'refs/heads/customkeyboards'
     needs: publish-tauri
@@ -183,7 +185,7 @@ jobs:
         with:
           path: artifacts
 
-      - name: publish the rolling latest release
+      - name: publish the desktop installers
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -208,10 +210,20 @@ jobs:
             --notes "Desktop build of the \`customkeyboards\` branch, replaced on every push. Windows installers are unsigned." \
             "${assets[@]}"
 
-  deploy-netlify:
-    if: github.event_name == 'release'
-    needs: publish-tauri
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to Netlify
-        run: curl -X POST -d '{}' ${{ secrets.NETLIFY_DEPLOY_HOOK }}
+          # Merging a release-please PR lands one commit and tags it, so a
+          # v<version> tag on this exact commit means this push is a release.
+          # Attach the installers already built here: release-please creates its
+          # release with GITHUB_TOKEN, which raises no `release: published`, so
+          # nothing else would ever put assets on it.
+          tag="v$(node -p "require('./package.json').version")"
+          # commits/<ref> resolves annotated and lightweight tags alike, unlike
+          # git/ref/tags, which hands back the tag object's sha for annotated tags.
+          # `|| tagged=` and not `|| true` inside: on a missing tag gh prints the
+          # error body to stdout, which would land in $tagged and get logged raw.
+          tagged=$(gh api "repos/$GITHUB_REPOSITORY/commits/$tag" --jq .sha 2>/dev/null) || tagged=""
+          if [ "$tagged" = "$GITHUB_SHA" ]; then
+            echo "attaching the same installers to $tag"
+            gh release upload "$tag" --clobber "${assets[@]}"
+          else
+            echo "no release tag on this commit ($tag -> ${tagged:-absent}); rolling build only"
+          fi
