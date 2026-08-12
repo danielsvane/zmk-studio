@@ -222,10 +222,16 @@ jobs:
           # installers would survive under their old names, and the download page
           # serves whichever asset matches its extension pattern first.
           gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          # Marked a prerelease so it stays out of /releases/latest, which is where
+          # the updater endpoint looks for latest.json and must resolve to the
+          # newest tagged version. Recreated on every push, this release would
+          # otherwise win that lookup on created_at every time. The download page
+          # is unaffected: it addresses this release by its `latest` tag.
           gh release create latest \
             --target "$GITHUB_SHA" \
+            --prerelease \
             --title "$(node -p "require('./package.json').version") (${GITHUB_SHA::7})" \
-            --notes "Desktop build of the \`customkeyboards\` branch, replaced on every push. Windows installers are unsigned." \
+            --notes "Rolling desktop build of the \`customkeyboards\` branch, replaced on every push, and newer than the last tagged release. In-app updates track tagged releases instead, so this one does not offer them. Windows installers are unsigned." \
             "${assets[@]}"
 
           # Merging a release-please PR lands one commit and tags it, so a
