@@ -375,7 +375,9 @@ function SimpleDevicePicker({
 
 function noTransportsOptionsPrompt() {
   return (
-    <div className="m-4 flex flex-col gap-2">
+    // No margin of its own: GenericModal's padding is the modal's inset, and a
+    // second one here indented this body past the title.
+    <div className="flex flex-col gap-2">
       <p>
         Your browser is not supported. ZMK Studio uses either{" "}
         <ExternalLink href="https://caniuse.com/web-serial">
