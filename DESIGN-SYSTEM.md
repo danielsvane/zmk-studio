@@ -223,6 +223,14 @@ standard `text-lg font-semibold` heading), `children` (body), and `actions`
 Don't hand-roll the heading or the button row; pass them as slots so every
 dialog lines up. Open/close is driven by `useModalRef` (`misc/useModalRef.ts`).
 
+**Pin the width of a modal whose body changes.** A `<dialog>` sizes to its
+content, so a modal that swaps between states — a list that fills and empties on
+refresh, an error line that appears under it, a different body on desktop than
+in the browser — resizes under the user on every one of them. Give those a
+`w-full max-w-*` pair (`ConnectModal` is the worked example: `w-full max-w-md`),
+not `max-w-*` alone, which only caps the jumping. `w-full` is the half that keeps
+it inside a viewport narrower than the cap.
+
 **Action buttons carry a leading `icon`.** Every action `<Button>` in a modal
 footer or form — Add/Save/Cancel/Apply/Close and friends — pairs its label with
 a `lucide-react` icon (`icon={<X aria-hidden />}`, `aria-hidden` since the label

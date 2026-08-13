@@ -113,9 +113,10 @@ export const DeviceList: Story = {
 };
 
 /**
- * A connect in flight. The row keeps its place and takes a spinner; the others
- * go unavailable, because the native side holds one transport at a time and a
- * second attempt would race the first.
+ * A connect in flight. The row keeps its place and takes a spinner — no caption,
+ * so the row doesn't reflow around it — and the others go unavailable, because
+ * the native side holds one transport at a time and a second attempt would race
+ * the first.
  *
  * Left alone this story becomes the timeout after 20s — neither transport
  * bounds its own wait, and a BLE link that BlueZ still calls connected can
@@ -128,7 +129,9 @@ export const Connecting: Story = {
 
     await userEvent.click(await canvas.findByRole("option", { name: "Benjiboard" }));
 
-    await expect(await canvas.findByText("Connecting…")).toBeInTheDocument();
+    await expect(
+      await canvas.findByRole("img", { name: "Connecting" })
+    ).toBeInTheDocument();
     // The rows that aren't being connected to.
     for (const row of canvas.getAllByRole("option", { name: "Manicule54" })) {
       await expect(row).toHaveAttribute("aria-disabled", "true");

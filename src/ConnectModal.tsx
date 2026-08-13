@@ -214,11 +214,16 @@ function DeviceList({
             <span className="min-w-0 flex-1 truncate">
               {entry.device.label}
             </span>
+            {/* The spinner carries this on its own — a "Connecting…" caption
+                next to it eats the width the device name truncates against,
+                for a word the spinner already says. `role="img"` so the label
+                is what AT announces. */}
             {connecting === entry.id && (
-              <span className="flex shrink-0 items-center gap-1.5 text-xs opacity-70">
-                <Loader2 aria-hidden className="animate-spin" />
-                Connecting…
-              </span>
+              <Loader2
+                role="img"
+                aria-label="Connecting"
+                className="shrink-0 animate-spin opacity-70"
+              />
             )}
           </ListBoxItem>
         )}
@@ -442,7 +447,17 @@ export const ConnectModal = ({
   const haveTransports = useMemo(() => transports.length > 0, [transports]);
 
   return (
-    <GenericModal ref={dialog} className="max-w-xl" title="Welcome to ZMK Studio">
+    // Pinned width, not `max-w-*`: a dialog sizes to its content, and this one's
+    // content changes underneath the user — devices appear and disappear on a
+    // refresh, a connect failure adds a line of prose, and the browser build
+    // shows a paragraph where the desktop build shows rows. Sizing to each of
+    // those made the modal jump every time its state changed. `w-full` keeps it
+    // inside a viewport narrower than the cap.
+    <GenericModal
+      ref={dialog}
+      className="w-full max-w-md"
+      title="Welcome to ZMK Studio"
+    >
       {haveTransports ? (
         <ConnectOptions
           transports={transports}
