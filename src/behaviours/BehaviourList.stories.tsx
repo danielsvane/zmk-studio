@@ -54,3 +54,23 @@ export const Empty: Story = {
     ),
   ],
 };
+
+/**
+ * The read failed, which is *not* the same list as {@link Empty} — the keyboard
+ * may well have behaviours we couldn't see. Add is disabled too: with the pool
+ * state unknown, claiming a slot would be a guess.
+ */
+export const ReadFailed: Story = {
+  args: {
+    behaviours: [],
+    error: "Couldn't read the behaviors from the keyboard (No response).",
+    canAdd: false,
+  },
+  decorators: [
+    (Story) => (
+      <div className="w-64 bg-base-200 p-4">
+        <Story />
+      </div>
+    ),
+  ],
+};

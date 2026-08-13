@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import type { CustomBehavior } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 
 import { Button } from "../misc/Button";
+import { ErrorMessage } from "../misc/Field";
 import { SidebarCard } from "../misc/SidebarCard";
 import { AddBehaviourModal } from "./AddBehaviourModal";
 
@@ -15,6 +16,12 @@ export interface BehaviourKindOption {
 
 export interface BehaviourListProps {
   behaviours: CustomBehavior[];
+  /**
+   * Why the list is empty, when it's empty because the read failed. Shown in
+   * place of the "none yet" line, which would otherwise report a broken
+   * connection as a keyboard with nothing on it.
+   */
+  error?: string;
   /** Kinds the "Add" button can claim from the spare pool. */
   addableKinds: BehaviourKindOption[];
   /** False when the pool is full (or disconnected) — disables Add. */
@@ -31,6 +38,7 @@ export interface BehaviourListProps {
 // the kind, then claims a new behaviour from the spare pool and selects it.
 export const BehaviourList = ({
   behaviours,
+  error,
   addableKinds,
   canAdd,
   selectedId,
@@ -42,7 +50,9 @@ export const BehaviourList = ({
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-sm font-bold uppercase opacity-70">Behaviors</h2>
-      {behaviours.length === 0 ? (
+      {error ? (
+        <ErrorMessage>{error}</ErrorMessage>
+      ) : behaviours.length === 0 ? (
         <p className="text-sm opacity-70">No custom behaviors yet.</p>
       ) : (
         <ul className="flex flex-col gap-2">

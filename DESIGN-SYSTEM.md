@@ -178,6 +178,15 @@ react-aria wires it to the control through `aria-describedby`. Use
 `ConnectModal`'s failed connect), where there's no field for AT to reach it
 through, so it has to announce itself.
 
+**An empty state may not stand in for a failed read.** "No custom behaviors yet"
+and "we couldn't ask the keyboard" are different facts, and the reassuring one is
+the wrong guess — it sent us hunting through firmware for behaviours that were
+there all along. Device reads carry that apart: `useConnectedDeviceData` returns
+the reason as a third tuple element, the list renders it as an `ErrorMessage`
+instead of the "none yet" line, and anything that would act on the missing data
+(`Add behavior`, whose pool size is now unknown) goes disabled. See
+`BehaviourList`'s `error` prop and its `ReadFailed` story.
+
 **Weight looks heavier in the desktop app, and that isn't a style bug.**
 `Inter.woff2` is the variable font and both engines interpolate the real `wght`
 instance, so a `font-semibold` heading *is* the same 600 in the browser and in

@@ -47,6 +47,7 @@ import { BehaviorBindingPicker } from "../behaviors/BehaviorBindingPicker";
 import { produce, type Draft } from "immer";
 import { LockStateContext } from "../rpc/LockStateContext";
 import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
+import { ErrorMessage } from "../misc/Field";
 import { BehaviourList } from "../behaviours/BehaviourList";
 import { BehaviourEditor } from "../behaviours/BehaviourEditor";
 import { defaultBehaviourName } from "../behaviours/behaviourNames";
@@ -99,11 +100,15 @@ function useBehaviors(): [BehaviorMap, () => Promise<void>] {
   useEffect(() => {
     let ignore = false;
     setBehaviors({});
-    doFetchBehaviorMap().then((map) => {
-      if (!ignore) {
-        setBehaviors(map);
-      }
-    });
+    doFetchBehaviorMap()
+      .then((map) => {
+        if (!ignore) {
+          setBehaviors(map);
+        }
+      })
+      // Leaves the registry empty, which empties every binding picker — worth a
+      // line in the console, since nothing else says why.
+      .catch((e) => console.error("Failed to read the behavior registry", e));
 
     return () => {
       ignore = true;
@@ -157,7 +162,11 @@ function useLayouts(): [
     }
 
     let ignore = false;
-    startRequest();
+    // Layouts only feed the (currently hidden) layout picker, so a failure just
+    // leaves them undefined — but say so rather than leaking a rejection.
+    startRequest().catch((e) =>
+      console.error("Failed to read the physical layouts", e)
+    );
 
     return () => {
       ignore = true;
@@ -219,7 +228,7 @@ export default function Keyboard({ page }: { page: Page }) {
 
   // Read the custom-behaviour pool, now editable in place (M3: RAM-only, lost
   // on reboot) via the generic schema-driven config editor.
-  const [customBehaviors, setCustomBehaviors] =
+  const [customBehaviors, setCustomBehaviors, customBehaviorsError] =
     useConnectedDeviceData<CustomBehaviors>(
       { behaviors: { getCustomBehaviors: true } },
       (resp) => resp?.behaviors?.getCustomBehaviors,
@@ -1082,6 +1091,11 @@ export default function Keyboard({ page }: { page: Page }) {
     const poolFull =
       customBehaviors?.max !== undefined &&
       behaviours.length >= customBehaviors.max;
+    // A failed read leaves the pool state unknown, so it reads as "empty and
+    // room to spare" — say so instead, and don't offer to claim a slot.
+    const behavioursError = customBehaviorsError
+      ? `Couldn't read the behaviors from the keyboard (${customBehaviorsError}).`
+      : undefined;
     // Raw key positions aren't remapped across layouts, so any layout is just a
     // visual aid for the key-position picker; use the active/selected one.
     const layoutKeys = layouts?.[selectedPhysicalLayoutIndex]?.keys;
@@ -1095,8 +1109,9 @@ export default function Keyboard({ page }: { page: Page }) {
         <div className={SIDEBAR_REGION}>
           <BehaviourList
             behaviours={behaviours}
+            error={behavioursError}
             addableKinds={ADDABLE_KINDS}
-            canAdd={!poolFull}
+            canAdd={!poolFull && !behavioursError}
             selectedId={selectedBehaviourId}
             onSelect={setSelectedBehaviourId}
             onAdd={addCustomBehavior}
@@ -1129,6 +1144,10 @@ export default function Keyboard({ page }: { page: Page }) {
                 }
                 onDelete={() => removeCustomBehavior(selectedBehaviour.id)}
               />
+            ) : behavioursError ? (
+              <div className="grid flex-1 place-items-center text-center">
+                <ErrorMessage>{behavioursError}</ErrorMessage>
+              </div>
             ) : (
               <div className="grid flex-1 place-items-center text-center text-base-content/60">
                 <div>

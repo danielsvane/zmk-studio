@@ -17,10 +17,18 @@ export function useConnectedDeviceData<T>(
   req: Omit<Request, "requestId">,
   response_mapper: (resp: RequestResponse) => T | undefined,
   requireUnlock?: boolean
-): [T | undefined, React.Dispatch<SetStateAction<T | undefined>>] {
+): [
+  T | undefined,
+  React.Dispatch<SetStateAction<T | undefined>>,
+  string | undefined,
+] {
   const connection = useContext(ConnectionContext);
   const lockState = useContext(LockStateContext);
   const [data, setData] = useState<T | undefined>(undefined);
+  // Third element of the tuple: why the read produced nothing. Without it a
+  // failed read is indistinguishable from a device that has nothing to report,
+  // and the UI states the more reassuring of the two.
+  const [error, setError] = useState<string | undefined>(undefined);
 
   // `req` is a fresh object literal and `response_mapper` a fresh closure on
   // every render at the call sites, so they can't be effect deps directly
@@ -42,21 +50,31 @@ export function useConnectedDeviceData<T>(
   useEffect(() => {
     if (!connection.conn || !canFetch) {
       setData(undefined);
+      setError(undefined);
       return;
     }
 
     async function startRequest() {
       setData(undefined);
+      setError(undefined);
       if (!connection.conn) {
         return;
       }
 
-      const response = mapperRef.current(
-        await call_rpc(connection.conn, reqRef.current)
-      );
+      try {
+        const response = mapperRef.current(
+          await call_rpc(connection.conn, reqRef.current)
+        );
 
-      if (!ignore) {
-        setData(response);
+        if (!ignore) {
+          setData(response);
+        }
+      } catch (e) {
+        // The ts-client throws bare strings for framing/protocol faults
+        // ("No response", "Mismatch request IDs"), so don't assume an Error.
+        if (!ignore) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
       }
     }
 
@@ -68,5 +86,5 @@ export function useConnectedDeviceData<T>(
     };
   }, [connection, canFetch, reqKey]);
 
-  return [data, setData];
+  return [data, setData, error];
 }
