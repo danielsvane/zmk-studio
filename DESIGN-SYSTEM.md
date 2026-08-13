@@ -190,11 +190,24 @@ wired for you):
 | Two-region picker (controls + canvas) | `PickerShell` (`PickerShell.tsx`) |
 | Selectable master-list row (sidebar → detail) | `SidebarCard` (`SidebarCard.tsx`) |
 | Action menu off a trigger | `DropdownMenu` + `DropdownMenuItem` (`DropdownMenu.tsx`) |
+| Inline list of choices (in a form or modal, not a popover) | `ListBox` framed with `controlSurface`, rows on `menuItem` — see `ConnectModal`'s `DeviceList` |
 | Dialog / modal | `GenericModal` (`GenericModal.tsx`) |
+
+**An inline choice list is a control, so it wears a control's frame.** The device
+picker is the worked example: `controlSurface` (the `base-100` input fill +
+hairline) around a react-aria `ListBox`, with rows on the shared `menuItem` token
+— the same 48px action row `DropdownMenu` uses, leading icon included. Unframed
+rows sitting directly on a `base-200` modal read as static text, which is exactly
+how that list looked before. Use `selectionMode="none"` + `onAction` when picking
+a row *does* something immediately (connect, open) rather than setting a value
+to confirm later, give it `renderEmptyState` (an empty list is a normal outcome —
+say what to do about it), and cap its height so the list scrolls, not the dialog.
+Reach for `selectableCard` instead when the row is persistent nav state (the
+sidebars), and for `DropdownMenu` when the choices belong in a popover.
 
 `GenericModal` is a native `<dialog>` on the `base-200` panel surface (so it
 matches the header and sidebars) with three slots: `title` (rendered as the
-standard `text-lg font-medium` heading), `children` (body), and `actions`
+standard `text-lg font-semibold` heading), `children` (body), and `actions`
 (a right-aligned `justify-end gap-3` footer — drop `<Button>`s straight in).
 Don't hand-roll the heading or the button row; pass them as slots so every
 dialog lines up. Open/close is driven by `useModalRef` (`misc/useModalRef.ts`).

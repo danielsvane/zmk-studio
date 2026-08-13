@@ -21,6 +21,34 @@ const BLE_UNAVAILABLE: TransportFactory = {
     "published yet.",
 };
 
+// The desktop (Tauri) shape: transports enumerate devices themselves, so the
+// modal lists every device instead of asking for a connection type first. A
+// browser can't do this — Web Serial/Bluetooth own the chooser — which is why
+// the two pickers differ in body while sharing the label/spacing/rows.
+const device = (label: string, id: string) => ({ label, id });
+const PICK_AND_CONNECT_TRANSPORTS: TransportFactory[] = [
+  {
+    label: "USB",
+    pick_and_connect: {
+      list: async () => [device("Manicule54", "/dev/ttyACM0")],
+      connect: fn() as never,
+    },
+  },
+  {
+    label: "BLE",
+    isWireless: true,
+    pick_and_connect: {
+      // Deliberately repeats a name from the USB lister: the same keyboard shows
+      // up under both, and the row icon is what tells them apart.
+      list: async () => [
+        device("Manicule54", "E1:22:B0:0B:14:5E"),
+        device("Engrammer", "C4:19:D1:7A:03:9F"),
+      ],
+      connect: fn() as never,
+    },
+  },
+];
+
 const meta = {
   title: "Application/ConnectModal",
   component: ConnectModal,
@@ -62,4 +90,22 @@ export const WithStatus: Story = {
 /** No Web Serial / Web Bluetooth — the unsupported-browser prompt instead. */
 export const NoTransports: Story = {
   args: { transports: [] },
+};
+
+/**
+ * The desktop app's picker: one row per device per transport, on the same 48px
+ * `menuItem` rows the DropdownMenu uses, framed as a control so they don't read
+ * as static text. Clicking a row connects — there's no selection to confirm.
+ */
+export const DeviceList: Story = {
+  args: { transports: PICK_AND_CONNECT_TRANSPORTS },
+};
+
+/** Nothing found — a keyboard that's unplugged or powered off looks like this. */
+export const NoDevices: Story = {
+  args: {
+    transports: [
+      { label: "USB", pick_and_connect: { list: async () => [], connect: fn() as never } },
+    ],
+  },
 };
