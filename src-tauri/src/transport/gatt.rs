@@ -84,13 +84,31 @@ pub async fn gatt_connect(
 
             let (send, mut recv) = channel(5);
             *state.conn.lock().await = Some(Box::new(send));
+            let ah3 = app_handle.clone();
             tauri::async_runtime::spawn(async move {
+                use tauri::Emitter;
+                use tauri::Manager;
+
                 while let Some(data) = recv.next().await {
-                    c.write(&data).await.expect("Write uneventfully");
+                    // A failed write used to `.expect()` here. That panicked this
+                    // task, which dropped the receiver, which made every later
+                    // request vanish into a closed channel while the client waited
+                    // for a reply that could never arrive — a dead keyboard that
+                    // looked like a slow one. Tear the connection down instead, so
+                    // the frontend sees a disconnect and pending calls reject.
+                    if let Err(e) = c.write(&data).await {
+                        println!("Failed to write to the RPC characteristic: {}", e.message());
+                        break;
+                    }
                 }
 
                 disconnect_handle.abort();
                 notify_handle.abort();
+
+                *ah3.state::<super::commands::ActiveConnection>().conn.lock().await = None;
+                if let Err(e) = ah3.emit("connection_disconnected", ()) {
+                    println!("Failed to raise the disconnect: {:?}", e);
+                }
             });
 
             Ok(true)

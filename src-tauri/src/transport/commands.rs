@@ -28,12 +28,20 @@ pub struct ActiveConnection<'a> {
 pub async fn transport_send_data(
     req: Request<'_>,
     state: State<'_, ActiveConnection<'_>>,
-) -> Result<(), ()> {
+) -> Result<(), String> {
     if let InvokeBody::Raw(data) = req.body() {
         let mut lock = state.conn.lock().await;
 
-        let sink = lock.as_mut().unwrap();
-        sink.send(data.clone()).await;
+        // Neither of these may be swallowed. The sink is gone once the write
+        // task has ended, and its `SendError` was being dropped on the floor —
+        // so a request would silently never leave the host while the client sat
+        // waiting for a response to it, holding the RPC mutex, forever. Failing
+        // the invoke instead errors the transport's writable stream, which
+        // aborts the connection and lets every pending call reject.
+        let sink = lock.as_mut().ok_or("Not connected")?;
+        sink.send(data.clone())
+            .await
+            .map_err(|e| format!("Failed to send to the device: {}", e))?;
     }
 
     Ok(())
