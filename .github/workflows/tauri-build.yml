@@ -218,22 +218,48 @@ jobs:
           fi
           printf 'publishing %s\n' "${assets[@]}"
 
-          # Recreate rather than `upload --clobber`: after a version bump the old
-          # installers would survive under their old names, and the download page
-          # serves whichever asset matches its extension pattern first.
-          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
-          # Marked a prerelease so it stays out of /releases/latest, which is where
-          # the updater endpoint looks for latest.json and must resolve to the
-          # newest tagged version. Recreated on every push, this release would
-          # otherwise win that lookup on created_at every time. The download page
-          # is unaffected: it addresses this release by its `latest` tag.
-          gh release create latest \
-            --target "$GITHUB_SHA" \
-            --prerelease \
-            --title "$(node -p "require('./package.json').version") (${GITHUB_SHA::7})" \
-            --notes "Rolling desktop build of the \`customkeyboards\` branch, replaced on every push, and newer than the last tagged release. In-app updates track tagged releases instead, so this one does not offer them. Windows installers are unsigned." \
-            "${assets[@]}"
+          # Nothing serialises these runs, so two pushes inside one build cycle
+          # (~15 min for four platforms) both reach this step. Whoever gets here
+          # last wins the rolling release — which is wrong when that's the OLDER
+          # build, and it happens whenever the first push draws a cold Rust cache
+          # and the second a warm one. So the newest commit on the branch, not
+          # the finishing order, decides: a superseded run leaves `latest` alone.
+          # Deliberately not GitHub `concurrency` with cancel-in-progress, which
+          # would solve the same race by cancelling the earlier run — including a
+          # release build, whose installers can never be reattached to their tag
+          # afterwards (see the tagged block below).
+          #
+          # Fails open on an empty $tip: an API hiccup shouldn't silently drop a
+          # build. `|| tip=` rather than `|| true` because gh prints its error
+          # body to stdout, which would otherwise land in $tip.
+          tip=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" --jq .sha 2>/dev/null) || tip=""
+          if [ -n "$tip" ] && [ "$tip" != "$GITHUB_SHA" ]; then
+            echo "superseded: $GITHUB_REF_NAME now points at ${tip::7}, not ${GITHUB_SHA::7}"
+            echo "leaving the rolling release to that build"
+          else
+            # Recreate rather than `upload --clobber`: after a version bump the old
+            # installers would survive under their old names, and the download page
+            # serves whichever asset matches its extension pattern first.
+            gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+            # Marked a prerelease so it stays out of /releases/latest, which is where
+            # the updater endpoint looks for latest.json and must resolve to the
+            # newest tagged version. Recreated on every push, this release would
+            # otherwise win that lookup on created_at every time. The download page
+            # is unaffected: it addresses this release by its `latest` tag.
+            gh release create latest \
+              --target "$GITHUB_SHA" \
+              --prerelease \
+              --title "$(node -p "require('./package.json').version") (${GITHUB_SHA::7})" \
+              --notes "Rolling desktop build of the \`customkeyboards\` branch, replaced on every push, and newer than the last tagged release. In-app updates track tagged releases instead, so this one does not offer them. Windows installers are unsigned." \
+              "${assets[@]}"
+          fi
 
+          # Outside the supersession check on purpose: a versioned release only
+          # ever gets its installers from the run that built its tagged commit, so
+          # this half must happen even when a later push has already taken over
+          # the rolling release. Skipping it would leave the tag permanently
+          # binary-less — v0.4.0 is the one that proved it.
+          #
           # Merging a release-please PR lands one commit and tags it, so a
           # v<version> tag on this exact commit means this push is a release.
           # Attach the installers already built here: release-please creates its
