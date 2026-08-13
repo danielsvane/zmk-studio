@@ -168,6 +168,17 @@ that disappears first: on a dim or sunlit screen, or for a low-vision reader,
 weight and size are what survive. This is also why the modal title still carries
 `text-lg`.
 
+**Weight looks heavier in the desktop app, and that isn't a style bug.**
+`Inter.woff2` is the variable font and both engines interpolate the real `wght`
+instance, so a `font-semibold` heading *is* the same 600 in the browser and in
+Tauri (measured — identical glyph advances and ink coverage). What differs is
+antialiasing: WebKitGTK takes its default from fontconfig and commonly lands on
+subpixel (LCD) rendering, whose RGB fringes fatten every stem, where a browser
+follows the desktop's grayscale setting. `index.css` pins
+`-webkit-font-smoothing: antialiased` on `body` for that reason. So don't chase
+the difference with a heavier or lighter `font-*` class — the weight is already
+right.
+
 ## Components — prefer these over raw `<input>`/`<select>`
 
 Don't re-roll control markup or styling. Build on these (all on
