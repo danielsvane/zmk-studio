@@ -31,6 +31,11 @@ const tailwindNewFileFix = {
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
+  // Serves `public/` at the root, same as the app's Vite dev server. Without it
+  // the `@font-face` in index.css requests a `/Inter.woff2` that 404s, so every
+  // story silently rendered in the fallback system font — which defeats the
+  // point of verifying type and spacing here.
+  staticDirs: ["../public"],
   addons: [
     "@storybook/addon-onboarding",
     "@storybook/addon-links",
