@@ -85,23 +85,39 @@ function DeviceList({
   const LoadEm = useCallback(async () => {
     setRefreshing(true);
     const entries: DeviceEntry[] = [];
-    for (const t of transports.filter((t) => t.pick_and_connect)) {
-      const devices = await t.pick_and_connect?.list();
-      if (!devices) {
-        continue;
+    const failures: string[] = [];
+    try {
+      for (const t of transports.filter((t) => t.pick_and_connect)) {
+        // One transport failing — BlueZ timing out on D-Bus, no permission to
+        // the serial port — must not hide what the others found, or leave the
+        // list spinning. Collect the reason and carry on.
+        let devices;
+        try {
+          devices = await t.pick_and_connect?.list();
+        } catch (e) {
+          failures.push(
+            `${t.label}: ${e instanceof Error ? e.message : String(e)}`
+          );
+          continue;
+        }
+        if (!devices) {
+          continue;
+        }
+
+        entries.push(
+          ...devices.map((d) => ({
+            id: `${t.label}:${d.id}`,
+            transport: t,
+            device: d,
+          }))
+        );
       }
 
-      entries.push(
-        ...devices.map((d) => ({
-          id: `${t.label}:${d.id}`,
-          transport: t,
-          device: d,
-        }))
-      );
+      setDevices(entries);
+      setError(failures.length ? failures.join("\n") : null);
+    } finally {
+      setRefreshing(false);
     }
-
-    setDevices(entries);
-    setRefreshing(false);
   }, [transports]);
 
   useEffect(() => {

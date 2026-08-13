@@ -119,7 +119,7 @@ async fn check_connected(_: &Adapter, device: &Device) -> bool {
 const ADAPTER_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[command]
-pub async fn gatt_list_devices() -> Result<Vec<super::commands::AvailableDevice>, ()> {
+pub async fn gatt_list_devices() -> Result<Vec<super::commands::AvailableDevice>, String> {
     let adapter = Adapter::default()
         .map(|a| a.ok_or(()))
         .and_then(|a| async {
@@ -133,10 +133,14 @@ pub async fn gatt_list_devices() -> Result<Vec<super::commands::AvailableDevice>
     let mut ret = vec![];
 
     if let Ok(a) = adapter {
+        // BlueZ answers this over D-Bus and can time out — reliably so just after
+        // the adapter has been power-cycled. `.expect()` here panicked the tokio
+        // worker and took the whole scan down with no way for the picker to say
+        // why; hand the reason to the frontend, which has somewhere to show it.
         let devices = a
             .discover_devices(&[SVC_UUID])
             .await
-            .expect("GET DEVICES!")
+            .map_err(|e| format!("Failed to scan for devices: {}", e.message()))?
             .take_until(async_std::task::sleep(Duration::from_secs(2)))
             .filter_map(|d| ready(d.ok()));
 
