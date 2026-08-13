@@ -66,7 +66,14 @@ const SIDEBAR_REGION =
 // undefined), keeping every call site free of repeated null guards.
 function editData<T>(recipe: (draft: Draft<T>) => void) {
   return produce((draft: Draft<T> | undefined) => {
-    if (draft) recipe(draft);
+    if (!draft) {
+      // Nothing to apply the edit to, because the read it belongs to never
+      // landed. Dropping it silently is how a *successful* device mutation turns
+      // into a click that appears to do nothing — so say so at least here.
+      console.error("Dropped an edit: the device data it applies to isn't loaded");
+      return;
+    }
+    recipe(draft);
   });
 }
 
@@ -554,15 +561,35 @@ export default function Keyboard({ page }: { page: Page }) {
       new Set((customBehaviors?.behaviors ?? []).map((b) => b.displayName))
     );
 
-    const resp = await call_rpc(conn.conn, {
-      behaviors: {
-        addCustomBehavior: { kind, displayName, config: [] },
-      },
-    });
+    let resp;
+    try {
+      resp = await call_rpc(conn.conn, {
+        behaviors: {
+          addCustomBehavior: { kind, displayName, config: [] },
+        },
+      });
+    } catch (e) {
+      // call_rpc rejects on a transport or protocol fault, as opposed to a
+      // device that answers with an error code. Without this the press does
+      // nothing at all: no row, no message, nothing but a console line.
+      window.alert(
+        `Failed to add the behavior: ${e instanceof Error ? e.message : String(e)}`
+      );
+      return;
+    }
 
     const ok = resp.behaviors?.addCustomBehavior?.ok;
     if (ok?.behavior) {
       const behavior = ok.behavior as CustomBehavior;
+      if (!customBehaviors) {
+        // The keyboard claimed the slot, but there's no list state to merge it
+        // into — editData would drop it and the press would look like a miss.
+        window.alert(
+          `The keyboard added "${behavior.displayName || behavior.kind}", but the ` +
+            `behavior list never loaded, so it can't be shown. Reconnect to see it.`
+        );
+        return;
+      }
       setCustomBehaviors(
         editData<CustomBehaviors>((draft) => {
           if (!draft.behaviors) {

@@ -27,15 +27,22 @@ export function useUndoRedo(): [
     [locked, redoStack]
   );
 
+  // `finally`, because a callback that throws must not leave the system locked:
+  // every mutation runs through here, and `locked` gates undo *and* redo, so one
+  // failed RPC would disable both for the rest of the session. The throw still
+  // propagates — the caller decides what to say about it.
   const doIt = async (doCb: DoCallback, preserveRedo?: boolean) => {
     setLocked(true);
-    const undo = await doCb();
+    try {
+      const undo = await doCb();
 
-    setUndoStack([[doCb, undo], ...undoStack]);
-    if (!preserveRedo) {
-      setRedoStack([]);
+      setUndoStack([[doCb, undo], ...undoStack]);
+      if (!preserveRedo) {
+        setRedoStack([]);
+      }
+    } finally {
+      setLocked(false);
     }
-    setLocked(false);
   };
 
   const undo = async () => {
@@ -52,9 +59,11 @@ export function useUndoRedo(): [
     setUndoStack(undoStack.slice(1));
     setRedoStack([doCb, ...redoStack]);
 
-    await undoCb();
-
-    setLocked(false);
+    try {
+      await undoCb();
+    } finally {
+      setLocked(false);
+    }
   };
 
   const redo = async () => {
