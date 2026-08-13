@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { ConnectModal, type TransportFactory } from "./ConnectModal";
 
@@ -26,20 +26,22 @@ const BLE_UNAVAILABLE: TransportFactory = {
 // browser can't do this — Web Serial/Bluetooth own the chooser — which is why
 // the two pickers differ in body while sharing the label/spacing/rows.
 const device = (label: string, id: string) => ({ label, id });
-// Connecting is the step that's slow or fails, so these return real promises
-// rather than a bare `fn()` (which resolves to `undefined` and can't produce
-// either state): USB never settles, so clicking it shows the pending row, then
-// the connect timeout; BLE rejects, so clicking it shows the error line.
-const HANGS = fn(() => new Promise<never>(() => {}));
-const FAILS = fn(() =>
+
+// What a click does is the point of the desktop stories, so `connect` is the
+// parameter and the device list is fixed. A bare `fn()` won't do: it resolves
+// to `undefined`, which is neither a pending connect nor a failed one.
+type Connect = NonNullable<TransportFactory["pick_and_connect"]>["connect"];
+const HANGS: Connect = fn(() => new Promise<never>(() => {}));
+const FAILS: Connect = fn(() =>
   Promise.reject(new Error("Failed to open the device: Not connected"))
 );
-const PICK_AND_CONNECT_TRANSPORTS: TransportFactory[] = [
+
+const desktopTransports = (connect: Connect): TransportFactory[] => [
   {
     label: "USB",
     pick_and_connect: {
       list: async () => [device("Manicule54", "/dev/ttyACM0")],
-      connect: HANGS,
+      connect,
     },
   },
   {
@@ -50,9 +52,9 @@ const PICK_AND_CONNECT_TRANSPORTS: TransportFactory[] = [
       // up under both, and the row icon is what tells them apart.
       list: async () => [
         device("Manicule54", "E1:22:B0:0B:14:5E"),
-        device("Engrammer", "C4:19:D1:7A:03:9F"),
+        device("Benjiboard", "CD:70:5A:F0:CE:6E"),
       ],
-      connect: FAILS,
+      connect,
     },
   },
 ];
@@ -104,12 +106,53 @@ export const NoTransports: Story = {
  * The desktop app's picker: one row per device per transport, on the same 48px
  * `menuItem` rows the DropdownMenu uses, framed as a control so they don't read
  * as static text. Clicking a row connects — there's no selection to confirm.
- *
- * Click the USB row for the pending state (and, 20s later, the connect
- * timeout); click a BLE row for a failure.
+ * The two states a click leads to are the stories below.
  */
 export const DeviceList: Story = {
-  args: { transports: PICK_AND_CONNECT_TRANSPORTS },
+  args: { transports: desktopTransports(HANGS) },
+};
+
+/**
+ * A connect in flight. The row keeps its place and takes a spinner; the others
+ * go unavailable, because the native side holds one transport at a time and a
+ * second attempt would race the first.
+ *
+ * Left alone this story becomes the timeout after 20s — neither transport
+ * bounds its own wait, and a BLE link that BlueZ still calls connected can
+ * swallow a connect for two minutes before erroring.
+ */
+export const Connecting: Story = {
+  args: { transports: desktopTransports(HANGS) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.click(await canvas.findByRole("option", { name: "Benjiboard" }));
+
+    await expect(await canvas.findByText("Connecting…")).toBeInTheDocument();
+    // The rows that aren't being connected to.
+    for (const row of canvas.getAllByRole("option", { name: "Manicule54" })) {
+      await expect(row).toHaveAttribute("aria-disabled", "true");
+    }
+  },
+};
+
+/**
+ * A failed connect. The message goes inline under the list rather than to
+ * `alert()`: on the desktop that's a blocking OS dialog stacked on a modal, and
+ * it can't say which device failed. The list stays live so the next row is one
+ * click away.
+ */
+export const ConnectFailed: Story = {
+  args: { transports: desktopTransports(FAILS) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.click(await canvas.findByRole("option", { name: "Benjiboard" }));
+
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(
+      "Failed to open the device: Not connected"
+    );
+  },
 };
 
 /** Nothing found — a keyboard that's unplugged or powered off looks like this. */
