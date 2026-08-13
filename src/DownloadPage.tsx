@@ -9,7 +9,7 @@ import {
 } from "@fortawesome/free-brands-svg-icons";
 import { DownloadIcon } from "lucide-react";
 import releaseData from "./data/release-data.json";
-import { Button } from "./misc/Button";
+import { Button, LinkButton } from "./misc/Button";
 
 type Platform = "windows" | "mac" | "linux" | "ios" | "android" | "unknown";
 
@@ -131,14 +131,27 @@ function getUrlFromPattern(assets: string[], pattern: RegExp) {
   return asset;
 }
 
+// release-data.json holds whatever the API returned at build time, so a platform
+// whose build failed has no matching asset. Drop those rather than render a
+// control with no `href`: as a plain `<a>` that was a dead button that still
+// looked live, and `LinkButton` degrades it to a `<span>`, which is no better.
+function availableLinks(links: DownloadLink[]): (DownloadLink & { url: string })[] {
+  return links.flatMap((link) => {
+    const url = getUrlFromPattern(ReleaseAssets, link.urlPattern);
+    return url ? [{ ...link, url }] : [];
+  });
+}
+
 export const Download = () => {
   const [platform, setPlatform] = useState<Platform>("unknown");
   const [showAll, setShowAll] = useState(false);
 
+  const platformLinks = availableLinks(PlatformLinks[platform]);
+
   useEffect(() => {
     const platform = detectPlatform();
     setPlatform(platform);
-    if (PlatformLinks[platform].length === 0) {
+    if (availableLinks(PlatformLinks[platform]).length === 0) {
       setShowAll(true);
     }
   }, []);
@@ -151,24 +164,22 @@ export const Download = () => {
         {ReleaseVersion}
       </div>
       <div className="bg-base-100 p-8 max-w-md w-full m-2 rounded-lg shadow-lg dark:shadow-xl">
-        {PlatformLinks[platform].length > 0 && (
-          <>
-            <div className="flex flex-col gap-3 mb-3">
-              {PlatformLinks[platform].map((link) => (
-                <a
-                  key={link.name}
-                  href={getUrlFromPattern(ReleaseAssets, link.urlPattern)}
-                  className="p-3 text-lg bg-action hover:brightness-110 active:brightness-95 text-action-content rounded-lg justify-center items-center gap-3 flex"
-                >
-                  <FontAwesomeIcon icon={PlatformMetadata[platform].icon} className="h-6"/>{" "}
-                  Download for {link.name}
-                </a>
-              ))}
-            </div>
-          </>
+        {platformLinks.length > 0 && (
+          <div className="flex flex-col gap-3 mb-3">
+            {platformLinks.map((link) => (
+              <LinkButton
+                key={link.name}
+                variant="primary"
+                href={link.url}
+                icon={<FontAwesomeIcon icon={PlatformMetadata[platform].icon} />}
+              >
+                Download for {link.name}
+              </LinkButton>
+            ))}
+          </div>
         )}
         <div className="flex flex-col gap-3">
-          {PlatformLinks[platform].length > 0 && (
+          {platformLinks.length > 0 && (
             <Button
               variant="link"
               className="self-start"
@@ -181,10 +192,10 @@ export const Download = () => {
             <div>
               {Object.entries(PlatformLinks).map(([platform, links]) => (
                 <div key={platform}>
-                  {links.map((link) => (
+                  {availableLinks(links).map((link) => (
                     <a
                       key={link.name}
-                      href={getUrlFromPattern(ReleaseAssets, link.urlPattern)}
+                      href={link.url}
                       className="flex gap-1 mb-3 text-base-content hover:underline"
                     >
                       <DownloadIcon className="w-5" />
