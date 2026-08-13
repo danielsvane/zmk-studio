@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { CircleAlert } from "lucide-react";
 import {
   Label as RACLabel,
   Text as RACText,
@@ -101,13 +102,65 @@ export function FieldDescription({ className, ...props }: TextProps) {
   );
 }
 
+// Every error in the app is a glyph *and* red text, never red text alone —
+// color is the signal that disappears first, the same reason headings pair
+// color with weight (see DESIGN-SYSTEM.md). `items-start` plus the 2px nudge
+// keeps the glyph on the first line when the message wraps, instead of centred
+// against the whole block. `text-sm` rather than `text-xs`, because an error is
+// the most urgent line on screen and shouldn't be set smaller than the prose
+// it interrupts.
+const errorMessageStyles = "flex items-start gap-1.5 text-sm text-red-500";
+
+function ErrorIcon() {
+  return <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />;
+}
+
+export interface ErrorMessageProps {
+  /**
+   * Pass `"alert"` for an error that arrives *after* an action — a failed
+   * connect, a rejected save. It has no field for AT to reach it through, so it
+   * has to announce itself. Leave unset for one that's simply on screen.
+   */
+  role?: "alert";
+  className?: string;
+  children: ReactNode;
+}
+
+/**
+ * Error text for a failure that isn't a field's validation. Same look as
+ * {@link FieldErrorMessage}, which is the one to use inside a field provider.
+ */
+export function ErrorMessage({ role, className, children }: ErrorMessageProps) {
+  return (
+    <p role={role} className={cx(errorMessageStyles, className)}>
+      <ErrorIcon />
+      <span>{children}</span>
+    </p>
+  );
+}
+
 /** Validation error text; rendered by react-aria only when the field is invalid. */
 export function FieldErrorMessage({
   className,
+  children,
   ...props
-}: Omit<FieldErrorProps, "className"> & { className?: string }) {
+}: Omit<FieldErrorProps, "children" | "className"> & {
+  className?: string;
+  children?: ReactNode;
+}) {
   return (
-    <RACFieldError className={cx("text-xs text-red-500", className)} {...props} />
+    <RACFieldError className={cx(errorMessageStyles, className)} {...props}>
+      {/* A render function, so the icon goes *inside* react-aria's element
+          rather than wrapping it — and so `defaultChildren` still supplies the
+          browser's own validation messages when no `errorMessage` was passed.
+          react-aria only calls this while the field is invalid. */}
+      {({ defaultChildren }) => (
+        <>
+          <ErrorIcon />
+          <span>{children ?? defaultChildren}</span>
+        </>
+      )}
+    </RACFieldError>
   );
 }
 

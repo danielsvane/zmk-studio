@@ -10,7 +10,7 @@ import { ExternalLink } from "./misc/ExternalLink";
 import { GenericModal } from "./GenericModal";
 import { Button } from "./misc/Button";
 import { Tooltip } from "./misc/Tooltip";
-import { fieldColumn, GroupLabel } from "./misc/Field";
+import { ErrorMessage, fieldColumn, GroupLabel } from "./misc/Field";
 import { controlSurface, cx, menuItem } from "./misc/controlStyles";
 import { valueAfter } from "./misc/async";
 
@@ -231,11 +231,7 @@ function DeviceList({
       {/* A connect can fail without the device list changing at all, so the
           message belongs here rather than in place of the list. `role="alert"`
           because it lands after the click that caused it. */}
-      {error && (
-        <p role="alert" className="text-xs text-red-500">
-          {error}
-        </p>
-      )}
+      {error && <ErrorMessage role="alert">{error}</ErrorMessage>}
     </div>
   );
 }

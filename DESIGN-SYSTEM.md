@@ -168,6 +168,16 @@ that disappears first: on a dim or sunlit screen, or for a low-vision reader,
 weight and size are what survive. This is also why the modal title still carries
 `text-lg`.
 
+**Errors pair color with a glyph,** for the same reason. `FieldErrorMessage` and
+`ErrorMessage` (`Field.tsx`) both render a `CircleAlert` before the text in
+`text-red-500`, at `text-sm` — an error is the most urgent line on screen and
+shouldn't be set smaller than the prose it interrupts. Use `FieldErrorMessage`
+inside a field provider: it renders only while that field is invalid and
+react-aria wires it to the control through `aria-describedby`. Use
+`ErrorMessage role="alert"` for a failure that arrives *after* an action (see
+`ConnectModal`'s failed connect), where there's no field for AT to reach it
+through, so it has to announce itself.
+
 **Weight looks heavier in the desktop app, and that isn't a style bug.**
 `Inter.woff2` is the variable font and both engines interpolate the real `wght`
 instance, so a `font-semibold` heading *is* the same 600 in the browser and in
@@ -189,6 +199,7 @@ wired for you):
 | --- | --- |
 | Field layout (label → control → description/error) | `Field` + `fieldColumn` (`Field.tsx`) |
 | Group label / non-field group | `GroupLabel` / `LabeledGroup` (`Field.tsx`) |
+| Error text outside a field (a failed action) | `ErrorMessage` (`Field.tsx`) |
 | Text / number input | `TextField` (`TextField.tsx`) |
 | Dropdown (short list) | `Select` (`Select.tsx`) |
 | Filtering dropdown (long list) | `Combobox` (`Select.tsx`) |
