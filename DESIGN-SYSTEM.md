@@ -185,6 +185,7 @@ wired for you):
 | Boolean | `Checkbox` (`Checkbox.tsx`) |
 | Explain a setting the label can't | `InfoTip` (`InfoTip.tsx`) |
 | Action | `Button` (`Button.tsx`) |
+| Action that navigates (download, external page) | `LinkButton` (`Button.tsx`) |
 | Collapsible section (advanced/secondary fields) | `Disclosure` (`Disclosure.tsx`) |
 | Two-region picker (controls + canvas) | `PickerShell` (`PickerShell.tsx`) |
 | Selectable master-list row (sidebar → detail) | `SidebarCard` (`SidebarCard.tsx`) |
@@ -253,6 +254,24 @@ Web Bluetooth is Linux+Chromium-only, and listing it as unavailable-with-a-reaso
 beats omitting it, which left no way to tell "unsupported here" from "my keyboard
 isn't wireless". Prefer `placement="bottom"` for a paragraph-long bubble over a
 small dialog, so it doesn't cover the thing it's explaining.
+
+**A button that navigates is a `LinkButton`, never `<a><Button/></a>`.** Same
+`buttonStyles` surface, but a real `<a>`, so it keeps link semantics a `<button>`
+can't have: Enter follows it, cmd/middle-click opens a new tab, "Copy link
+address" works. Wrapping a `Button` in an anchor to fake it fails three ways, and
+the third is the one that bites: `<a>`'s content model forbids interactive
+descendants (non-conforming HTML); the anchor and the button are each focusable,
+so one visual control costs two tab stops and the first draws the focus ring on
+an unstyled wrapper; and **keyboard activation silently stops navigating**.
+`usePress` calls `preventDefault()` on the Enter/Space keydown of a
+`type="button"` button (`shouldPreventDefaultUp` returns true for every button
+that isn't submit/reset), which suppresses the browser's native activation
+behavior — so no `click` is dispatched to bubble to the anchor. The pointer path
+deliberately waits for the *real* click, so the mouse still works and the wrapper
+looks fine right up until someone tabs to it. Note RAC renders a `<span>` when
+`href` is missing or `isDisabled` is set, so don't pass `href={undefined}` and
+expect a control — drop the item instead (see `availableLinks` in
+`DownloadPage.tsx`).
 
 **Picking a `Button` variant.** The one gotcha is that `secondary`'s fill *is*
 `base-200`, the panel color — so it only reads as a button when it sits on

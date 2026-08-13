@@ -9,8 +9,9 @@ import {
   Plus,
   Minus,
   ArrowRight,
+  Download,
 } from "lucide-react";
-import { Button, ToggleButton, ButtonGroup } from "./Button";
+import { Button, ToggleButton, ButtonGroup, LinkButton } from "./Button";
 import { Tooltip } from "./Tooltip";
 
 const meta = {
@@ -285,6 +286,33 @@ export const NavTabs: Story = {
       </nav>
     );
   },
+};
+
+/**
+ * `LinkButton` — a button that navigates. Identical surface to `Button` (same
+ * `buttonStyles`), but a real `<a>`, so Enter follows it, cmd/middle-click opens
+ * a new tab, and "Copy link address" works. This is the DownloadPage CTA.
+ *
+ * Do *not* reach for `<a><Button/></a>` instead: `usePress` calls
+ * `preventDefault()` on the Enter/Space keydown of a `type="button"` button, so
+ * no click is ever dispatched to bubble to the anchor — mouse navigates,
+ * keyboard doesn't, and nothing warns you. Tab through the row below: one stop
+ * each, ring on the button itself. The wrapper version takes two.
+ */
+export const AsLink: Story = {
+  render: () => (
+    <Row>
+      <LinkButton variant="primary" href="#" icon={<Download />}>
+        Download for Linux
+      </LinkButton>
+      <LinkButton variant="tertiary" href="#" icon={<ArrowRight />} iconPosition="end">
+        Release notes
+      </LinkButton>
+      <LinkButton variant="link" href="#">
+        Inline link
+      </LinkButton>
+    </Row>
+  ),
 };
 
 /** A non-toggle group, e.g. clustered actions sharing one surface. */

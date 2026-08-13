@@ -1,8 +1,10 @@
 import {
   Button as RACButton,
   ToggleButton as RACToggleButton,
+  Link as RACLink,
   type ButtonProps as RACButtonProps,
   type ToggleButtonProps as RACToggleButtonProps,
+  type LinkProps as RACLinkProps,
 } from "react-aria-components";
 import { createContext, useContext, type ReactNode } from "react";
 import { buttonStyles, cx, type ButtonVariant, type ButtonSize } from "./controlStyles";
@@ -109,6 +111,52 @@ export function ToggleButton({
     >
       {renderContent(children, icon, iconPosition)}
     </RACToggleButton>
+  );
+}
+
+export interface LinkButtonProps
+  extends Omit<RACLinkProps, "children" | "className">,
+    CommonOwnProps {
+  children?: ReactNode;
+  className?: string;
+}
+
+/**
+ * A button that *navigates* — same `buttonStyles` surface, but a real `<a>`.
+ *
+ * Use this whenever the action is "go somewhere" (a download URL, an external
+ * page). Never wrap a `Button` in an `<a>` to get the same effect: besides being
+ * non-conforming HTML (`<a>`'s content model forbids interactive descendants)
+ * and two tab stops for one control, it silently breaks keyboard activation.
+ * `usePress` calls `preventDefault()` on the Enter/Space keydown for a
+ * `type="button"` button, which suppresses the browser's native activation
+ * behavior — so no `click` event is ever dispatched to bubble up to the wrapping
+ * anchor. The mouse path deliberately waits for the *real* click and so still
+ * navigates, which means the wrapper looks fine in testing and is dead only for
+ * keyboard users.
+ *
+ * Note RAC renders a `<span>`, not an `<a>`, when `href` is missing or
+ * `isDisabled` is set — a disabled link isn't a link. Don't hand it an
+ * `href={undefined}` and expect a working control; drop the item instead.
+ */
+export function LinkButton({
+  variant = "secondary",
+  size = "md",
+  icon,
+  iconPosition = "start",
+  className,
+  children,
+  ...props
+}: LinkButtonProps) {
+  const inGroup = useContext(ButtonGroupContext);
+  const iconOnly = !children && !!icon;
+  return (
+    <RACLink
+      className={cx(buttonStyles({ variant, size, iconOnly, inGroup }), className)}
+      {...props}
+    >
+      {renderContent(children, icon, iconPosition)}
+    </RACLink>
   );
 }
 
