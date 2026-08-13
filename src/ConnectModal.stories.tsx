@@ -26,12 +26,20 @@ const BLE_UNAVAILABLE: TransportFactory = {
 // browser can't do this — Web Serial/Bluetooth own the chooser — which is why
 // the two pickers differ in body while sharing the label/spacing/rows.
 const device = (label: string, id: string) => ({ label, id });
+// Connecting is the step that's slow or fails, so these return real promises
+// rather than a bare `fn()` (which resolves to `undefined` and can't produce
+// either state): USB never settles, so clicking it shows the pending row, then
+// the connect timeout; BLE rejects, so clicking it shows the error line.
+const HANGS = fn(() => new Promise<never>(() => {}));
+const FAILS = fn(() =>
+  Promise.reject(new Error("Failed to open the device: Not connected"))
+);
 const PICK_AND_CONNECT_TRANSPORTS: TransportFactory[] = [
   {
     label: "USB",
     pick_and_connect: {
       list: async () => [device("Manicule54", "/dev/ttyACM0")],
-      connect: fn() as never,
+      connect: HANGS,
     },
   },
   {
@@ -44,7 +52,7 @@ const PICK_AND_CONNECT_TRANSPORTS: TransportFactory[] = [
         device("Manicule54", "E1:22:B0:0B:14:5E"),
         device("Engrammer", "C4:19:D1:7A:03:9F"),
       ],
-      connect: fn() as never,
+      connect: FAILS,
     },
   },
 ];
@@ -96,6 +104,9 @@ export const NoTransports: Story = {
  * The desktop app's picker: one row per device per transport, on the same 48px
  * `menuItem` rows the DropdownMenu uses, framed as a control so they don't read
  * as static text. Clicking a row connects — there's no selection to confirm.
+ *
+ * Click the USB row for the pending state (and, 20s later, the connect
+ * timeout); click a BLE row for a failure.
  */
 export const DeviceList: Story = {
   args: { transports: PICK_AND_CONNECT_TRANSPORTS },
@@ -105,7 +116,7 @@ export const DeviceList: Story = {
 export const NoDevices: Story = {
   args: {
     transports: [
-      { label: "USB", pick_and_connect: { list: async () => [], connect: fn() as never } },
+      { label: "USB", pick_and_connect: { list: async () => [], connect: HANGS } },
     ],
   },
 };

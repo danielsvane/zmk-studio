@@ -3,7 +3,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import type { RpcTransport } from "@zmkfirmware/zmk-studio-ts-client/transport/index";
 import { UserCancelledError } from "@zmkfirmware/zmk-studio-ts-client/transport/errors";
 import type { AvailableDevice } from "./tauri/index";
-import { Bluetooth, Plug, RefreshCw } from "lucide-react";
+import { Bluetooth, Loader2, Plug, RefreshCw } from "lucide-react";
 import { ListBox, ListBoxItem } from "react-aria-components";
 import { useModalRef } from "./misc/useModalRef";
 import { ExternalLink } from "./misc/ExternalLink";
@@ -12,6 +12,7 @@ import { Button } from "./misc/Button";
 import { Tooltip } from "./misc/Tooltip";
 import { fieldColumn, GroupLabel } from "./misc/Field";
 import { controlSurface, cx, menuItem } from "./misc/controlStyles";
+import { valueAfter } from "./misc/async";
 
 export type TransportFactory = {
   label: string;
@@ -53,6 +54,18 @@ type DeviceEntry = {
   device: AvailableDevice;
 };
 
+// Connecting has to be able to give up. The desktop transports can hang for as
+// long as the OS lets them — the BLE path opens the device, waits for the
+// adapter and then discovers GATT services, none of which carry a timeout of
+// their own — and a promise that never settles renders as a click that did
+// nothing at all. Generous, because a cold BLE connect plus service discovery
+// legitimately takes a few seconds, but bounded so the row always comes back.
+// Giving up is a UI-side decision only: the native side may still finish and
+// hold a connection we never asked for. That resolves itself — the next connect
+// replaces the stored channel, which drops the abandoned one's tasks.
+const CONNECT_TIMEOUT_MS = 20_000;
+const TIMED_OUT = Symbol("connect timed out");
+
 function DeviceList({
   open,
   transports,
@@ -64,6 +77,9 @@ function DeviceList({
 }) {
   const [devices, setDevices] = useState<DeviceEntry[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  // The entry id being connected, and why the last attempt failed.
+  const [connecting, setConnecting] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const labelId = useId();
 
   const LoadEm = useCallback(async () => {
@@ -96,16 +112,43 @@ function DeviceList({
 
   const onRefresh = useCallback(() => {
     setDevices([]);
+    setError(null);
 
     LoadEm();
   }, [LoadEm]);
 
   const connect = useCallback(
-    (entry: DeviceEntry) => {
-      entry.transport
-        .pick_and_connect!.connect(entry.device)
-        .then(onTransportCreated)
-        .catch((e) => alert(e));
+    async (entry: DeviceEntry) => {
+      setError(null);
+      setConnecting(entry.id);
+      try {
+        // Failures used to go to `alert()`, which is fine in a browser but the
+        // wrong surface for the desktop app: it's a blocking GTK/Win32 dialog
+        // stacked on top of a modal, and it says nothing about which device.
+        const attempt = entry.transport.pick_and_connect!.connect(entry.device);
+        // Once the timeout has won the race, nothing is left to handle this
+        // promise — swallow it separately so a rejection long afterwards (the
+        // BLE path can take two minutes to give up) isn't an unhandled one.
+        attempt.catch(() => {});
+        const transport = await Promise.race([
+          attempt,
+          valueAfter(TIMED_OUT, CONNECT_TIMEOUT_MS),
+        ]);
+        if (transport === TIMED_OUT) {
+          throw new Error(
+            `${entry.device.label} didn't answer within ${CONNECT_TIMEOUT_MS / 1000} seconds. ` +
+              (entry.transport.isWireless
+                ? "Check that it's powered on and in range, then try again."
+                : "Try unplugging and reconnecting it.")
+          );
+        }
+        onTransportCreated(transport);
+      } catch (e) {
+        console.error(e);
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setConnecting(null);
+      }
     },
     [onTransportCreated]
   );
@@ -118,7 +161,7 @@ function DeviceList({
           variant="ghost"
           icon={<RefreshCw className={refreshing ? "animate-spin" : ""} />}
           aria-label="Refresh device list"
-          isDisabled={refreshing}
+          isDisabled={refreshing || connecting !== null}
           onPress={onRefresh}
         />
       </div>
@@ -132,6 +175,10 @@ function DeviceList({
       <ListBox
         aria-labelledby={labelId}
         items={devices}
+        // react-aria caches rendered items by item identity, so a row's own
+        // state (here: which one is connecting) has to be declared or the
+        // pending row never repaints.
+        dependencies={[connecting]}
         selectionMode="none"
         className={cx(
           controlSurface,
@@ -149,6 +196,11 @@ function DeviceList({
           <ListBoxItem
             className={menuItem}
             textValue={entry.device.label}
+            // One connection at a time — the native side keeps a single active
+            // transport, so a second attempt while one is in flight would race
+            // it. The row being connected stays undimmed and carries the
+            // spinner instead.
+            isDisabled={connecting !== null && connecting !== entry.id}
             onAction={() => connect(entry)}
           >
             {/* Wired vs wireless, because the two listers can surface the same
@@ -162,9 +214,23 @@ function DeviceList({
             <span className="min-w-0 flex-1 truncate">
               {entry.device.label}
             </span>
+            {connecting === entry.id && (
+              <span className="flex shrink-0 items-center gap-1.5 text-xs opacity-70">
+                <Loader2 aria-hidden className="animate-spin" />
+                Connecting…
+              </span>
+            )}
           </ListBoxItem>
         )}
       </ListBox>
+      {/* A connect can fail without the device list changing at all, so the
+          message belongs here rather than in place of the list. `role="alert"`
+          because it lands after the click that caused it. */}
+      {error && (
+        <p role="alert" className="text-xs text-red-500">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
