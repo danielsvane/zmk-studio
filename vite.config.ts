@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 import react from "@vitejs/plugin-react-swc";
 
 // https://vitejs.dev/config/
@@ -9,6 +10,19 @@ export default defineConfig({
   // Tauri expects a fixed port, fail if that port is not available
   server: {
     strictPort: true,
+    fs: {
+      // `@zmkfirmware/zmk-studio-ts-client` is a `file:` dependency, so
+      // node_modules holds a symlink to a sibling checkout and every module
+      // Vite serves from it resolves to a real path outside this project. The
+      // dev server refuses those by default ("The request id … is outside of
+      // Vite serving allow list") and the import fails at runtime — the RPC
+      // client and its transports simply don't load. Keep the default root and
+      // add the sibling.
+      allow: [
+        searchForWorkspaceRoot(process.cwd()),
+        fileURLToPath(new URL("../zmk-studio-ts-client", import.meta.url)),
+      ],
+    },
   },
   // to access the Tauri environment variables set by the CLI with information about the current target
   envPrefix: [
