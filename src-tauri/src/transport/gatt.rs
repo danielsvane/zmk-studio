@@ -49,11 +49,30 @@ pub async fn gatt_connect(
             let c2 = c.clone();
             let ah1 = app_handle.clone();
             let notify_handle = tauri::async_runtime::spawn(async move {
-                if let Ok(mut n) = c2.notify().await {
-                    use tauri::Emitter;
+                use tauri::Emitter;
 
-                    while let Some(Ok(vn)) = n.next().await {
-                        ah1.emit("connection_data", vn.clone());
+                let mut n = match c2.notify().await {
+                    Ok(n) => n,
+                    Err(e) => {
+                        println!("Failed to subscribe to RPC notifications: {}", e.message());
+                        return;
+                    }
+                };
+
+                while let Some(item) = n.next().await {
+                    let vn = match item {
+                        Ok(vn) => vn,
+                        Err(e) => {
+                            // `while let Some(Ok(_))` ended the loop here silently:
+                            // no further data could ever arrive, and nothing said
+                            // why. Every response after it would then hang.
+                            println!("RPC notification stream failed: {}", e.message());
+                            break;
+                        }
+                    };
+
+                    if let Err(e) = ah1.emit("connection_data", vn.clone()) {
+                        println!("Failed to hand RPC data to the frontend: {}", e);
                     }
                 }
             });
