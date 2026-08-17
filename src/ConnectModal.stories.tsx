@@ -88,10 +88,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 // The first thing anyone sees: one full-width button per thing you can do here,
-// stacked. The two connect buttons are `primary`; the download is `tertiary`,
-// which is the one step down that works on this surface — `secondary`'s fill is
-// `base-200`, the same color as the modal panel, so it would render as bare
-// centred text with no visible edge.
+// stacked. The two connect buttons are `primary`; the download is `ghost`, so it
+// reads as an aside rather than a third thing competing for the click.
 export const Open: Story = {};
 
 /** Single transport — the shape a Chrome-on-desktop user gets (Web Serial only). */

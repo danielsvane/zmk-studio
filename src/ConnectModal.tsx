@@ -451,10 +451,12 @@ function noTransportsOptionsPrompt() {
 // step down in weight, because someone who can connect right now should still be
 // connecting right now.
 //
-// `tertiary`, which is what "secondary" means on this surface: the `secondary`
-// variant's fill is `bg-base-200`, the exact color of the GenericModal panel, so
-// it would render as bare centred text with no visible edge. Tertiary is the
-// transparent-with-a-hairline variant that exists for precisely this case.
+// `ghost` rather than `secondary`, though on this surface the two are literally
+// indistinguishable — `secondary`'s fill is `bg-base-200`, the exact color of
+// the GenericModal panel, so it renders as the same bare centred text ghost
+// does (screenshotted both; the images differ by ~1e-7). Ghost is the one that
+// says what it means: transparent by intent rather than by coincidence, so it
+// still reads correctly if this modal's surface ever changes.
 //
 // A `LinkButton`, so it's a real `<a>`: middle-click and "copy link address"
 // work, and `_new` keeps a half-finished connect attempt alive in this tab.
@@ -465,7 +467,7 @@ function noTransportsOptionsPrompt() {
 // the desktop app is nonsense regardless.
 const desktopAppAction = (
   <LinkButton
-    variant="tertiary"
+    variant="ghost"
     className="w-full"
     icon={<Download />}
     href="/download"
