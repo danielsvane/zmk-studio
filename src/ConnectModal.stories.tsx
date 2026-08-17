@@ -1,5 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
+import { useEffect } from "react";
 
 import { ConnectModal, type TransportFactory } from "./ConnectModal";
 
@@ -17,8 +18,20 @@ const BLE_UNAVAILABLE: TransportFactory = {
   label: "BLE",
   unavailableReason:
     "Needs Web Bluetooth: Linux only, in Chrome or Edge.\n\n" +
-    "The desktop app has no such limit, but builds of this version aren't " +
-    "published yet.",
+    "The desktop app has no such limit. See the download link below.",
+};
+
+// Storybook runs in a browser, so every story below is a *web* build and shows
+// the desktop-app footer. The desktop stories opt out through this decorator —
+// without it they'd advertise a download the real app never offers.
+const asDesktopApp: Decorator = (Story) => {
+  window.__TAURI_INTERNALS__ ??= {};
+  useEffect(() => {
+    return () => {
+      delete window.__TAURI_INTERNALS__;
+    };
+  }, []);
+  return <Story />;
 };
 
 // The desktop (Tauri) shape: transports enumerate devices themselves, so the
@@ -109,6 +122,7 @@ export const NoTransports: Story = {
  * The two states a click leads to are the stories below.
  */
 export const DeviceList: Story = {
+  decorators: [asDesktopApp],
   args: { transports: desktopTransports(HANGS) },
 };
 
@@ -123,6 +137,7 @@ export const DeviceList: Story = {
  * swallow a connect for two minutes before erroring.
  */
 export const Connecting: Story = {
+  decorators: [asDesktopApp],
   args: { transports: desktopTransports(HANGS) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -146,6 +161,7 @@ export const Connecting: Story = {
  * click away.
  */
 export const ConnectFailed: Story = {
+  decorators: [asDesktopApp],
   args: { transports: desktopTransports(FAILS) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -160,6 +176,7 @@ export const ConnectFailed: Story = {
 
 /** Nothing found — a keyboard that's unplugged or powered off looks like this. */
 export const NoDevices: Story = {
+  decorators: [asDesktopApp],
   args: {
     transports: [
       { label: "USB", pick_and_connect: { list: async () => [], connect: HANGS } },

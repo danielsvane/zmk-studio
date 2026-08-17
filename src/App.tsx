@@ -55,12 +55,6 @@ import {
   BackupImportReportModal,
 } from "./backup/BackupImportModals";
 
-declare global {
-  interface Window {
-    __TAURI_INTERNALS__?: object;
-  }
-}
-
 // Web USB serial is added per-render inside the component (it needs an
 // `establish` callback that probes ports — see below). These are the static
 // transports that don't.
@@ -75,8 +69,7 @@ const WEB_BLE_SUPPORTED =
 // they can't distinguish "unsupported here" from "my keyboard isn't wireless".
 const BLE_REQUIREMENTS =
   "Needs Web Bluetooth: Linux only, in Chrome or Edge.\n\n" +
-  "The desktop app has no such limit, but builds of this version aren't " +
-  "published yet.";
+  "The desktop app has no such limit. See the download link below.";
 
 const STATIC_TRANSPORTS: TransportFactory[] = [
   // Skipped entirely under Tauri, which brings its own native BLE below —

@@ -3,12 +3,12 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import type { RpcTransport } from "@zmkfirmware/zmk-studio-ts-client/transport/index";
 import { UserCancelledError } from "@zmkfirmware/zmk-studio-ts-client/transport/errors";
 import type { AvailableDevice } from "./tauri/index";
-import { Bluetooth, Loader2, Plug, RefreshCw } from "lucide-react";
+import { Bluetooth, Download, Loader2, Plug, RefreshCw } from "lucide-react";
 import { ListBox, ListBoxItem } from "react-aria-components";
 import { useModalRef } from "./misc/useModalRef";
 import { ExternalLink } from "./misc/ExternalLink";
 import { GenericModal } from "./GenericModal";
-import { Button } from "./misc/Button";
+import { Button, LinkButton } from "./misc/Button";
 import { Tooltip } from "./misc/Tooltip";
 import { ErrorMessage, fieldColumn, GroupLabel } from "./misc/Field";
 import { controlSurface, cx, menuItem } from "./misc/controlStyles";
@@ -402,25 +402,40 @@ function noTransportsOptionsPrompt() {
         (Linux only) to connect to ZMK devices.
       </p>
 
-      <div>
-        <p>To use ZMK Studio, either:</p>
-        <ul className="list-disc list-inside">
-          <li>
-            Use a browser that supports the above web technologies, e.g.
-            Chrome/Edge, or
-          </li>
-          <li>
-            Download our{" "}
-            <ExternalLink href="/download">
-              cross platform application
-            </ExternalLink>
-            .
-          </li>
-        </ul>
-      </div>
+      {/* The download link this used to carry is now in the modal's footer, on
+          every browser rather than only this one, so this points at the footer
+          instead of putting two links to the same page a line apart.
+
+          Firefox is named because it stopped being an exception: Web Serial
+          shipped in 151, so USB works there now. Web Bluetooth still hasn't
+          (not as of 153), which is why it's qualified as USB-only rather than
+          listed alongside Chrome and Edge. */}
+      <p>
+        To use ZMK Studio, switch to a supported browser: Chrome, Edge, or
+        Firefox 151+ (USB only). You can also use the desktop app, linked below.
+      </p>
     </div>
   );
 }
+
+// The desktop app is the answer to more than an unsupported browser: no browser
+// on any platform can do wireless except Chrome and Edge on Linux, so the offer
+// has to be in front of every web visitor, not only the ones whose browser can't
+// connect at all. `ghost` keeps it from competing with the picker above —
+// someone who can connect right now should still be connecting right now.
+//
+// A `LinkButton`, so it's a real `<a>`: middle-click and "copy link address"
+// work, and `_new` keeps a half-finished connect attempt alive in this tab.
+//
+// Never rendered under Tauri. `download.html` is a second Vite entry that gets
+// bundled into the app too, so the link would navigate the app window onto the
+// download page with no way back — and offering the desktop download from inside
+// the desktop app is nonsense regardless.
+const desktopAppAction = (
+  <LinkButton variant="ghost" icon={<Download />} href="/download" target="_new">
+    Get the desktop app
+  </LinkButton>
+);
 
 function ConnectOptions({
   transports,
@@ -471,6 +486,7 @@ export const ConnectModal = ({
       ref={dialog}
       className="w-full max-w-md"
       title="Welcome to ZMK Studio"
+      actions={window.__TAURI_INTERNALS__ ? undefined : desktopAppAction}
     >
       {haveTransports ? (
         <ConnectOptions
