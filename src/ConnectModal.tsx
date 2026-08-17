@@ -334,33 +334,59 @@ function SimpleDevicePicker({
     };
   }, [selectedTransport, onTransportCreated]);
 
-  const connections = transports.map((t) => (
-    <li key={t.label} className="list-none">
-      {t.unavailableReason ? (
-        // Shorter than the default 1s hover delay: this tooltip isn't a
-        // reminder of what an icon means, it's the only place the requirements
-        // are written down, and the button it hangs off does nothing else.
-        <Tooltip label={t.unavailableReason} delay={300} placement="bottom">
-          <Button variant="tertiary" isUnavailable>
-            {t.label}
+  // Each button carries a whole sentence, not the bare "USB"/"BLE" of the
+  // two-up row this replaced: they're full-width rows now, so there's room, and
+  // an acronym alone doesn't say that pressing it connects. "Bluetooth" is
+  // spelled out for the same reason — "BLE" stays the transport's *identifier*
+  // (list keys, error prefixes), but nothing here is addressed to someone who
+  // already knows the acronym. Icons match the desktop DeviceList rows, where
+  // Plug/Bluetooth already mean wired/wireless.
+  const connections = transports.map((t) => {
+    const name = t.isWireless ? "Bluetooth" : t.label;
+    const icon = t.isWireless ? <Bluetooth /> : <Plug />;
+    return (
+      <li key={t.label} className="list-none">
+        {t.unavailableReason ? (
+          // Shorter than the default 1s hover delay: this tooltip isn't a
+          // reminder of what an icon means, it's the only place the requirements
+          // are written down, and the button it hangs off does nothing else.
+          <Tooltip label={t.unavailableReason} delay={300} placement="bottom">
+            <Button
+              variant="primary"
+              className="w-full"
+              icon={icon}
+              isUnavailable
+            >
+              Connect using {name}
+            </Button>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="primary"
+            className="w-full"
+            icon={icon}
+            onPress={() => setSelectedTransport(t)}
+          >
+            Connect using {name}
           </Button>
-        </Tooltip>
-      ) : (
-        <Button variant="tertiary" onPress={() => setSelectedTransport(t)}>
-          {t.label}
-        </Button>
-      )}
-    </li>
-  ));
+        )}
+      </li>
+    );
+  });
   return (
-    // "Select a connection type" labels the button row, so the pair is spaced as
-    // a field (`fieldColumn`'s gap-1.5) rather than with padding on the row, and
-    // it's a `GroupLabel` — the app's label style, wired to the row it names —
-    // rather than a loose paragraph. Same shape as `DeviceList` above, so the
-    // browser and desktop pickers read as one component with two bodies.
+    // "Select a connection type" labels the button stack, so the pair is spaced
+    // as a field (`fieldColumn`'s gap-1.5) rather than with padding on the list,
+    // and it's a `GroupLabel` — the app's label style, wired to the group it
+    // names — rather than a loose paragraph. Same shape as `DeviceList` above,
+    // so the browser and desktop pickers read as one component with two bodies.
+    //
+    // The list's gap-2 matches the gap ConnectModal puts between this block and
+    // the download button below it, so all three read as one evenly-spaced
+    // stack even though only these two are connection types and belong in the
+    // labelled group.
     <div className={fieldColumn}>
       <GroupLabel id={labelId}>Select a connection type</GroupLabel>
-      <ul role="group" aria-labelledby={labelId} className="flex gap-2">
+      <ul role="group" aria-labelledby={labelId} className="flex flex-col gap-2">
         {connections}
       </ul>
       {selectedTransport && availableDevices && (
@@ -402,9 +428,9 @@ function noTransportsOptionsPrompt() {
         (Linux only) to connect to ZMK devices.
       </p>
 
-      {/* The download link this used to carry is now in the modal's footer, on
-          every browser rather than only this one, so this points at the footer
-          instead of putting two links to the same page a line apart.
+      {/* The download link this used to carry is now a button below, on every
+          browser rather than only this one, so this points at that instead of
+          putting two links to the same page a line apart.
 
           Firefox is named because it stopped being an exception: Web Serial
           shipped in 151, so USB works there now. Web Bluetooth still hasn't
@@ -421,8 +447,14 @@ function noTransportsOptionsPrompt() {
 // The desktop app is the answer to more than an unsupported browser: no browser
 // on any platform can do wireless except Chrome and Edge on Linux, so the offer
 // has to be in front of every web visitor, not only the ones whose browser can't
-// connect at all. `ghost` keeps it from competing with the picker above —
-// someone who can connect right now should still be connecting right now.
+// connect at all. It's the third row of the same button stack — same width, one
+// step down in weight, because someone who can connect right now should still be
+// connecting right now.
+//
+// `tertiary`, which is what "secondary" means on this surface: the `secondary`
+// variant's fill is `bg-base-200`, the exact color of the GenericModal panel, so
+// it would render as bare centred text with no visible edge. Tertiary is the
+// transparent-with-a-hairline variant that exists for precisely this case.
 //
 // A `LinkButton`, so it's a real `<a>`: middle-click and "copy link address"
 // work, and `_new` keeps a half-finished connect attempt alive in this tab.
@@ -432,8 +464,14 @@ function noTransportsOptionsPrompt() {
 // download page with no way back — and offering the desktop download from inside
 // the desktop app is nonsense regardless.
 const desktopAppAction = (
-  <LinkButton variant="ghost" icon={<Download />} href="/download" target="_new">
-    Get the desktop app
+  <LinkButton
+    variant="tertiary"
+    className="w-full"
+    icon={<Download />}
+    href="/download"
+    target="_new"
+  >
+    Download desktop app
   </LinkButton>
 );
 
@@ -486,22 +524,31 @@ export const ConnectModal = ({
       ref={dialog}
       className="w-full max-w-md"
       title="Welcome to ZMK Studio"
-      actions={window.__TAURI_INTERNALS__ ? undefined : desktopAppAction}
     >
-      {haveTransports ? (
-        <ConnectOptions
-          transports={transports}
-          onTransportCreated={onTransportCreated}
-          open={open}
-        />
-      ) : (
-        noTransportsOptionsPrompt()
-      )}
-      {status && (
-        <p className="pt-3 text-sm opacity-70" aria-live="polite">
-          {status}
-        </p>
-      )}
+      {/* One column, gap-2, so the picker's buttons and the download button
+          below them form a single evenly-spaced stack. The download button is
+          deliberately *not* in GenericModal's `actions` footer: there it was a
+          third button in a different place, at a different width, right-aligned
+          under a divider of whitespace, when it's really just the third thing
+          you can do from this dialog. It also has to survive the no-transports
+          case, which has no picker to sit under. */}
+      <div className="flex flex-col gap-2">
+        {haveTransports ? (
+          <ConnectOptions
+            transports={transports}
+            onTransportCreated={onTransportCreated}
+            open={open}
+          />
+        ) : (
+          noTransportsOptionsPrompt()
+        )}
+        {!window.__TAURI_INTERNALS__ && desktopAppAction}
+        {status && (
+          <p className="text-sm opacity-70" aria-live="polite">
+            {status}
+          </p>
+        )}
+      </div>
     </GenericModal>
   );
 };

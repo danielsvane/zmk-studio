@@ -73,11 +73,11 @@ const WEB_BLE_SUPPORTED =
 // as a broken app.
 //
 // Spelled as the bare `#experimental-web-platform-features` that Chrome's own
-// docs use, not the full `chrome://flags/#enable-...` URL. Both fit the
-// tooltip's `max-w-xs`, but measured in the story the full URL is a single
-// unbreakable token 318px wide against a 320px cap, so it survives on 2px of
-// headroom and would overflow the moment Inter falls back (`font-display:
-// fallback`) or the user zooms. The short form measures 275px.
+// docs use, not the full `chrome://flags/#enable-...` URL — shorter to read and
+// to retype, and it's the form the user will actually recognise once they're on
+// the flags page. Not a layout constraint: the flag name wraps at its own
+// hyphens, so neither spelling overflows the tooltip's `max-w-xs` (see the
+// WirelessUnavailableTooltip story, which screenshots the bubble).
 const BLE_REQUIREMENTS =
   "Needs Web Bluetooth: Chrome or Edge on Linux, with " +
   "#experimental-web-platform-features enabled in chrome://flags.\n\n" +
@@ -88,11 +88,21 @@ const STATIC_TRANSPORTS: TransportFactory[] = [
   // otherwise a Tauri build whose webview exposes `navigator.bluetooth` would
   // list two "BLE" entries (and, worse, could pair the real one with an
   // "unavailable" duplicate).
+  // `isWireless` on the web entries too, not just the Tauri one below: the
+  // picker reads it to label the button ("Connect using Bluetooth") and pick its
+  // icon, and the web BLE transport is no less wireless for going through
+  // `navigator.bluetooth`.
   ...(window.__TAURI_INTERNALS__
     ? []
     : WEB_BLE_SUPPORTED
-      ? [{ label: "BLE", connect: gatt_connect }]
-      : [{ label: "BLE", unavailableReason: BLE_REQUIREMENTS }]),
+      ? [{ label: "BLE", isWireless: true, connect: gatt_connect }]
+      : [
+          {
+            label: "BLE",
+            isWireless: true,
+            unavailableReason: BLE_REQUIREMENTS,
+          },
+        ]),
   ...(window.__TAURI_INTERNALS__
     ? [
         {

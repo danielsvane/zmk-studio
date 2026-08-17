@@ -16,6 +16,7 @@ const SIMPLE_TRANSPORTS: TransportFactory[] = [
 // check it explains; duplicated here only so the story is self-contained.
 const BLE_UNAVAILABLE: TransportFactory = {
   label: "BLE",
+  isWireless: true,
   unavailableReason:
     "Needs Web Bluetooth: Chrome or Edge on Linux, with " +
     "#experimental-web-platform-features enabled in chrome://flags.\n\n" +
@@ -23,7 +24,7 @@ const BLE_UNAVAILABLE: TransportFactory = {
 };
 
 // Storybook runs in a browser, so every story below is a *web* build and shows
-// the desktop-app footer. The desktop stories opt out through this decorator —
+// the desktop-app button. The desktop stories opt out through this decorator —
 // without it they'd advertise a download the real app never offers.
 const asDesktopApp: Decorator = (Story) => {
   window.__TAURI_INTERNALS__ ??= {};
@@ -86,9 +87,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// The first thing anyone sees. The transport buttons are `variant="tertiary"`:
-// `secondary`'s fill is `base-200`, the same color as the modal panel, so a
-// secondary button here rendered as bare text with no visible edge.
+// The first thing anyone sees: one full-width button per thing you can do here,
+// stacked. The two connect buttons are `primary`; the download is `tertiary`,
+// which is the one step down that works on this surface — `secondary`'s fill is
+// `base-200`, the same color as the modal panel, so it would render as bare
+// centred text with no visible edge.
 export const Open: Story = {};
 
 /** Single transport — the shape a Chrome-on-desktop user gets (Web Serial only). */
@@ -97,10 +100,11 @@ export const OneTransport: Story = {
 };
 
 /**
- * What most browsers actually show: USB usable, BLE listed but unavailable, its
- * requirements on hover (or on Tab — the button is `aria-disabled`, not
- * `disabled`, so it keeps both). Previously BLE was simply absent, leaving no
- * way to tell "unsupported here" from "my keyboard isn't wireless".
+ * What most browsers actually show: USB usable, Bluetooth listed but
+ * unavailable, its requirements on hover (or on Tab — the button is
+ * `aria-disabled`, not `disabled`, so it keeps both). Previously it was simply
+ * absent, leaving no way to tell "unsupported here" from "my keyboard isn't
+ * wireless".
  */
 export const WirelessUnavailable: Story = {
   args: { transports: [SIMPLE_TRANSPORTS[0], BLE_UNAVAILABLE] },
@@ -109,16 +113,32 @@ export const WirelessUnavailable: Story = {
 /**
  * The same story with the tooltip open, because that bubble is the only place
  * the requirements are written down and it is invisible in every other story.
- * Worth a screenshot of its own: the flag name is a 35-character unbreakable
- * token inside a `max-w-xs` bubble, so this is where a copy edit that overflows
- * it would show up.
+ * Worth a screenshot of its own: it's a paragraph of copy in a `max-w-xs`
+ * bubble containing a 35-character flag name, so this is where an edit that
+ * overflows or badly wraps it shows up.
  */
 export const WirelessUnavailableTooltip: Story = {
   args: { transports: [SIMPLE_TRANSPORTS[0], BLE_UNAVAILABLE] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    await userEvent.hover(canvas.getByRole("button", { name: "BLE" }));
+    // Tab, not hover. react-aria opens a tooltip on hover from its
+    // `onPointerEnter`, and neither `userEvent.hover` nor a hand-dispatched
+    // PointerEvent gets there — only a real (trusted) pointer does, which a play
+    // function has no way to produce. Keyboard focus is the other trigger and it
+    // does work: the keydown sets react-aria's interaction modality, so the
+    // focus that follows counts as focus-visible and opens the bubble. It's also
+    // the path that most needs a test — `isUnavailable` renders `aria-disabled`
+    // rather than `disabled` precisely so this button stays in the tab order.
+    //
+    // Focus the button before it explicitly, rather than assuming where the
+    // dialog's initial focus landed.
+    canvas.getByRole("button", { name: "Connect using USB" }).focus();
+    await userEvent.tab();
+    await expect(
+      canvas.getByRole("button", { name: "Connect using Bluetooth" })
+    ).toHaveFocus();
+
     await expect(await canvas.findByRole("tooltip")).toHaveTextContent(
       "#experimental-web-platform-features"
     );
