@@ -1185,9 +1185,9 @@ export default function Keyboard({ page }: { page: Page }) {
                   </p>
                   <p className="mt-2 text-sm text-base-content/50">
                     Any factory behaviors that ship with this keyboard reload
-                    after the board restarts — e.g. after restoring stock
-                    settings, reset the board (or unplug and reconnect) to see
-                    them again.
+                    after the board restarts. After restoring stock settings,
+                    for example, reset the board (or unplug and reconnect) to
+                    see them again.
                   </p>
                 </div>
               </div>

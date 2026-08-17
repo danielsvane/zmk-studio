@@ -55,9 +55,9 @@ export const BackupImportConfirmModal = ({
           <p>
             This restores the backup of{" "}
             <span className="font-medium">{backup.device.name}</span> from{" "}
-            {new Date(backup.exportedAt).toLocaleString()} —{" "}
+            {new Date(backup.exportedAt).toLocaleString()} (
             {backup.keymap.layers.length} layers, {backup.combos.length} combos,{" "}
-            {backup.customBehaviors.length} custom behaviors.
+            {backup.customBehaviors.length} custom behaviors).
           </p>
           {deviceName && backup.device.name !== deviceName && (
             <p className="text-error">
@@ -67,8 +67,8 @@ export const BackupImportConfirmModal = ({
             </p>
           )}
           <p>
-            Everything currently on the keyboard — layers, combos, and custom
-            behaviors — will be <span className="font-medium">replaced</span>{" "}
+            Everything currently on the keyboard (layers, combos, and custom
+            behaviors) will be <span className="font-medium">replaced</span>{" "}
             and the result saved to flash immediately.
           </p>
         </div>
@@ -123,7 +123,7 @@ export const BackupImportReportModal = ({
                 <ul className="max-h-[40vh] overflow-y-auto list-disc pl-5 text-sm">
                   {report.skipped.map((item, i) => (
                     <li key={i}>
-                      <span className="font-medium">{item.location}</span> —{" "}
+                      <span className="font-medium">{item.location}</span>:{" "}
                       {item.reason}
                     </li>
                   ))}
