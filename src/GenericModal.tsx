@@ -42,10 +42,18 @@ export const GenericModal = React.forwardRef(({ onClose, children, className, ti
     [ref]
   );
 
+  // The title is the dialog's accessible name, but only if it's actually
+  // associated with it: a <dialog> takes no name from an <h2> that merely sits
+  // inside it, so without this every modal in the app announced as an unnamed
+  // "dialog". Nothing is set when there's no `title` — a wrong or empty
+  // `aria-labelledby` is worse than none.
+  const titleId = React.useId();
+
   return (
     <dialog
       ref={setDialog}
       onClose={onClose}
+      aria-labelledby={title != null ? titleId : undefined}
       // `overflow-visible` overrides the UA default `overflow: auto`, which
       // clips an overlay to the dialog's box — a tooltip or popover hanging off
       // a control near the edge of a small dialog is mostly *outside* it, so the
@@ -58,7 +66,10 @@ export const GenericModal = React.forwardRef(({ onClose, children, className, ti
       {/* Read lazily, when an overlay actually opens — by then the ref is set. */}
       <UNSAFE_PortalProvider getContainer={() => dialogRef.current}>
         {title != null && (
-          <h2 className="mb-3 text-lg font-semibold text-base-content-strong">
+          <h2
+            id={titleId}
+            className="mb-3 text-lg font-semibold text-base-content-strong"
+          >
             {title}
           </h2>
         )}
