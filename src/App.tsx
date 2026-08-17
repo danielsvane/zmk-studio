@@ -67,8 +67,20 @@ const WEB_BLE_SUPPORTED =
 // Shown on the disabled BLE button when neither path is available. Without it
 // the option is simply missing from the picker, which tells the user nothing —
 // they can't distinguish "unsupported here" from "my keyboard isn't wireless".
+// The flag is named because without it this tooltip misleads exactly the person
+// who reads it: Chromium on Linux meets every other condition, so being told
+// "Linux only, in Chrome or Edge" and then finding the button greyed out reads
+// as a broken app.
+//
+// Spelled as the bare `#experimental-web-platform-features` that Chrome's own
+// docs use, not the full `chrome://flags/#enable-...` URL. Both fit the
+// tooltip's `max-w-xs`, but measured in the story the full URL is a single
+// unbreakable token 318px wide against a 320px cap, so it survives on 2px of
+// headroom and would overflow the moment Inter falls back (`font-display:
+// fallback`) or the user zooms. The short form measures 275px.
 const BLE_REQUIREMENTS =
-  "Needs Web Bluetooth: Linux only, in Chrome or Edge.\n\n" +
+  "Needs Web Bluetooth: Chrome or Edge on Linux, with " +
+  "#experimental-web-platform-features enabled in chrome://flags.\n\n" +
   "The desktop app has no such limit. See the download link below.";
 
 const STATIC_TRANSPORTS: TransportFactory[] = [

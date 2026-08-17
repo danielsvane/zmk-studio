@@ -17,7 +17,8 @@ const SIMPLE_TRANSPORTS: TransportFactory[] = [
 const BLE_UNAVAILABLE: TransportFactory = {
   label: "BLE",
   unavailableReason:
-    "Needs Web Bluetooth: Linux only, in Chrome or Edge.\n\n" +
+    "Needs Web Bluetooth: Chrome or Edge on Linux, with " +
+    "#experimental-web-platform-features enabled in chrome://flags.\n\n" +
     "The desktop app has no such limit. See the download link below.",
 };
 
@@ -103,6 +104,25 @@ export const OneTransport: Story = {
  */
 export const WirelessUnavailable: Story = {
   args: { transports: [SIMPLE_TRANSPORTS[0], BLE_UNAVAILABLE] },
+};
+
+/**
+ * The same story with the tooltip open, because that bubble is the only place
+ * the requirements are written down and it is invisible in every other story.
+ * Worth a screenshot of its own: the flag name is a 35-character unbreakable
+ * token inside a `max-w-xs` bubble, so this is where a copy edit that overflows
+ * it would show up.
+ */
+export const WirelessUnavailableTooltip: Story = {
+  args: { transports: [SIMPLE_TRANSPORTS[0], BLE_UNAVAILABLE] },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.hover(canvas.getByRole("button", { name: "BLE" }));
+    await expect(await canvas.findByRole("tooltip")).toHaveTextContent(
+      "#experimental-web-platform-features"
+    );
+  },
 };
 
 /** The `status` line, shown while probing serial ports during auto-reconnect. */
