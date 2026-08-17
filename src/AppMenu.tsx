@@ -6,7 +6,25 @@ import { LicenseNoticeModal } from "./misc/LicenseNoticeModal";
 import { Button } from "./misc/Button";
 import { DropdownMenu, DropdownMenuItem } from "./misc/DropdownMenu";
 import { UpdateModal } from "./updater/UpdateModal";
-import { useUpdater } from "./updater/useUpdater";
+import { useUpdater, type InstallState } from "./updater/useUpdater";
+
+/**
+ * Just the fields the UI reads off an update. Declared here rather than reusing
+ * the plugin's `Update` so the view has no Tauri dependency and can be rendered
+ * anywhere; `Update` satisfies it structurally, so the container passes one
+ * straight through.
+ */
+export interface AvailableUpdate {
+  currentVersion: string;
+  version: string;
+  body?: string;
+}
+
+export interface AppMenuViewProps {
+  update: AvailableUpdate | null;
+  install: InstallState;
+  onInstall: () => void;
+}
 
 /**
  * The application menu: everything about the app itself, as opposed to the
@@ -20,13 +38,19 @@ import { useUpdater } from "./updater/useUpdater";
  * one thing here worth reading without a click, it's the first thing anyone asks
  * for in a bug report, and it gives the "new version available" dot somewhere to
  * hang that already means "version".
+ *
+ * Split from `AppMenu` for the same reason `UpdateModal` takes plain props: the
+ * update states are Tauri-only through the hook, so this is the seam that lets
+ * them be seen and tested without a release to install.
  */
-export const AppMenu = () => {
+export const AppMenuView = ({
+  update,
+  install,
+  onInstall,
+}: AppMenuViewProps) => {
   const [showAbout, setShowAbout] = useState(false);
   const [showLicenseNotice, setShowLicenseNotice] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
-
-  const { update, install, installAndRelaunch } = useUpdater();
 
   return (
     <>
@@ -88,10 +112,23 @@ export const AppMenu = () => {
           version={update.version}
           notes={update.body}
           install={install}
-          onInstall={installAndRelaunch}
+          onInstall={onInstall}
           onClose={() => setShowUpdate(false)}
         />
       )}
     </>
+  );
+};
+
+/** The live menu: {@link AppMenuView} wired to the real updater. */
+export const AppMenu = () => {
+  const { update, install, installAndRelaunch } = useUpdater();
+
+  return (
+    <AppMenuView
+      update={update}
+      install={install}
+      onInstall={installAndRelaunch}
+    />
   );
 };
