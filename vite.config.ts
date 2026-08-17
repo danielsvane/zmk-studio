@@ -1,10 +1,36 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig, searchForWorkspaceRoot } from "vite";
 import react from "@vitejs/plugin-react-swc";
 
+const readJson = (rel: string) =>
+  JSON.parse(readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8"));
+
+// One version string for the whole app, baked in at build time rather than read
+// with Tauri's async `getVersion()`: this way the web build has a version too,
+// it's a plain constant in Storybook, and nothing has to render an empty slot
+// while a promise settles.
+//
+// It has to agree with `src-tauri/tauri.conf.json`, because *that* is the number
+// the updater compares against `latest.json`. A UI claiming one version while
+// the updater acts on another is worse than showing no version at all: it would
+// offer an update you already have, or stay silent on one you don't.
+// release-please bumps both together, so a mismatch means the release tooling
+// broke — fail the build instead of shipping the confusion.
+const { version: APP_VERSION } = readJson("./package.json");
+const tauriVersion = readJson("./src-tauri/tauri.conf.json").version;
+if (APP_VERSION !== tauriVersion) {
+  throw new Error(
+    `Version mismatch: package.json says ${APP_VERSION}, ` +
+      `src-tauri/tauri.conf.json says ${tauriVersion}. ` +
+      `The updater compares the tauri.conf.json version, so these must match.`
+  );
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   // prevent vite from obscuring rust errors
   clearScreen: false,
   // Tauri expects a fixed port, fail if that port is not available

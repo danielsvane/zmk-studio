@@ -27,6 +27,7 @@ import type { ReactNode } from "react";
 import { Tooltip } from "./misc/Tooltip";
 import { ThemeSwitcher } from "./misc/ThemeSwitcher";
 import { GenericModal } from "./GenericModal";
+import { AppMenu } from "./AppMenu";
 
 export interface AppHeaderProps {
   connectedDeviceLabel?: string;
@@ -234,6 +235,10 @@ export const AppHeader = ({
             </DropdownMenuItem>
           </DropdownMenu>
         )}
+        {/* Outside the `connectedDeviceLabel` gate above: the app menu is about
+            the app, so it's there before you connect and stays after you
+            disconnect. */}
+        <AppMenu />
       </div>
     </header>
   );

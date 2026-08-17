@@ -42,8 +42,6 @@ import { LockState } from "@zmkfirmware/zmk-studio-ts-client/core";
 import { LockStateContext } from "./rpc/LockStateContext";
 import { UnlockModal } from "./UnlockModal";
 import { valueAfter } from "./misc/async";
-import { AboutModal } from "./AboutModal";
-import { LicenseNoticeModal } from "./misc/LicenseNoticeModal";
 import { fetchBehaviorMap } from "./rpc/fetchBehaviorMap";
 import { buildBackup } from "./backup/exportBackup";
 import { downloadBackup } from "./backup/downloadBackup";
@@ -248,8 +246,6 @@ function App() {
   >(undefined);
   const [doIt, undo, redo, canUndo, canRedo, reset] = useUndoRedo();
   const [page, setPage] = useState<Page>("layers");
-  const [showAbout, setShowAbout] = useState(false);
-  const [showLicenseNotice, setShowLicenseNotice] = useState(false);
   const [connectionAbort, setConnectionAbort] = useState(new AbortController());
 
   const [lockState, setLockState] = useState<LockState>(
@@ -677,7 +673,6 @@ function App() {
             onTransportCreated={onConnect}
             status={probeStatus}
           />
-          <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
           <input
             ref={importFileRef}
             type="file"
@@ -694,10 +689,6 @@ function App() {
           <BackupImportReportModal
             report={importReport}
             onClose={() => setImportReport(null)}
-          />
-          <LicenseNoticeModal
-            open={showLicenseNotice}
-            onClose={() => setShowLicenseNotice(false)}
           />
           <div className="bg-base-100 text-base-content h-full max-h-[100vh] w-full max-w-[100vw] inline-grid grid-cols-[auto] grid-rows-[auto_1fr] overflow-hidden">
             <AppHeader
