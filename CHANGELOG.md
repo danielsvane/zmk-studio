@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.5.0](https://github.com/danielsvane/zmk-studio/compare/v0.4.1...v0.5.0) (2026-08-17)
+
+
+### Features
+
+* **button:** add LinkButton for actions that navigate ([15cf2a3](https://github.com/danielsvane/zmk-studio/commit/15cf2a3718ae4bdc22696bc880ea924d0597245f))
+* **connect:** offer the desktop app download on every browser ([82792b7](https://github.com/danielsvane/zmk-studio/commit/82792b7314f38a815afaec3a180cf0b79b5b5727))
+* **connect:** stack the connect modal's actions as full-width buttons ([d40a7ee](https://github.com/danielsvane/zmk-studio/commit/d40a7ee281748a36c9482c4ca0fd81fab16a82f6))
+* **header:** add an app menu showing the version ([a99c3e8](https://github.com/danielsvane/zmk-studio/commit/a99c3e87e60621368259e2977653d19aa010e09d))
+* **updater:** check for updates on launch and install them in app ([8301dfd](https://github.com/danielsvane/zmk-studio/commit/8301dfd3e4e8b11c7f0ae49155b7ad41803696e5))
+
+
+### Bug Fixes
+
+* **a11y:** name every modal by its title ([eb2b1bb](https://github.com/danielsvane/zmk-studio/commit/eb2b1bb179c66d0de8245adb153eba500757a3cf))
+* **connect:** frame the desktop device picker as a control ([47ecc15](https://github.com/danielsvane/zmk-studio/commit/47ecc15abe420387fd10ef85b7e42cd3d7580345))
+* **connect:** name the Chrome flag Linux needs for Web Bluetooth ([dfb9a2e](https://github.com/danielsvane/zmk-studio/commit/dfb9a2e2aaa5e708539bb942e8638dabc039d778))
+* **connect:** pin the modal's width and drop the connecting caption ([10e6ff4](https://github.com/danielsvane/zmk-studio/commit/10e6ff47d79967e8d68293ccfca97f93e7174589))
+* **connect:** show progress and failures when picking a device ([d79e850](https://github.com/danielsvane/zmk-studio/commit/d79e850c511492447e4a756356cbb8502cfc8f2a))
+* **copy:** drop em-dashes from user-facing text ([d34d116](https://github.com/danielsvane/zmk-studio/commit/d34d116e06de5bd0108c0f3a90d5fe1198b0ec34))
+* **dev:** let vite serve the linked ts-client ([65283d9](https://github.com/danielsvane/zmk-studio/commit/65283d9bad27535357aebcf7dea1d19f0386b71f))
+* **download:** make the platform CTAs real links ([e363b4a](https://github.com/danielsvane/zmk-studio/commit/e363b4a2638352098dc62e7bcf660da6f573c7bd))
+* **rpc:** report a failed read instead of an empty list ([38f4928](https://github.com/danielsvane/zmk-studio/commit/38f4928a0106129adc3ad2d8e48bd9a19939ddd9))
+* **rpc:** stop a rejected mutation failing in silence ([0f0ee74](https://github.com/danielsvane/zmk-studio/commit/0f0ee743c785e83fc80a10bc9bac350888ddc212))
+* **tauri:** a broken write must not look like a silent keyboard ([ed13f92](https://github.com/danielsvane/zmk-studio/commit/ed13f9215395630c5c7e7d5208555b9c8d563627))
+* **tauri:** don't panic when BlueZ times out listing devices ([f220d79](https://github.com/danielsvane/zmk-studio/commit/f220d796e332c8393fe9c5a1feb974d174db0d0e))
+* **tauri:** report a failed BLE notification stream instead of going quiet ([2739f07](https://github.com/danielsvane/zmk-studio/commit/2739f07211081ccf2855091957ecd016de10da59))
+* **tauri:** stop the desktop transports dropping notifications ([b624597](https://github.com/danielsvane/zmk-studio/commit/b624597c6d84803f0ef8ff32ed37a8b260047060))
+* **ui:** give every error message a glyph and body-size text ([cd5ad01](https://github.com/danielsvane/zmk-studio/commit/cd5ad01e91d3c28ce59aaf154966c256d10abe3e))
+* **ui:** render the Tauri webview's text with grayscale antialiasing ([f687338](https://github.com/danielsvane/zmk-studio/commit/f687338cdc8afc358b5b1ec619597ce4399f7ffa))
+
 ## [0.4.1](https://github.com/danielsvane/zmk-studio/compare/v0.4.0...v0.4.1) (2026-08-12)
 
 
