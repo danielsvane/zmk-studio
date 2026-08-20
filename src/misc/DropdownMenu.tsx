@@ -31,12 +31,22 @@ export interface DropdownMenuProps {
   children: ReactNode;
   /** Popover placement relative to the trigger (default `bottom end`). */
   placement?: PopoverProps["placement"];
+  /**
+   * Static content below the rows — a fact about the menu's subject rather than
+   * something to pick (the header menu's `Version 0.5.0`). It sits *outside* the
+   * `Menu`: a react-aria collection only accepts items, and a fact rendered as a
+   * disabled row would read as an action you're not allowed to take. Keyboard
+   * focus never lands here, so anything a screen reader must reach needs a home
+   * elsewhere too.
+   */
+  footer?: ReactNode;
 }
 
 export function DropdownMenu({
   trigger,
   children,
   placement = "bottom end",
+  footer,
 }: DropdownMenuProps) {
   return (
     <MenuTrigger>
@@ -44,6 +54,13 @@ export function DropdownMenu({
       {/* `p-1` insets the rows from the panel edge, matching the Combobox popover. */}
       <Popover placement={placement} className={cx(popoverSurface, "p-1")}>
         <Menu className="outline-none">{children}</Menu>
+        {footer && (
+          // `-mx-1` cancels the popover's `p-1` so the rule spans edge to edge,
+          // like the untitled-section divider in `Select`'s option lists.
+          <div className="-mx-1 mt-1 border-t border-base-line px-3 pt-2 pb-1 text-xs text-base-content/60">
+            {footer}
+          </div>
+        )}
       </Popover>
     </MenuTrigger>
   );

@@ -192,6 +192,10 @@ export const AboutModal = ({ open, onClose }: AboutModalProps) => {
         </Button>
       }
     >
+      {/* Also in the app menu's footer, but that line is static text a screen
+          reader inside a captured menu never reaches — and this is the dialog a
+          bug report tells people to open. */}
+      <p className="text-sm text-base-content/70">Version {__APP_VERSION__}</p>
       <p>
         The ZMK Project:{" "}
         <ExternalLink href="https://zmk.dev/">website</ExternalLink>,{" "}

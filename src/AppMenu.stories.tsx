@@ -4,8 +4,8 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import { AppMenuView } from "./AppMenu";
 
 // A release *newer* than this build, in release-please's format. The version
-// has to be one `__APP_VERSION__` isn't, or the trigger and the menu row show
-// the same number and the story stops demonstrating anything: the trigger is
+// has to be one `__APP_VERSION__` isn't, or the menu's footer and its update row
+// show the same number and the story stops demonstrating anything: the footer is
 // what you're running, the row is what's on offer.
 const UPDATE = {
   currentVersion: __APP_VERSION__,
@@ -37,16 +37,17 @@ type Story = StoryObj<typeof meta>;
 const openMenu = async (canvasElement: HTMLElement) => {
   const canvas = within(canvasElement);
   await userEvent.click(
-    canvas.getByRole("button", { name: /^Application menu, version / })
+    canvas.getByRole("button", { name: /^Application menu/ })
   );
   // react-aria portals the popover, so it lands outside `canvasElement`.
   return within(canvasElement.ownerDocument.body);
 };
 
 /**
- * The resting state: a version number and a chevron. Small and quiet on purpose,
- * since it sits in the header permanently and nothing here is part of editing a
- * keymap.
+ * The resting state: an overflow `...` and nothing else. It sits in the header
+ * permanently and nothing behind it is part of editing a keymap, so it carries no
+ * label of its own — a bordered pill reading "0.5.0" with a chevron, which is what
+ * this used to be, reads as a version *picker*.
  */
 export const Closed: Story = {};
 
@@ -65,18 +66,26 @@ export const MenuOpen: Story = {
     await expect(
       body.getByRole("menuitem", { name: "License notice" })
     ).toBeInTheDocument();
+    // Theme lives here rather than in a header slot of its own.
+    for (const name of ["System", "Light", "Dark"]) {
+      await expect(body.getByRole("menuitem", { name })).toBeInTheDocument();
+    }
+    // The version is a fact at the foot of the menu, not a row you can pick.
+    await expect(
+      body.getByText(`Version ${__APP_VERSION__}`)
+    ).toBeInTheDocument();
+    await expect(body.queryByRole("menuitem", { name: /^Version / })).toBeNull();
     // Nothing to update, so no row for it.
     await expect(body.queryByRole("menuitem", { name: /^Update to/ })).toBeNull();
   },
 };
 
 /**
- * An update, announced by a dot next to the version. The number itself does not
- * change: it means "the version you are running", which is what a bug report
- * needs and what the About dialog will agree with. Swapping it for the version
- * on offer would make the header state something false about the running build
- * for as long as the user ignores the update. The dot carries the news, the menu
- * row names the new version.
+ * An update, announced by a blue dot on the corner of the `...` glyph, the same
+ * `action` blue as the Update button it leads to. The
+ * menu's own version line does not change: it means "the version you are
+ * running", which is what a bug report needs and what About agrees with, so the
+ * dot carries the news and the menu row names the new version.
  *
  * This is as loud as it gets. Nothing else on screen changes, and no dialog
  * opens on its own.
@@ -88,7 +97,7 @@ export const UpdateAvailable: Story = {
     // The dot is decorative, so the label is where an update is announced.
     await expect(
       canvas.getByRole("button", {
-        name: /^Application menu, version .*, update available$/,
+        name: "Application menu, update available",
       })
     ).toBeInTheDocument();
   },
@@ -105,7 +114,8 @@ export const UpdateAvailableMenuOpen: Story = {
 
     const items = await body.findAllByRole("menuitem");
     await expect(items[0]).toHaveTextContent("Update to 0.5.0");
-    await expect(items).toHaveLength(3);
+    // Update, three themes, About, License notice.
+    await expect(items).toHaveLength(6);
   },
 };
 

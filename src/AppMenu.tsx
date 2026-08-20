@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ChevronDown, Info, Scale, Sparkles } from "lucide-react";
+import { EllipsisVertical, Info, Scale, Sparkles } from "lucide-react";
 
 import { AboutModal } from "./AboutModal";
 import { LicenseNoticeModal } from "./misc/LicenseNoticeModal";
 import { Button } from "./misc/Button";
 import { DropdownMenu, DropdownMenuItem } from "./misc/DropdownMenu";
+import { ThemeMenuItems } from "./misc/ThemeMenuItems";
 import { UpdateModal } from "./updater/UpdateModal";
 import { useUpdater, type InstallState } from "./updater/useUpdater";
 
@@ -34,10 +35,14 @@ export interface AppMenuViewProps {
  * license notice had no home there. They were mounted in `App.tsx` with state
  * nothing ever set, which meant neither modal could be opened at all.
  *
- * The version is the trigger's label rather than a row inside the menu. It's the
- * one thing here worth reading without a click, it's the first thing anyone asks
- * for in a bug report, and it gives the "new version available" dot somewhere to
- * hang that already means "version".
+ * An overflow `...` rather than a labelled trigger, and the last thing in the
+ * header: everything behind it is about the app, so it shouldn't compete with
+ * the keymap actions (undo/redo/save/discard) or the device menu beside it. The
+ * version used to *be* the trigger, a bordered pill reading "0.5.0" with a
+ * chevron, which is the app's input look plus a value plus a picker affordance:
+ * it read as a version *selector*. A version is a fact, so it's now a static
+ * line at the foot of the menu (and in About, which is the copy a screen reader
+ * can reach).
  *
  * Split from `AppMenu` for the same reason `UpdateModal` takes plain props: the
  * update states are Tauri-only through the hook, so this is the seam that lets
@@ -55,29 +60,38 @@ export const AppMenuView = ({
   return (
     <>
       <DropdownMenu
+        footer={`Version ${__APP_VERSION__}`}
         trigger={
-          // `aria-label` because the visible label is a bare number: "0.4.1"
-          // announced on its own says nothing about what the button does, or
-          // that the number is a version. The dot is decorative, so the label
-          // is also the only place an update gets announced.
           <Button
             variant="ghost"
-            size="sm"
-            icon={<ChevronDown />}
-            iconPosition="end"
-            aria-label={
-              `Application menu, version ${__APP_VERSION__}` +
-              (update ? ", update available" : "")
+            className="relative"
+            icon={
+              <>
+                <EllipsisVertical />
+                {update && (
+                  // Anchored to the *glyph's* top-right corner, not the 48px
+                  // button's: at the button corner it floats in empty space and
+                  // stops reading as a mark on the icon.
+                  //
+                  // `action` rather than a warning colour: an update is news
+                  // worth acting on, not something wrong, and this is the same
+                  // blue as the Update button the dot leads to. One of the few
+                  // direct uses of the token outside `variant="primary"`, since
+                  // there's no button here to carry it.
+                  <span
+                    aria-hidden
+                    className="absolute top-3 right-3 size-2 rounded-full bg-action"
+                  />
+                )}
+              </>
             }
-          >
-            {__APP_VERSION__}
-            {update && (
-              <span
-                aria-hidden
-                className="size-1.5 shrink-0 rounded-full bg-action"
-              />
-            )}
-          </Button>
+            // The dot is decorative, so the label is the only place an update is
+            // announced. No version here: on a `...` it would be noise, and the
+            // menu carries it.
+            aria-label={
+              update ? "Application menu, update available" : "Application menu"
+            }
+          />
         }
       >
         {/* An available update is the only thing here anyone is waiting for, so
@@ -90,6 +104,9 @@ export const AppMenuView = ({
             Update to {update.version}
           </DropdownMenuItem>
         ) : null}
+        {/* Theme sits above About/License because it's the only thing here
+            anyone changes more than once. */}
+        <ThemeMenuItems />
         <DropdownMenuItem icon={<Info />} onAction={() => setShowAbout(true)}>
           About ZMK Studio
         </DropdownMenuItem>

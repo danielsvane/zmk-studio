@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Tooltip } from "./misc/Tooltip";
-import { ThemeSwitcher } from "./misc/ThemeSwitcher";
 import { GenericModal } from "./GenericModal";
 import { AppMenu } from "./AppMenu";
 
@@ -168,7 +167,6 @@ export const AppHeader = ({
         </div>
       </GenericModal>
       <div className="flex items-center justify-end gap-1 px-2">
-        <ThemeSwitcher />
         {onUndo && (
           <Tooltip label="Undo">
             <Button
@@ -235,9 +233,9 @@ export const AppHeader = ({
             </DropdownMenuItem>
           </DropdownMenu>
         )}
-        {/* Outside the `connectedDeviceLabel` gate above: the app menu is about
-            the app, so it's there before you connect and stays after you
-            disconnect. */}
+        {/* Last, and outside the `connectedDeviceLabel` gate above: app chrome
+            belongs at the far edge, away from the keymap actions, and it's there
+            before you connect and stays after you disconnect. */}
         <AppMenu />
       </div>
     </header>

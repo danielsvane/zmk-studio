@@ -146,7 +146,12 @@ grey, which needs no special handling.
   from `primary` so a page's main *action* doesn't read like a *selected*
   element — together they're the two ends of the logo gradient. Don't reach for
   it directly — use `<Button variant="primary">`; the mapping lives in
-  `controlStyles.ts`.
+  `controlStyles.ts`. The one sanctioned exception is the "update available" dot
+  on the header's `...` menu (`AppMenu.tsx`): same meaning (the thing worth
+  acting on) and the same blue as the Update button it leads to, but with no
+  button to hang it on. Deliberately **not** a warning yellow — an update is
+  news, not a fault — which is also why the app has no warning tier to reach
+  for.
 - `base-content` — default text. Written with an `<alpha-value>` slot, so it
   **does** take opacity modifiers: `bg-base-content/40` gives a muted surface
   that contrasts with the panel in both themes (~2.3:1) where the
@@ -221,6 +226,8 @@ wired for you):
 | Two-region picker (controls + canvas) | `PickerShell` (`PickerShell.tsx`) |
 | Selectable master-list row (sidebar → detail) | `SidebarCard` (`SidebarCard.tsx`) |
 | Action menu off a trigger | `DropdownMenu` + `DropdownMenuItem` (`DropdownMenu.tsx`) |
+| A fact under a menu's rows (not something to pick) | `DropdownMenu`'s `footer` — the header menu's version line |
+| App-level chrome (theme, about, licence, version, update) | a row in the header's `...` `AppMenu` (`AppMenu.tsx`), **not** a new header slot. That row is for the keymap (undo/redo/save/discard) and the device; anything about the app itself goes behind the overflow at the far edge |
 | Inline list of choices (in a form or modal, not a popover) | `ListBox` framed with `controlSurface`, rows on `menuItem` — see `ConnectModal`'s `DeviceList` |
 | Dialog / modal | `GenericModal` (`GenericModal.tsx`) |
 
