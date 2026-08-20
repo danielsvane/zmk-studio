@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/danielsvane/zmk-studio/compare/v0.5.0...v0.6.0) (2026-08-20)
+
+
+### Features
+
+* **header:** move version, theme and About behind an overflow menu ([57d1924](https://github.com/danielsvane/zmk-studio/commit/57d1924afbfea8ad3584d6fe7b755bfeac41b57b))
+
 ## [0.5.0](https://github.com/danielsvane/zmk-studio/compare/v0.4.1...v0.5.0) (2026-08-17)
 
 
